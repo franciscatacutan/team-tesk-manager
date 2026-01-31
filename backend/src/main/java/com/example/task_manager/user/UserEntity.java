@@ -11,9 +11,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-/**
- * Entity representing a user.
- */
+
 @Getter
 @Setter
 @Entity
@@ -24,10 +22,7 @@ public class UserEntity {
   private Long id;
 
   @Column(nullable = false)
-  private String firstName;
-
-  @Column(nullable = false)
-  private String lastName;
+  private String name;
 
   @Column(nullable = false, unique = true)
   private String email;
@@ -35,19 +30,11 @@ public class UserEntity {
   @Column(nullable = false)
   private String password;
 
-  // One-to-many relationship with projects (owner)
   @OneToMany(mappedBy = "owner")
   private List<ProjectEntity> projects = new ArrayList<>();
 
-  // One-to-many relationship with tasks (assigned to)
   @OneToMany(mappedBy = "assignedTo")
   private List<TaskEntity> assignedTasks = new ArrayList<>();
 
   private Instant createdAt = Instant.now();
-
-  private Instant updatedAt = Instant.now();
-
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private UserRole role;
 }

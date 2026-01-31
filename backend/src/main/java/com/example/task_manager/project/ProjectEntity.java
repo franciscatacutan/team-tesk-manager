@@ -11,9 +11,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-/**
- * Entity representing a project.
- */
 @Getter
 @Setter
 @Entity
@@ -28,12 +25,10 @@ public class ProjectEntity {
 
   private String description;
 
-  // Many-to-one relationship with user (owner)
   @ManyToOne
   @JoinColumn(name = "owner_id", nullable = false)
   private UserEntity owner;
 
-  // One-to-many relationship with tasks
   @OneToMany(mappedBy = "project", cascade = CascadeType.ALL)
   private List<TaskEntity> tasks = new ArrayList<>();
 

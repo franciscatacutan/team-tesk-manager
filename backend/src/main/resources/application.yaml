@@ -1,20 +1,12 @@
 spring:
   application:
     name: Team Task Manager
-
-  # Database configuration
   datasource:
     url: jdbc:postgresql://localhost:5432/taskmanager
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    username: postgres
+    password: admin
 
-  # JPA configuration
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
-
-# JWT configuration
-jwt:
-  secret: ${JWT_SECRET}
-  expiration-ms: 86400000 # 1 day in milliseconds
