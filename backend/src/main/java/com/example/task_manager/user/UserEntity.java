@@ -45,7 +45,7 @@ public class UserEntity {
 
   private Instant createdAt = Instant.now();
 
-  private Instant updatedAt = Instant.now();
+  private Instant updatedAt;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
