@@ -38,4 +38,7 @@ public class ProjectEntity {
   private List<TaskEntity> tasks = new ArrayList<>();
 
   private Instant createdAt = Instant.now();
+
+  private Instant updatedAt;
+
 }
