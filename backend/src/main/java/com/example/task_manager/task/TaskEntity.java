@@ -2,6 +2,10 @@ package com.example.task_manager.task;
 
 import java.time.Instant;
 
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import com.example.task_manager.project.ProjectEntity;
 import com.example.task_manager.user.UserEntity;
 
@@ -16,6 +20,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "tasks")
+@EntityListeners(AuditingEntityListener.class)
 public class TaskEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,8 +31,9 @@ public class TaskEntity {
 
   private String description;
 
+  @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private TaskStatus status = TaskStatus.TODO;
+  private TaskStatus status;
 
   // Many-to-one relationship with project
   @ManyToOne
@@ -36,8 +42,14 @@ public class TaskEntity {
 
   // Many-to-one relationship with user (assigned to)
   @ManyToOne
-  @JoinColumn(name = "assigned_to")
-  private UserEntity assignedTo;
+  @JoinColumn(name = "assigned_user")
+  private UserEntity assignedUser;
 
-  private Instant createdAt = Instant.now();
+  @CreatedDate
+  @Column(nullable = false, updatable = false)
+  private Instant createdAt;
+
+  @LastModifiedDate
+  @Column(nullable = false)
+  private Instant updatedAt;
 }
