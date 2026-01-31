@@ -4,14 +4,8 @@ import java.security.Principal;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 import com.example.task_manager.project.dto.CreateProjectRequest;
 import com.example.task_manager.project.dto.ProjectResponse;
@@ -37,7 +31,10 @@ public class ProjectController {
   public ResponseEntity<ProjectResponse> create(
       @Valid @RequestBody CreateProjectRequest request,
       Principal principal) {
-    return ResponseEntity.ok(projectService.create(request, principal.getName()));
+
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(projectService.create(request, principal.getName()));
+
   }
 
   /**
@@ -52,7 +49,7 @@ public class ProjectController {
   /**
    * Update project.
    */
-  @PutMapping("/{id}")
+  @PatchMapping("/{id}")
   public ResponseEntity<ProjectResponse> update(
       @PathVariable Long id,
       @Valid @RequestBody UpdateProjectRequest request,
@@ -65,9 +62,7 @@ public class ProjectController {
    * Delete project.
    */
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> delete(
-      @PathVariable Long id,
-      Principal principal) {
+  public ResponseEntity<Void> delete(@PathVariable Long id, Principal principal) {
 
     projectService.delete(id, principal.getName());
     return ResponseEntity.noContent().build();

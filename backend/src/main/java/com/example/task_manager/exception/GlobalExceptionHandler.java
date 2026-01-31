@@ -5,11 +5,13 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.example.task_manager.exception.ErrorResponse.ErrorCode;
 import com.example.task_manager.exception.api.ApiException;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,18 +21,11 @@ import jakarta.servlet.http.HttpServletRequest;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-        private ResponseEntity<ErrorResponse> build(
-                        HttpStatus status,
+        private ResponseEntity<ErrorResponse> build(HttpStatus status,
                         ErrorResponse.ErrorCode errorCode,
-                        String message,
-                        HttpServletRequest request) {
-                return ResponseEntity.status(status).body(
-                                new ErrorResponse(
-                                                status.value(),
-                                                errorCode,
-                                                message,
-                                                request.getRequestURI(),
-                                                Instant.now()));
+                        String message, HttpServletRequest request) {
+                return ResponseEntity.status(status).body(new ErrorResponse(status.value(), errorCode, message,
+                                request.getRequestURI(), Instant.now()));
         }
 
         /**
@@ -78,6 +73,21 @@ public class GlobalExceptionHandler {
                                 HttpStatus.BAD_REQUEST,
                                 ErrorResponse.ErrorCode.VALIDATION_ERROR,
                                 message,
+                                request);
+        }
+
+        /**
+         * Handles empty or malformed request body exceptions.
+         */
+        @ExceptionHandler(HttpMessageNotReadableException.class)
+        public ResponseEntity<ErrorResponse> handleEmptyOrInvalidBody(
+                        HttpMessageNotReadableException ex,
+                        HttpServletRequest request) {
+
+                return build(
+                                HttpStatus.BAD_REQUEST,
+                                ErrorCode.INVALID_REQUEST,
+                                "Request body is missing or malformed",
                                 request);
         }
 }

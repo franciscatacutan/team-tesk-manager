@@ -1,6 +1,5 @@
 package com.example.task_manager.project;
 
-import java.time.Instant;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -65,9 +64,13 @@ public class ProjectService {
 
     ProjectEntity project = getOwnedProject(projectId, userEmail);
 
-    project.setName(request.name());
-    project.setDescription(request.description());
-    project.setUpdatedAt(Instant.now());
+    if (request.name() != null) {
+      project.setName(request.name());
+    }
+
+    if (request.description() != null) {
+      project.setDescription(request.description());
+    }
 
     return mapToResponse(projectRepository.save(project));
   }
@@ -86,6 +89,11 @@ public class ProjectService {
     projectRepository.delete(project);
   }
 
+  // HELPERS
+
+  /**
+   * Fetches user by email or throws if not found.
+   */
   private UserEntity getUser(String email) {
 
     return userRepository.findByEmail(email)
@@ -115,10 +123,17 @@ public class ProjectService {
    * Maps a ProjectEntity to a ProjectResponse.
    */
   private ProjectResponse mapToResponse(ProjectEntity project) {
+    ProjectResponse.ProjectOwner owner = new ProjectResponse.ProjectOwner(
+        project.getOwner().getId(),
+        project.getOwner().getFirstName(),
+        project.getOwner().getLastName(),
+        project.getOwner().getEmail());
+
     return new ProjectResponse(
         project.getId(),
         project.getName(),
         project.getDescription(),
+        owner,
         project.getCreatedAt(),
         project.getUpdatedAt());
   }

@@ -4,6 +4,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+
 import com.example.task_manager.project.ProjectEntity;
 import com.example.task_manager.task.TaskEntity;
 
@@ -40,11 +43,15 @@ public class UserEntity {
   private List<ProjectEntity> projects = new ArrayList<>();
 
   // One-to-many relationship with tasks (assigned to)
-  @OneToMany(mappedBy = "assignedTo")
+  @OneToMany(mappedBy = "assignedUser")
   private List<TaskEntity> assignedTasks = new ArrayList<>();
 
-  private Instant createdAt = Instant.now();
+  @CreatedDate
+  @Column(nullable = false, updatable = false)
+  private Instant createdAt;
 
+  @LastModifiedDate
+  @Column(nullable = false)
   private Instant updatedAt;
 
   @Enumerated(EnumType.STRING)
