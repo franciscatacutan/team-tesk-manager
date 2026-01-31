@@ -9,6 +9,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * Entity representing a task.
+ */
 @Getter
 @Setter
 @Entity
@@ -26,10 +29,12 @@ public class TaskEntity {
   @Enumerated(EnumType.STRING)
   private TaskStatus status = TaskStatus.TODO;
 
+  // Many-to-one relationship with project
   @ManyToOne
   @JoinColumn(name = "project_id", nullable = false)
   private ProjectEntity project;
 
+  // Many-to-one relationship with user (assigned to)
   @ManyToOne
   @JoinColumn(name = "assigned_to")
   private UserEntity assignedTo;
