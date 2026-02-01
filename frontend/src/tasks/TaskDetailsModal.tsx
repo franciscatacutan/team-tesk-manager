@@ -34,6 +34,13 @@ export default function TaskDetailsModal({
 
         <p className="text-gray-600">{task.description}</p>
 
+        {task.assignedUser && (
+          <p className="text-sm text-gray-500">
+            Assigned to: {task.assignedUser.firstName}{" "}
+            {task.assignedUser.lastName}
+          </p>
+        )}
+
         <span
           className="
             inline-block px-3 py-1 rounded-full

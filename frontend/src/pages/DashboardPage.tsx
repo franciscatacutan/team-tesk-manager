@@ -2,6 +2,7 @@ import { useState } from "react";
 import TaskList from "../tasks/TaskList";
 import type { Task } from "../tasks/task.types";
 import TaskDetailsModal from "../tasks/TaskDetailsModal";
+import TaskFormModal from "../tasks/TaskFormModal";
 
 /*
  * Dashboard page showing project tasks.
@@ -10,6 +11,7 @@ export default function Dashboard() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const PROJECT_ID = 3; //TEMPORARY: Replace with actual project selection logic
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -26,7 +28,9 @@ export default function Dashboard() {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Tasks</h2>
 
-          <button className="btn">+ Add Task</button>
+          <button className="btn" onClick={() => setIsCreateOpen(true)}>
+            + Add Task
+          </button>
         </div>
 
         {/*
@@ -59,6 +63,15 @@ export default function Dashboard() {
           onDelete={(taskId) => {
             console.log("Delete task", taskId);
           }}
+        />
+
+        {/*
+         * Task Creation Modal
+         */}
+        <TaskFormModal
+          projectId={PROJECT_ID}
+          isOpen={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
         />
       </main>
     </div>

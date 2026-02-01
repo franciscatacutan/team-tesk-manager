@@ -23,6 +23,13 @@ export default function TaskItem({ task, onClick }: Props) {
       <div>
         <h3 className="font-semibold">{task.title}</h3>
         <p className="text-sm text-gray-500">{task.description}</p>
+
+        {task.assignedUser && (
+          <p className="text-xs text-gray-400 mt-1">
+            Assigned to: {task.assignedUser.firstName}{" "}
+            {task.assignedUser.lastName}
+          </p>
+        )}
       </div>
 
       <span
