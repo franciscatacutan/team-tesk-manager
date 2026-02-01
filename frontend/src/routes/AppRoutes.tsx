@@ -1,6 +1,13 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Auth from "../pages/Auth";
+import AuthPage from "../pages/AuthPage";
 import ProtectedRoute from "./ProtectedRoute";
+import ErrorPage from "../pages/ErrorPage";
+import PublicRoute from "./PublicRoute";
+
+// Dummy Dashboard component
+function Dashboard() {
+  return <h1 className="text-center mt-20">Dashboard</h1>;
+}
 
 /*
  * Application Routes
@@ -12,18 +19,28 @@ export default function AppRoutes() {
         {/*
          * Public Route
          */}
-        <Route path="/login" element={<Auth />} />
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <AuthPage />
+            </PublicRoute>
+          }
+        />
+
+        {/*
+         * Protected Route
+         */}
         <Route
           path="/"
           element={
-            /*
-             * Protected Route
-             */
             <ProtectedRoute>
-              <div>Protected Home Page</div>
+              <Dashboard />
             </ProtectedRoute>
           }
-        />{" "}
+        />
+        {/* Catch ALL unknown routes */}
+        <Route path="*" element={<ErrorPage />} />
       </Routes>
     </BrowserRouter>
   );

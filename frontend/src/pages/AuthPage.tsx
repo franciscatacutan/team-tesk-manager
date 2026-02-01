@@ -36,6 +36,7 @@ export default function Auth() {
           // On successful login, store the token in local storage
           onSuccess: (data) => {
             localStorage.setItem("token", data.token);
+            window.location.href = "/";
           },
         },
       );
