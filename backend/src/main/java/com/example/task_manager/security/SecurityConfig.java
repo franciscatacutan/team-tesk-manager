@@ -31,6 +31,10 @@ public class SecurityConfig {
         // Disable CSRF for stateless session management
         .csrf(AbstractHttpConfigurer::disable)
 
+        // Enable CORS
+        .cors(cors -> {
+        })
+
         // Authorize requests and endpoint access rules
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/auth/**")
