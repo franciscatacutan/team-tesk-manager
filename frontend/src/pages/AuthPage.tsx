@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLogin, useRegister } from "../auth/useAuth";
+import { useNavigate } from "react-router-dom";
 
 /*
  * Authentication page component
@@ -9,34 +10,113 @@ export default function Auth() {
   // Checks if the register form should be displayed
   const [isRegister, setIsRegister] = useState(false);
 
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+  });
+
+  // State to hold form validation errors
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  // State to hold server error messages
+  const [serverError, setServerError] = useState("");
+
+  // Highlight input field if there's an error
+  const inputClass = (hasError?: string) =>
+    hasError ? "input border-red-500 focus:ring-red-500" : "input";
+
+  // const isLoading = login.isPending || register.isPending;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  // Hooks for login and registration mutations
   const login = useLogin();
   const register = useRegister();
+  const navigate = useNavigate();
+
+  // Loading state for form submission
+  const isLoading = login.isPending || register.isPending;
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    // Basic email validation
+    if (!form.email.includes("@")) {
+      newErrors.email = "Invalid email";
+    }
+
+    // Password strength validation
+    const strongPasswordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
+    if (!strongPasswordRegex.test(form.password)) {
+      newErrors.password =
+        "Password must be at least 8 characters and include uppercase, number, and special character";
+    }
+
+    // Additional validations for registration form
+    if (isRegister) {
+      if (!form.firstName) newErrors.firstName = "First name required";
+      if (!form.lastName) newErrors.lastName = "Last name required";
+    }
+
+    // Update error state
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setServerError("");
 
-    const form = e.target as HTMLFormElement;
+    if (!validateForm()) return;
 
     // Handle form submission for registration
     if (isRegister) {
-      register.mutate({
-        firstName: form.firstName?.value,
-        lastName: form.lastName?.value,
-        email: form.email.value,
-        password: form.password.value,
+      register.mutate(form, {
+        // On successful registration, switch to login form
+        onSuccess: () => setIsRegister(false),
+
+        // Set server error message on registration failure
+        onError: (error: unknown) => {
+          const axiosError = error as {
+            response?: { data?: { message?: string } };
+          };
+
+          // Set server error message from response or default message
+          setServerError(
+            axiosError?.response?.data?.message || "Registration failed",
+          );
+        },
       });
       // Handle form submission for login
     } else {
       login.mutate(
         {
-          email: form.email.value,
-          password: form.password.value,
+          email: form.email,
+          password: form.password,
         },
         {
-          // On successful login, store the token in local storage
+          // On successful login, store token and navigate to home page
           onSuccess: (data) => {
             localStorage.setItem("token", data.token);
-            window.location.href = "/";
+            navigate("/");
+          },
+          // Set server error message on login failure
+          onError: (error: unknown) => {
+            const axiosError = error as {
+              response?: { data?: { message?: string } };
+            };
+
+            // Set server error message from response or default message
+            setServerError(
+              axiosError?.response?.data?.message ||
+                "Invalid email or password",
+            );
           },
         },
       );
@@ -50,30 +130,62 @@ export default function Auth() {
           {isRegister ? "Create Account" : "Login"}
         </h1>
 
-        {/* Show input fields for first name and last name if registering */}
         {isRegister && (
           <>
             <input
               name="firstName"
               placeholder="First name"
-              className="input"
+              className={inputClass(errors.firstName)}
+              value={form.firstName}
+              onChange={handleChange}
             />
+            {/*
+             * Display first name error message
+             */}
+            {errors.firstName && (
+              <p className="text-red-500 text-sm">{errors.firstName}</p>
+            )}
 
-            <input name="lastName" placeholder="Last name" className="input" />
+            <input
+              name="lastName"
+              placeholder="Last name"
+              className={inputClass(errors.lastName)}
+              value={form.lastName}
+              onChange={handleChange}
+            />
+            {errors.lastName && (
+              <p className="text-red-500 text-sm">{errors.lastName}</p>
+            )}
           </>
         )}
 
-        <input name="email" placeholder="Email" className="input" />
+        <input
+          name="email"
+          placeholder="Email"
+          className={inputClass(errors.email)}
+          value={form.email}
+          onChange={handleChange}
+        />
+        {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
 
         <input
           name="password"
           type="password"
           placeholder="Password"
-          className="input"
+          className={inputClass(errors.password)}
+          value={form.password}
+          onChange={handleChange}
         />
+        {errors.password && (
+          <p className="text-red-500 text-sm">{errors.password}</p>
+        )}
 
-        <button className="btn w-full">
-          {isRegister ? "Register" : "Login"}
+        {serverError && (
+          <p className=" text-red-600 text-sm text-center">{serverError}</p>
+        )}
+
+        <button className="btn w-full" disabled={isLoading}>
+          {isLoading ? "Please wait..." : isRegister ? "Register" : "Login"}
         </button>
 
         {/* Toggle between login and registration forms*/}
