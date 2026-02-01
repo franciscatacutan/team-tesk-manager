@@ -2,6 +2,8 @@ import { useState } from "react";
 import TaskList from "../tasks/TaskList";
 import type { Task } from "../tasks/task.types";
 import TaskDetailsModal from "../tasks/TaskDetailsModal";
+import TaskEditModal from "../tasks/TaskEditModal";
+import { useUpdateTask } from "../tasks/useUpdateTask";
 import TaskFormModal from "../tasks/TaskFormModal";
 
 /*
@@ -11,7 +13,13 @@ export default function Dashboard() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const PROJECT_ID = 3; //TEMPORARY: Replace with actual project selection logic
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  const currentUserEmail: string = "test1@test.com"; // Temporary
+  const projectOwnerEmail: string = "owner@test.com"; // Temporary
+
+  const updateStatus = useUpdateTask(selectedTask?.id || 0);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -56,14 +64,28 @@ export default function Dashboard() {
           isOpen={isDetailsOpen}
           // Close modal handler
           onClose={() => setIsDetailsOpen(false)}
+          // Checks if the current user is the owner
+          isOwner={currentUserEmail === projectOwnerEmail}
+          // Checks if the current user is an the assigned user
+          isAssignee={selectedTask?.assignedUser?.email === currentUserEmail}
           //   Handlers for edit and delete actions
-          onEdit={(task) => {
-            console.log("Edit task", task);
+          onEdit={() => {
+            setIsDetailsOpen(false);
+            setIsEditOpen(true);
           }}
-          onDelete={(taskId) => {
-            console.log("Delete task", taskId);
-          }}
+          onStatusChange={(status) => updateStatus.mutate({ status })}
         />
+        {/*
+         * Task Edit Modal
+         */}
+        {selectedTask && (
+          <TaskEditModal
+            task={selectedTask}
+            isOwner={currentUserEmail === projectOwnerEmail}
+            isOpen={isEditOpen}
+            onClose={() => setIsEditOpen(false)}
+          />
+        )}
 
         {/*
          * Task Creation Modal

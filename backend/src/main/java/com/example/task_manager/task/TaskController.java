@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.task_manager.task.dto.CreateTaskRequest;
 import com.example.task_manager.task.dto.TaskResponse;
 import com.example.task_manager.task.dto.UpdateTaskRequest;
-import com.example.task_manager.task.dto.UpdateTaskStatusRequest;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -73,23 +72,6 @@ public class TaskController {
 
         return ResponseEntity.ok(
                 taskService.update(
-                        taskId,
-                        request,
-                        principal.getName()));
-    }
-
-    /**
-     * Update task status.
-     * Allowed for project owner OR assigned user.
-     */
-    @PatchMapping("/{taskId}/status")
-    public ResponseEntity<TaskResponse> updateTaskStatus(
-            @PathVariable Long taskId,
-            @RequestBody UpdateTaskStatusRequest request,
-            Principal principal) {
-
-        return ResponseEntity.ok(
-                taskService.updateStatus(
                         taskId,
                         request,
                         principal.getName()));

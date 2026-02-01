@@ -3,10 +3,12 @@ import type { Task } from "./task.types";
 
 type Props = {
   task: Task | null;
+  isOwner: boolean;
+  isAssignee: boolean;
   isOpen: boolean;
   onClose: () => void;
-  onEdit: (task: Task) => void;
-  onDelete: (taskId: number) => void;
+  onEdit: () => void;
+  onStatusChange: (status: string) => void;
 };
 
 /*
@@ -14,55 +16,53 @@ type Props = {
  */
 export default function TaskDetailsModal({
   task,
+  isOwner,
+  isAssignee,
   isOpen,
   onClose,
   onEdit,
-  onDelete,
+  onStatusChange,
 }: Props) {
   if (!task) return null;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="space-y-4">
-        <div className="flex justify-between items-start">
-          <h2 className="text-xl font-bold">{task.title}</h2>
+      <h2 className="text-xl font-bold">{task.title}</h2>
 
-          <button onClick={onClose} className="text-gray-500 hover:text-black">
-            ✕
-          </button>
-        </div>
+      <p className="text-gray-500">{task.description}</p>
 
-        <p className="text-gray-600">{task.description}</p>
+      {task.assignedUser && (
+        <p className="text-sm text-gray-400">
+          Assigned to: {task.assignedUser.firstName}{" "}
+          {task.assignedUser.lastName}
+        </p>
+      )}
 
-        {task.assignedUser && (
-          <p className="text-sm text-gray-500">
-            Assigned to: {task.assignedUser.firstName}{" "}
-            {task.assignedUser.lastName}
-          </p>
-        )}
-
-        <span
-          className="
-            inline-block px-3 py-1 rounded-full
-            text-sm bg-gray-200
-          "
+      {/*
+       * Owner and Assigned can change the status
+       */}
+      {(isOwner || isAssignee) && (
+        <select
+          className="input mt-3"
+          value={task.status}
+          onChange={(e) => onStatusChange(e.target.value)}
         >
-          {task.status}
-        </span>
+          <option value="TODO">TODO</option>
+          <option value="IN_PROGRESS">IN PROGRESS</option>
+          <option value="DONE">DONE</option>
+        </select>
+      )}
 
-        <div className="flex justify-end gap-2 pt-4">
-          <button className="btn" onClick={() => onEdit(task)}>
+      {/*
+       * Owner can edit the task
+       */}
+      {isOwner && (
+        <div className="flex justify-end mt-4">
+          <button className="btn" onClick={onEdit}>
             Edit
           </button>
-
-          <button
-            className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-            onClick={() => onDelete(task.id)}
-          >
-            Delete
-          </button>
         </div>
-      </div>
+      )}
     </Modal>
   );
 }
