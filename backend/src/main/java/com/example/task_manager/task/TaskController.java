@@ -52,17 +52,12 @@ public class TaskController {
 
     /**
      * Get all tasks for a project.
-     * Owner only.
      */
     @GetMapping
     public ResponseEntity<List<TaskResponse>> getProjectTasks(
-            @PathVariable Long projectId,
-            Principal principal) {
+            @PathVariable Long projectId) {
 
-        return ResponseEntity.ok(
-                taskService.getByProject(
-                        projectId,
-                        principal.getName()));
+        return ResponseEntity.ok(taskService.getByProject(projectId));
     }
 
     /**

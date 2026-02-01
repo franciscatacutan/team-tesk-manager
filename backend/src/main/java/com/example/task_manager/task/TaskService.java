@@ -59,13 +59,11 @@ public class TaskService {
 
   /**
    * Returns all tasks for a project.
-   * Owner only.
    */
-  public List<TaskResponse> getByProject(
-      Long projectId,
-      String userEmail) {
+  public List<TaskResponse> getByProject(Long projectId) {
 
-    ProjectEntity project = getOwnedProject(projectId, userEmail);
+    ProjectEntity project = projectRepository.findById(projectId)
+        .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
     return taskRepository
         .findByProjectId(project.getId())

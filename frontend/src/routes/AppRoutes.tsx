@@ -3,11 +3,7 @@ import AuthPage from "../pages/AuthPage";
 import ProtectedRoute from "./ProtectedRoute";
 import ErrorPage from "../pages/ErrorPage";
 import PublicRoute from "./PublicRoute";
-
-// Dummy Dashboard component
-function Dashboard() {
-  return <h1 className="text-center mt-20">Dashboard</h1>;
-}
+import DashboardPage from "../pages/DashboardPage";
 
 /*
  * Application Routes
@@ -35,7 +31,7 @@ export default function AppRoutes() {
           path="/"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <DashboardPage />
             </ProtectedRoute>
           }
         />
