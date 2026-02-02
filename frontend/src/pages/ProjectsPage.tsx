@@ -1,6 +1,8 @@
 import { useProjects } from "../projects/useProjects";
 import ProjectList from "../projects/ProjectList";
 import { useNavigate } from "react-router-dom";
+import CreateProjectModal from "../projects/ProjectFormModal";
+import { useState } from "react";
 
 /*
  * Project page showing projects.
@@ -8,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 export default function ProjectsPage() {
   const { data, isLoading } = useProjects();
   const navigate = useNavigate();
+
+  const [showCreate, setShowCreate] = useState(false);
 
   if (isLoading) {
     return (
@@ -28,7 +32,9 @@ export default function ProjectsPage() {
             <p className="text-gray-500">Select a project to view its tasks</p>
           </div>
 
-          <button className="btn">+ New Project</button>
+          <button className="btn" onClick={() => setShowCreate(true)}>
+            + New Project
+          </button>
         </div>
 
         {/* Content */}
@@ -38,6 +44,13 @@ export default function ProjectsPage() {
             onSelect={(id) => navigate(`/projects/${id}`)}
           />
         )}
+        {/*
+         * Project Creation Modal
+         */}
+        <CreateProjectModal
+          isOpen={showCreate}
+          onClose={() => setShowCreate(false)}
+        />
       </div>
     </div>
   );

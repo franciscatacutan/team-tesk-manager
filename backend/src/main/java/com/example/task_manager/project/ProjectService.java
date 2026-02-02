@@ -44,14 +44,19 @@ public class ProjectService {
   /**
    * Returns all projects owned by authenticated user.
    */
-  public List<ProjectResponse> getUserProjects(String userEmail) {
-    UserEntity owner = getUser(userEmail);
-
-    return projectRepository
-        .findByOwnerId(owner.getId())
+  public List<ProjectResponse> getAllProjects() {
+    return projectRepository.findAll()
         .stream()
         .map(this::mapToResponse)
         .toList();
+  }
+
+  /**
+   * Returns a projects by id.
+   */
+  public ProjectResponse getByProjectId(Long id) {
+    return projectRepository.findById(id).map(this::mapToResponse)
+        .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
   }
 
   /**

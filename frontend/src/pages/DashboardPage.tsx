@@ -8,6 +8,8 @@ import TaskFormModal from "../tasks/TaskFormModal";
 import { getCurrentUserFromToken } from "../auth/auth.utils";
 import ConfirmDeleteTaskModal from "../tasks/ConfirmDeleteTaskModal";
 import { useDeleteTask } from "../tasks/useDeleteTask";
+import { useParams } from "react-router-dom";
+import { useProjectById } from "../projects/useProjects";
 
 /*
  * Dashboard page showing project tasks.
@@ -23,9 +25,13 @@ export default function Dashboard() {
   const updateTask = useUpdateTask(selectedTask?.id || 0);
   const deleteTask = useDeleteTask();
 
-  //TEMPORARY: Replace with actual project selection logic
-  const PROJECT_ID = 3;
-  const projectOwnerEmail: string = "test1@test.com"; // Temporary
+  //Fetch Project Data
+  const { id } = useParams();
+  const projectId = Number(id);
+
+  // Fetch project and owner
+  const { data: project } = useProjectById(projectId);
+  const projectOwnerEmail: string = project?.owner.email;
 
   // Fetch User details from token
   const user = getCurrentUserFromToken();
@@ -44,7 +50,7 @@ export default function Dashboard() {
     if (!selectedTask) return;
 
     deleteTask.mutate(
-      { projectId: PROJECT_ID, taskId: selectedTask.id },
+      { projectId: projectId, taskId: selectedTask.id },
       {
         onSuccess: () => {
           setIsDeleteOpen(false);
@@ -58,8 +64,10 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-sm">
         <div className="max-w-5xl mx-auto p-4">
-          <h1 className="text-2xl font-bold">My Project</h1>
-          <p className="text-sm text-gray-500">All tasks under this project</p>
+          <h1 className="text-3xl font-bold">{project?.name}</h1>
+          {project?.description && (
+            <p className="text-sm text-gray-500">{project.description}</p>
+          )}
         </div>
       </header>
 
@@ -76,7 +84,7 @@ export default function Dashboard() {
          * Task List
          */}
         <TaskList
-          projectId={PROJECT_ID}
+          projectId={projectId}
           onSelectTask={(task) => {
             // Pass selected task to selectedTask state
             setSelectedTask(task);
@@ -126,7 +134,7 @@ export default function Dashboard() {
          * Task Creation Modal
          */}
         <TaskFormModal
-          projectId={PROJECT_ID}
+          projectId={projectId}
           isOpen={isCreateOpen}
           onClose={() => setIsCreateOpen(false)}
         />

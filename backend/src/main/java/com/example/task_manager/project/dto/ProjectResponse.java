@@ -9,7 +9,7 @@ public record ProjectResponse(
         Long id,
         String name,
         String description,
-        ProjectOwner ownerId,
+        ProjectOwner owner,
         Instant createdAt,
         Instant updatedAt) {
 

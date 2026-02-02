@@ -41,9 +41,16 @@ public class ProjectController {
    * Get all projects for authenticated user.
    */
   @GetMapping
-  public ResponseEntity<List<ProjectResponse>> getUserProjects(
-      Principal principal) {
-    return ResponseEntity.ok(projectService.getUserProjects(principal.getName()));
+  public ResponseEntity<List<ProjectResponse>> getAllProjects() {
+    return ResponseEntity.ok(projectService.getAllProjects());
+  }
+
+  /**
+   * Get project by ID.
+   */
+  @GetMapping("/{id}")
+  public ResponseEntity<ProjectResponse> getByProjectId(@PathVariable Long id) {
+    return ResponseEntity.ok(projectService.getByProjectId(id));
   }
 
   /**
