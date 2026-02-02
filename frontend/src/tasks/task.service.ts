@@ -39,6 +39,29 @@ export const createTask = async (
   return data;
 };
 
+// Update Task
+export const updateTask = async (
+  projectId: number,
+  taskId: number,
+  payload: {
+    name?: string;
+    description?: string;
+    status?: string | null;
+    assignedUserId?: number | null;
+  },
+) => {
+  const { data } = await api.patch(
+    `/projects/${projectId}/tasks/${taskId}`,
+    payload,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+  return data;
+};
+
 // Delete a task within a specific project
 export const deleteTask = async (
   projectId: number,

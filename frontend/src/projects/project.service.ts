@@ -45,6 +45,19 @@ export const updateProject = async (
     description?: string;
   },
 ) => {
-  const { data } = await api.put(`/projects/${projectId}`, payload);
+  const { data } = await api.patch(`/projects/${projectId}`, payload, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   return data;
+};
+
+// Delete Project
+export const deleteProject = async (projectId: number): Promise<void> => {
+  await api.delete(`/projects/${projectId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 };

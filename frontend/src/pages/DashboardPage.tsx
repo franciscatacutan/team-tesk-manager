@@ -11,6 +11,9 @@ import { useDeleteTask } from "../tasks/useDeleteTask";
 import { useParams } from "react-router-dom";
 import { useProjectById } from "../projects/useProjects";
 import EditProjectModal from "../projects/ProjectEditModal";
+import { useDeleteProject } from "../projects/useDeleteProject";
+import ConfirmDeleteProjectModal from "../projects/ConfirmDeleteProjectModal";
+import { useNavigate } from "react-router-dom";
 
 /*
  * Dashboard page showing project tasks.
@@ -24,9 +27,11 @@ export default function Dashboard() {
   const [isTaskCreateOpen, setIsTaskCreateOpen] = useState(false);
   const [isTaskDeleteOpen, setIsTaskDeleteOpen] = useState(false);
   const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
+  const [showDeleteProject, setShowDeleteProject] = useState(false);
 
-  const updateTask = useUpdateTask(selectedTask?.id || 0);
-  const deleteTask = useDeleteTask();
+  // Delete Project
+  const deleteProject = useDeleteProject();
+  const navigate = useNavigate();
 
   //Fetch Project Data
   const { id } = useParams();
@@ -35,6 +40,11 @@ export default function Dashboard() {
   // Fetch project and owner
   const { data: project } = useProjectById(projectId);
   const projectOwnerEmail: string = project?.owner.email;
+
+  // Update Task
+  const updateTask = useUpdateTask(projectId, selectedTask?.id || 0);
+  // Delete Task
+  const deleteTask = useDeleteTask();
 
   // Fetch User details from token
   const user = getCurrentUserFromToken();
@@ -61,6 +71,18 @@ export default function Dashboard() {
         },
       },
     );
+  };
+
+  // Handles Delete Project
+  const handleDeleteProject = () => {
+    if (!project) return;
+
+    deleteProject.mutate(project.id, {
+      onSuccess: () => {
+        setShowDeleteProject(false);
+        navigate("/projects");
+      },
+    });
   };
 
   return (
@@ -93,6 +115,14 @@ export default function Dashboard() {
           {isOwner && (
             <button className="btn" onClick={() => setIsEditProjectOpen(true)}>
               Edit Project
+            </button>
+          )}
+          {isOwner && (
+            <button
+              className="btn bg-red-600 hover:bg-red-700"
+              onClick={() => setShowDeleteProject(true)}
+            >
+              Delete Project
             </button>
           )}
         </div>
@@ -150,6 +180,7 @@ export default function Dashboard() {
          */}
         {selectedTask && (
           <TaskEditModal
+            projectId={projectId}
             task={selectedTask}
             isOwner={currentUserEmail === projectOwnerEmail}
             isOpen={isTaskEditOpen}
@@ -166,7 +197,7 @@ export default function Dashboard() {
           onClose={() => setIsTaskCreateOpen(false)}
         />
         {/*
-         * Confirm Delete Modal
+         * Confirm Task Delete Modal
          */}
         <ConfirmDeleteTaskModal
           isOpen={isTaskDeleteOpen}
@@ -174,6 +205,9 @@ export default function Dashboard() {
           onConfirm={handleDeleteTask}
         />
 
+        {/*
+         * Project Edit Modal
+         */}
         {project && (
           <EditProjectModal
             project={project}
@@ -181,6 +215,15 @@ export default function Dashboard() {
             onClose={() => setIsEditProjectOpen(false)}
           />
         )}
+
+        {/*
+         * Confirm Project Delete Modal
+         */}
+        <ConfirmDeleteProjectModal
+          isOpen={showDeleteProject}
+          onClose={() => setShowDeleteProject(false)}
+          onConfirm={handleDeleteProject}
+        />
       </main>
     </div>
   );

@@ -3,8 +3,10 @@ import Modal from "../components/Modal";
 import type { Task } from "./task.types";
 import { useUsers } from "../users/useUsers";
 import { useUpdateTask } from "./useUpdateTask";
+import { useEffect } from "react";
 
 type Props = {
+  projectId: number;
   task: Task;
   isOwner: boolean;
   isOpen: boolean;
@@ -15,6 +17,7 @@ type Props = {
  * Edit Modal for Task
  */
 export default function TaskEditModal({
+  projectId,
   task,
   isOwner,
   isOpen,
@@ -26,8 +29,18 @@ export default function TaskEditModal({
     assignedUserId: task.assignedUser?.id ?? "",
   });
 
+  //  Keep state in sync
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setForm({
+      title: task.title,
+      description: task.description,
+      assignedUserId: task.assignedUser?.id ?? "",
+    });
+  }, [task]);
+
   // Load Task data for Edit
-  const updateTask = useUpdateTask(task.id);
+  const updateTask = useUpdateTask(projectId, task.id);
 
   // Load User data
   const { data: users } = useUsers();
