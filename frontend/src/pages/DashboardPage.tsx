@@ -10,6 +10,7 @@ import ConfirmDeleteTaskModal from "../tasks/ConfirmDeleteTaskModal";
 import { useDeleteTask } from "../tasks/useDeleteTask";
 import { useParams } from "react-router-dom";
 import { useProjectById } from "../projects/useProjects";
+import EditProjectModal from "../projects/ProjectEditModal";
 
 /*
  * Dashboard page showing project tasks.
@@ -18,10 +19,12 @@ export default function Dashboard() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   // Open Modals and transfer data
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
+  const [isTaskEditOpen, setIsTaskEditOpen] = useState(false);
+  const [isTaskCreateOpen, setIsTaskCreateOpen] = useState(false);
+  const [isTaskDeleteOpen, setIsTaskDeleteOpen] = useState(false);
+  const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
+
   const updateTask = useUpdateTask(selectedTask?.id || 0);
   const deleteTask = useDeleteTask();
 
@@ -53,8 +56,8 @@ export default function Dashboard() {
       { projectId: projectId, taskId: selectedTask.id },
       {
         onSuccess: () => {
-          setIsDeleteOpen(false);
-          setIsDeleteOpen(false);
+          setIsTaskDeleteOpen(false);
+          setIsTaskDeleteOpen(false);
         },
       },
     );
@@ -62,11 +65,35 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-5xl mx-auto p-4">
-          <h1 className="text-3xl font-bold">{project?.name}</h1>
-          {project?.description && (
-            <p className="text-sm text-gray-500">{project.description}</p>
+      <header className="bg-white border-b">
+        <div
+          className="
+      max-w-5xl mx-auto
+      px-6 py-4
+      flex items-center
+      justify-between
+    "
+        >
+          {/* LEFT SIDE */}
+          <div>
+            <h1 className="text-2xl font-semibold">{project?.name}</h1>
+
+            {project?.description && (
+              <p className="text-sm text-gray-500 mt-1">
+                {project.description}
+              </p>
+            )}
+
+            <p className="text-sm text-gray-500 mt-1">
+              Owner: {project?.owner.firstName} {project?.owner.lastName}
+            </p>
+          </div>
+
+          {/* RIGHT SIDE */}
+          {isOwner && (
+            <button className="btn" onClick={() => setIsEditProjectOpen(true)}>
+              Edit Project
+            </button>
           )}
         </div>
       </header>
@@ -75,7 +102,7 @@ export default function Dashboard() {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Tasks</h2>
 
-          <button className="btn" onClick={() => setIsCreateOpen(true)}>
+          <button className="btn" onClick={() => setIsTaskCreateOpen(true)}>
             + Add Task
           </button>
         </div>
@@ -89,7 +116,7 @@ export default function Dashboard() {
             // Pass selected task to selectedTask state
             setSelectedTask(task);
             // Open task details modal
-            setIsDetailsOpen(true);
+            setIsTaskDetailsOpen(true);
           }}
         />
 
@@ -100,21 +127,21 @@ export default function Dashboard() {
           // Pass selectedTask to modal
           task={selectedTask}
           // Set modal open state
-          isOpen={isDetailsOpen}
+          isOpen={isTaskDetailsOpen}
           // Close modal handler
-          onClose={() => setIsDetailsOpen(false)}
+          onClose={() => setIsTaskDetailsOpen(false)}
           // Checks if the current user is the owner
           isOwner={isOwner}
           // Checks if the current user is an the assigned user
           isAssignee={isAssignee}
           //   Handlers for edit and delete actions
           onEdit={() => {
-            setIsDetailsOpen(false);
-            setIsEditOpen(true);
+            setIsTaskDetailsOpen(false);
+            setIsTaskEditOpen(true);
           }}
           onDelete={() => {
-            setIsDetailsOpen(false);
-            setIsDeleteOpen(true);
+            setIsTaskDetailsOpen(false);
+            setIsTaskDeleteOpen(true);
           }}
           onStatusChange={(status) => updateTask.mutate({ status })}
         />
@@ -125,8 +152,8 @@ export default function Dashboard() {
           <TaskEditModal
             task={selectedTask}
             isOwner={currentUserEmail === projectOwnerEmail}
-            isOpen={isEditOpen}
-            onClose={() => setIsEditOpen(false)}
+            isOpen={isTaskEditOpen}
+            onClose={() => setIsTaskEditOpen(false)}
           />
         )}
 
@@ -135,17 +162,25 @@ export default function Dashboard() {
          */}
         <TaskFormModal
           projectId={projectId}
-          isOpen={isCreateOpen}
-          onClose={() => setIsCreateOpen(false)}
+          isOpen={isTaskCreateOpen}
+          onClose={() => setIsTaskCreateOpen(false)}
         />
         {/*
          * Confirm Delete Modal
          */}
         <ConfirmDeleteTaskModal
-          isOpen={isDeleteOpen}
-          onClose={() => setIsDeleteOpen(false)}
+          isOpen={isTaskDeleteOpen}
+          onClose={() => setIsTaskDeleteOpen(false)}
           onConfirm={handleDeleteTask}
         />
+
+        {project && (
+          <EditProjectModal
+            project={project}
+            isOpen={isEditProjectOpen}
+            onClose={() => setIsEditProjectOpen(false)}
+          />
+        )}
       </main>
     </div>
   );

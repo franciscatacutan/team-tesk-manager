@@ -12,10 +12,10 @@ export default function ProjectList({ projects, onSelect }: Props) {
   if (projects.length === 0) {
     return (
       <div className="text-center py-20">
-        <p className="text-gray-500 mb-4">You don’t have any projects yet.</p>
+        <p className="text-gray-500 mb-4">There aren't any projects yet.</p>
 
         <p className="text-sm text-gray-400">
-          Create your first project to get started.
+          Create the first project to get started.
         </p>
       </div>
     );
@@ -40,6 +40,10 @@ export default function ProjectList({ projects, onSelect }: Props) {
           {project.description && (
             <p className="text-gray-500 text-sm">{project.description}</p>
           )}
+
+          <p className="text-sm text-gray-400">
+            Owner: {project?.owner.firstName} {project?.owner.lastName}
+          </p>
         </div>
       ))}
     </div>

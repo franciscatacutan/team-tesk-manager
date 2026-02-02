@@ -36,3 +36,15 @@ export const createProject = async (payload: {
   });
   return data;
 };
+
+// Update Project
+export const updateProject = async (
+  projectId: number,
+  payload: {
+    name?: string;
+    description?: string;
+  },
+) => {
+  const { data } = await api.put(`/projects/${projectId}`, payload);
+  return data;
+};
