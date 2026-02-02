@@ -104,7 +104,7 @@ export default function Auth() {
           // On successful login, store token and navigate to home page
           onSuccess: (data) => {
             localStorage.setItem("token", data.token);
-            navigate("/");
+            navigate("/projects");
           },
           // Set server error message on login failure
           onError: (error: unknown) => {

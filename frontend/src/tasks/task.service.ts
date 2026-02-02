@@ -1,13 +1,13 @@
 import { api } from "../api/axios";
 import type { Task, TaskStatus } from "./task.types";
 
+// Retrieve the token from local storage
 const token = localStorage.getItem("token");
 
 /*
  * Fetch all tasks for a specific project.
  */
 export const getTasksByProject = async (projectId: number): Promise<Task[]> => {
-  // Retrieve the token from local storage
   const { data } = await api.get<Task[]>(`/projects/${projectId}/tasks`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -41,7 +41,7 @@ export const createTask = async (
 
 // Delete a task within a specific project
 export const deleteTask = async (
-    projectId: number,
+  projectId: number,
   taskId: number,
 ): Promise<void> => {
   await api.delete(`/projects/${projectId}/tasks/${taskId}`, {

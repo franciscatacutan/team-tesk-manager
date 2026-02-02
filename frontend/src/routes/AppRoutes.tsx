@@ -4,6 +4,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import ErrorPage from "../pages/ErrorPage";
 import PublicRoute from "./PublicRoute";
 import DashboardPage from "../pages/DashboardPage";
+import ProjectsPage from "../pages/ProjectsPage";
 
 /*
  * Application Routes
@@ -28,10 +29,19 @@ export default function AppRoutes() {
          * Protected Route
          */}
         <Route
-          path="/"
+          path="/projects/:id"
           element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <ProjectsPage />
             </ProtectedRoute>
           }
         />
