@@ -2,12 +2,19 @@ import { useState } from "react";
 import TaskList from "../tasks/TaskList";
 import type { Task } from "../tasks/task.types";
 import TaskDetailsModal from "../tasks/TaskDetailsModal";
-import TaskEditModal from "../tasks/TaskEditModal";
+import TaskEditModal from "../tasks/EditTaskModal";
 import { useUpdateTask } from "../tasks/useUpdateTask";
-import TaskFormModal from "../tasks/TaskFormModal";
+import TaskFormModal from "../tasks/CreateTaskModal";
 import { getCurrentUserFromToken } from "../auth/auth.utils";
 import ConfirmDeleteTaskModal from "../tasks/ConfirmDeleteTaskModal";
 import { useDeleteTask } from "../tasks/useDeleteTask";
+import { useParams } from "react-router-dom";
+import { useProjectById } from "../projects/useProjects";
+import EditProjectModal from "../projects/EditProjectModal";
+import { useDeleteProject } from "../projects/useDeleteProject";
+import ConfirmDeleteProjectModal from "../projects/ConfirmDeleteProjectModal";
+import { useNavigate } from "react-router-dom";
+import Button from "../components/Button";
 
 /*
  * Dashboard page showing project tasks.
@@ -16,16 +23,29 @@ export default function Dashboard() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   // Open Modals and transfer data
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const updateTask = useUpdateTask(selectedTask?.id || 0);
-  const deleteTask = useDeleteTask();
+  const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
+  const [isTaskEditOpen, setIsTaskEditOpen] = useState(false);
+  const [isTaskCreateOpen, setIsTaskCreateOpen] = useState(false);
+  const [isTaskDeleteOpen, setIsTaskDeleteOpen] = useState(false);
+  const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
+  const [showDeleteProject, setShowDeleteProject] = useState(false);
 
-  //TEMPORARY: Replace with actual project selection logic
-  const PROJECT_ID = 3;
-  const projectOwnerEmail: string = "test1@test.com"; // Temporary
+  // Delete Project
+  const deleteProject = useDeleteProject();
+  const navigate = useNavigate();
+
+  //Fetch Project Data
+  const { id } = useParams();
+  const projectId = Number(id);
+
+  // Fetch project and owner
+  const { data: project } = useProjectById(projectId);
+  const projectOwnerEmail: string = project?.owner.email;
+
+  // Update Task
+  const updateTask = useUpdateTask(projectId, selectedTask?.id || 0);
+  // Delete Task
+  const deleteTask = useDeleteTask();
 
   // Fetch User details from token
   const user = getCurrentUserFromToken();
@@ -44,44 +64,104 @@ export default function Dashboard() {
     if (!selectedTask) return;
 
     deleteTask.mutate(
-      { projectId: PROJECT_ID, taskId: selectedTask.id },
+      { projectId: projectId, taskId: selectedTask.id },
       {
         onSuccess: () => {
-          setIsDeleteOpen(false);
-          setIsDeleteOpen(false);
+          setIsTaskDeleteOpen(false);
+          setIsTaskDeleteOpen(false);
         },
       },
     );
   };
 
+  // Handles Delete Project
+  const handleDeleteProject = () => {
+    if (!project) return;
+
+    deleteProject.mutate(project.id, {
+      onSuccess: () => {
+        setShowDeleteProject(false);
+        navigate("/projects");
+      },
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-5xl mx-auto p-4">
-          <h1 className="text-2xl font-bold">My Project</h1>
-          <p className="text-sm text-gray-500">All tasks under this project</p>
+      <header className="border-b border-gray-200 bg-white">
+        <div className="mx-auto max-w-5xl px-6 py-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            {/* LEFT */}
+            <div className="space-y-2">
+              <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
+                {project?.name}
+              </h1>
+
+              {project?.description?.trim() && (
+                <p className="max-w-2xl text-sm leading-relaxed text-gray-600">
+                  {project.description}
+                </p>
+              )}
+
+              {/* Owner */}
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                {/* Avatar */}
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-700">
+                  {project?.owner.firstName?.[0]}
+                </div>
+
+                <span className="font-medium text-gray-700">
+                  {project?.owner.firstName} {project?.owner.lastName}
+                </span>
+              </div>
+            </div>
+
+            {/* RIGHT */}
+            {isOwner && (
+              <div className="flex items-center gap-2">
+                <Button
+                  size="md"
+                  variant="secondary"
+                  onClick={() => setIsEditProjectOpen(true)}
+                >
+                  Edit
+                </Button>
+
+                <Button
+                  size="md"
+                  variant="danger"
+                  onClick={() => setShowDeleteProject(true)}
+                >
+                  Delete
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto p-4 mt-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Tasks</h2>
-
-          <button className="btn" onClick={() => setIsCreateOpen(true)}>
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={() => setIsTaskCreateOpen(true)}
+          >
             + Add Task
-          </button>
+          </Button>
         </div>
 
         {/*
          * Task List
          */}
         <TaskList
-          projectId={PROJECT_ID}
+          projectId={projectId}
           onSelectTask={(task) => {
             // Pass selected task to selectedTask state
             setSelectedTask(task);
             // Open task details modal
-            setIsDetailsOpen(true);
+            setIsTaskDetailsOpen(true);
           }}
         />
 
@@ -92,21 +172,21 @@ export default function Dashboard() {
           // Pass selectedTask to modal
           task={selectedTask}
           // Set modal open state
-          isOpen={isDetailsOpen}
+          isOpen={isTaskDetailsOpen}
           // Close modal handler
-          onClose={() => setIsDetailsOpen(false)}
+          onClose={() => setIsTaskDetailsOpen(false)}
           // Checks if the current user is the owner
           isOwner={isOwner}
           // Checks if the current user is an the assigned user
           isAssignee={isAssignee}
           //   Handlers for edit and delete actions
           onEdit={() => {
-            setIsDetailsOpen(false);
-            setIsEditOpen(true);
+            setIsTaskDetailsOpen(false);
+            setIsTaskEditOpen(true);
           }}
           onDelete={() => {
-            setIsDetailsOpen(false);
-            setIsDeleteOpen(true);
+            setIsTaskDetailsOpen(false);
+            setIsTaskDeleteOpen(true);
           }}
           onStatusChange={(status) => updateTask.mutate({ status })}
         />
@@ -115,10 +195,11 @@ export default function Dashboard() {
          */}
         {selectedTask && (
           <TaskEditModal
+            projectId={projectId}
             task={selectedTask}
             isOwner={currentUserEmail === projectOwnerEmail}
-            isOpen={isEditOpen}
-            onClose={() => setIsEditOpen(false)}
+            isOpen={isTaskEditOpen}
+            onClose={() => setIsTaskEditOpen(false)}
           />
         )}
 
@@ -126,17 +207,37 @@ export default function Dashboard() {
          * Task Creation Modal
          */}
         <TaskFormModal
-          projectId={PROJECT_ID}
-          isOpen={isCreateOpen}
-          onClose={() => setIsCreateOpen(false)}
+          projectId={projectId}
+          isOpen={isTaskCreateOpen}
+          onClose={() => setIsTaskCreateOpen(false)}
         />
         {/*
-         * Confirm Delete Modal
+         * Confirm Task Delete Modal
          */}
         <ConfirmDeleteTaskModal
-          isOpen={isDeleteOpen}
-          onClose={() => setIsDeleteOpen(false)}
+          isOpen={isTaskDeleteOpen}
+          onClose={() => setIsTaskDeleteOpen(false)}
           onConfirm={handleDeleteTask}
+        />
+
+        {/*
+         * Project Edit Modal
+         */}
+        {project && (
+          <EditProjectModal
+            project={project}
+            isOpen={isEditProjectOpen}
+            onClose={() => setIsEditProjectOpen(false)}
+          />
+        )}
+
+        {/*
+         * Confirm Project Delete Modal
+         */}
+        <ConfirmDeleteProjectModal
+          isOpen={showDeleteProject}
+          onClose={() => setShowDeleteProject(false)}
+          onConfirm={handleDeleteProject}
         />
       </main>
     </div>

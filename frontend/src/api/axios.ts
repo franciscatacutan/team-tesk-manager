@@ -16,3 +16,14 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+// Attach token on every request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
+});

@@ -13,7 +13,7 @@ export default function PublicRoute({ children }: Props) {
 
   //   If a token is found in local storage, redirect to the dashboard
   if (token) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/projects" replace />;
   }
 
   return children;

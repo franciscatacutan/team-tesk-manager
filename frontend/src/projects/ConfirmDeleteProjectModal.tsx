@@ -8,9 +8,9 @@ type Props = {
 };
 
 /*
- * Delete Task Modal
+ * Delete Project Modal
  */
-export default function ConfirmDeleteTaskModal({
+export default function ConfirmDeleteProjectModal({
   isOpen,
   onClose,
   onConfirm,
@@ -20,7 +20,7 @@ export default function ConfirmDeleteTaskModal({
       {/* Header */}
       <div className="mb-4">
         <h2 className="text-2xl font-semibold tracking-tight text-gray-900">
-          Delete task
+          Delete project
         </h2>
         <p className="mt-1 text-sm text-gray-500">
           This action cannot be undone.
@@ -29,7 +29,11 @@ export default function ConfirmDeleteTaskModal({
 
       {/* Body */}
       <p className="mb-6 text-sm text-gray-600">
-        Are you sure you want to permanently delete this task?
+        Are you sure you want to permanently delete this project?
+        <br />
+        <span className="font-medium text-gray-700">
+          All tasks inside this project will also be removed.
+        </span>
       </p>
 
       {/* Footer */}

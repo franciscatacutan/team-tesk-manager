@@ -9,37 +9,72 @@ type Props = {
  * Component to display a single task item in the task list.
  */
 export default function TaskItem({ task, onClick }: Props) {
+  const statusStyles: Record<string, string> = {
+    TODO: "bg-gray-100 text-gray-700",
+    IN_PROGRESS: "bg-blue-100 text-blue-700",
+    DONE: "bg-green-100 text-green-700",
+  };
+
   return (
-    <div
-      // On click pass the task to the onClick handler
+    <button
+      type="button"
       onClick={() => onClick(task)}
       className="
-        p-4 rounded-lg border
-        bg-white hover:bg-gray-50
-        cursor-pointer transition
-        flex items-center justify-between
-      "
+    group
+    w-full
+    rounded-lg border border-gray-200
+    bg-white p-4
+    text-left
+    shadow-sm
+    transition-all duration-200
+    hover:-translate-y-[1px] hover:bg-gray-50 hover:shadow-md
+    focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
+  "
     >
-      <div>
-        <h3 className="font-semibold">{task.title}</h3>
-        <p className="text-sm text-gray-500">{task.description}</p>
+      <div className="flex items-start justify-between gap-4">
+        {/* LEFT */}
+        <div className="min-w-0">
+          <h3 className="font-semibold text-gray-900 line-clamp-1">
+            {task.title}
+          </h3>
 
-        {task.assignedUser && (
-          <p className="text-xs text-gray-400 mt-1">
-            Assigned to: {task.assignedUser.firstName}{" "}
-            {task.assignedUser.lastName}
+          {task.description && (
+            <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+              {task.description}
+            </p>
+          )}
+
+          <p className="mt-1 text-xs text-gray-500">
+            Assigned to:{" "}
+            <span className="font-medium text-gray-700">
+              {task.assignedUser
+                ? `${task.assignedUser.firstName} ${task.assignedUser.lastName}`
+                : "Unassigned"}
+            </span>
           </p>
-        )}
-      </div>
+        </div>
 
-      <span
-        className="
-          text-xs px-2 py-1 rounded-full
-          bg-gray-200
-        "
-      >
-        {task.status}
-      </span>
-    </div>
+        {/* RIGHT */}
+        {/* <span
+          className="
+        shrink-0
+        rounded-full px-2.5 py-1
+        text-xs font-medium
+        bg-gray-100 text-gray-700
+      "
+        >
+          {task.status}
+        </span> */}
+        <span
+          className={`
+    shrink-0 rounded-full px-2.5 py-1
+    text-xs font-medium
+    ${statusStyles[task.status] ?? "bg-gray-100 text-gray-700"}
+  `}
+        >
+          {task.status}
+        </span>
+      </div>
+    </button>
   );
 }
