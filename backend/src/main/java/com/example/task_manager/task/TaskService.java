@@ -12,7 +12,6 @@ import com.example.task_manager.project.ProjectRepo;
 import com.example.task_manager.task.dto.CreateTaskRequest;
 import com.example.task_manager.task.dto.TaskResponse;
 import com.example.task_manager.task.dto.UpdateTaskRequest;
-import com.example.task_manager.task.dto.UpdateTaskStatusRequest;
 import com.example.task_manager.user.UserEntity;
 import com.example.task_manager.user.UserRepo;
 
@@ -59,13 +58,11 @@ public class TaskService {
 
   /**
    * Returns all tasks for a project.
-   * Owner only.
    */
-  public List<TaskResponse> getByProject(
-      Long projectId,
-      String userEmail) {
+  public List<TaskResponse> getByProject(Long projectId) {
 
-    ProjectEntity project = getOwnedProject(projectId, userEmail);
+    ProjectEntity project = projectRepository.findById(projectId)
+        .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
     return taskRepository
         .findByProjectId(project.getId())
@@ -75,41 +72,15 @@ public class TaskService {
   }
 
   /**
-   * Updates task and assignment.
+   * Updates task.
+   *
+   * Rules:
+   * - Only project owner can edit title, description, assignee
+   * - Project owner OR assigned user can update status
    */
   public TaskResponse update(
       Long taskId,
       UpdateTaskRequest request,
-      String userEmail) {
-
-    TaskEntity task = getOwnedTask(taskId, userEmail);
-    if (request.title() != null) {
-      task.setTitle(request.title());
-    }
-
-    if (request.description() != null) {
-      task.setDescription(request.description());
-    }
-
-    if (request.status() != null) {
-      task.setStatus(request.status());
-    }
-
-    if (request.assignedUserId() != null) {
-      task.setAssignedUser(
-          resolveAssignee(request.assignedUserId()));
-    }
-
-    return mapToResponse(taskRepository.save(task));
-  }
-
-  /**
-   * Updates task status.
-   * Allowed for project owner OR assigned user.
-   */
-  public TaskResponse updateStatus(
-      Long taskId,
-      UpdateTaskStatusRequest request,
       String userEmail) {
 
     TaskEntity task = taskRepository.findById(taskId)
@@ -129,7 +100,27 @@ public class TaskService {
       throw new UnauthorizedException();
     }
 
-    task.setStatus(request.status());
+    // OWNER-ONLY FIELDS
+    if (isOwner) {
+
+      if (request.title() != null) {
+        task.setTitle(request.title());
+      }
+
+      if (request.description() != null) {
+        task.setDescription(request.description());
+      }
+
+      if (request.assignedUserId() != null) {
+        task.setAssignedUser(
+            resolveAssignee(request.assignedUserId()));
+      }
+    }
+
+    // OWNER OR ASSIGNEE
+    if (request.status() != null) {
+      task.setStatus(request.status());
+    }
 
     return mapToResponse(taskRepository.save(task));
   }

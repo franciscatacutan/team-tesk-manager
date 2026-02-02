@@ -11,6 +11,11 @@
          hover:bg-blue-700 transition;
 }
 
+.btn-del {
+  @apply bg-red-600 text-white py-2 rounded-md
+         hover:bg-red-700 transition;
+}
+
 .card {
   @apply bg-white p-6 rounded-lg shadow-md;
 }

@@ -1,8 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
 import * as authService from "./auth.service";
 
-/* Custom hook for user registration
- *
+/*
+ * Custom hook for user registration
  */
 export const useRegister = () =>
   useMutation({
