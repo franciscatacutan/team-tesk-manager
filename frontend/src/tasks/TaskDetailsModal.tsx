@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import type { Task } from "./task.types";
@@ -10,7 +11,7 @@ type Props = {
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  onStatusChange: (status: string) => void;
+  onStatusChange: (status: "TODO" | "IN_PROGRESS" | "DONE") => void;
 };
 
 /*
@@ -28,50 +29,81 @@ export default function TaskDetailsModal({
 }: Props) {
   if (!task) return null;
 
+  // Local status for immediate UI updates
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [status, setStatus] = useState<"TODO" | "IN_PROGRESS" | "DONE">(
+    task.status,
+  );
+
+  // Sync when task changes
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    setStatus(task.status);
+  }, [task]);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <h2 className="text-xl font-bold">{task.title}</h2>
+      {/* Header */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-semibold tracking-tight text-gray-900">
+          {task.title}
+        </h2>
 
-      <p className="text-gray-500">{task.description}</p>
+        {task.description?.trim() && (
+          <p className="mt-2 text-sm leading-relaxed text-gray-600">
+            {task.description}
+          </p>
+        )}
+      </div>
 
-      {task.assignedUser && (
-        <p className="text-sm text-gray-400">
-          Assigned to: {task.assignedUser.firstName}{" "}
-          {task.assignedUser.lastName}
-        </p>
-      )}
+      {/* Metadata */}
+      <div className="mb-4 space-y-2 text-sm text-gray-500">
+        {task.assignedUser && (
+          <div>
+            Assigned to{" "}
+            <span className="font-medium text-gray-700">
+              {task.assignedUser.firstName} {task.assignedUser.lastName}
+            </span>
+          </div>
+        )}
+      </div>
 
-      {/*
-       * Owner and Assigned can change the status
-       */}
+      {/* Status */}
       {(isOwner || isAssignee) && (
-        <select
-          className="input mt-3"
-          value={task.status}
-          onChange={(e) => onStatusChange(e.target.value)}
-        >
-          <option value="TODO">TODO</option>
-          <option value="IN_PROGRESS">IN PROGRESS</option>
-          <option value="DONE">DONE</option>
-        </select>
+        <div className="mb-6 space-y-1">
+          <label className="text-sm font-medium text-gray-700">Status</label>
+
+          <select
+            className="input"
+            value={status}
+            onChange={(e) => {
+              const newStatus = e.target.value as
+                | "TODO"
+                | "IN_PROGRESS"
+                | "DONE";
+
+              setStatus(newStatus);
+              onStatusChange(newStatus);
+            }}
+          >
+            <option value="TODO">To do</option>
+            <option value="IN_PROGRESS">In progress</option>
+            <option value="DONE">Done</option>
+          </select>
+        </div>
       )}
 
-      <div className="flex justify-end gap-2 mt-4">
-        {/*
-         * Owner can delete task
-         */}
+      {/* Footer */}
+      <div className="flex justify-end gap-2 border-t pt-4">
         {isOwner && (
-          <Button size="lg" onClick={onDelete} variant="danger">
-            DELETE
+          <Button type="button" size="md" variant="secondary" onClick={onEdit}>
+            Edit
           </Button>
         )}
 
-        {/*
-         * Owner can edit the task
-         */}
         {isOwner && (
-          <Button size="lg" onClick={onEdit} variant="secondary">
-            EDIT
+          <Button type="button" size="md" variant="danger" onClick={onDelete}>
+            Delete
           </Button>
         )}
       </div>

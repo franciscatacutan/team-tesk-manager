@@ -2,15 +2,15 @@ import { useState } from "react";
 import TaskList from "../tasks/TaskList";
 import type { Task } from "../tasks/task.types";
 import TaskDetailsModal from "../tasks/TaskDetailsModal";
-import TaskEditModal from "../tasks/TaskEditModal";
+import TaskEditModal from "../tasks/EditTaskModal";
 import { useUpdateTask } from "../tasks/useUpdateTask";
-import TaskFormModal from "../tasks/TaskFormModal";
+import TaskFormModal from "../tasks/CreateTaskModal";
 import { getCurrentUserFromToken } from "../auth/auth.utils";
 import ConfirmDeleteTaskModal from "../tasks/ConfirmDeleteTaskModal";
 import { useDeleteTask } from "../tasks/useDeleteTask";
 import { useParams } from "react-router-dom";
 import { useProjectById } from "../projects/useProjects";
-import EditProjectModal from "../projects/ProjectEditModal";
+import EditProjectModal from "../projects/EditProjectModal";
 import { useDeleteProject } from "../projects/useDeleteProject";
 import ConfirmDeleteProjectModal from "../projects/ConfirmDeleteProjectModal";
 import { useNavigate } from "react-router-dom";
@@ -88,52 +88,55 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <header className="bg-white border-b">
-        <div
-          className="
-      max-w-5xl mx-auto
-      px-6 py-4
-      flex items-center justify-between
-      gap-4
-    "
-        >
-          {/* LEFT */}
-          <div>
-            <h1 className="text-2xl font-semibold leading-tight">
-              {project?.name}
-            </h1>
+      <header className="border-b border-gray-200 bg-white">
+        <div className="mx-auto max-w-5xl px-6 py-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            {/* LEFT */}
+            <div className="space-y-2">
+              <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
+                {project?.name}
+              </h1>
 
-            {project?.description && (
-              <p className="text-sm text-gray-500 mt-1 max-w-xl">
-                {project.description}
-              </p>
-            )}
+              {project?.description?.trim() && (
+                <p className="max-w-2xl text-sm leading-relaxed text-gray-600">
+                  {project.description}
+                </p>
+              )}
 
-            <p className="text-xs text-gray-400 mt-1">
-              Owner: {project?.owner.firstName} {project?.owner.lastName}
-            </p>
-          </div>
+              {/* Owner */}
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                {/* Avatar */}
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-700">
+                  {project?.owner.firstName?.[0]}
+                </div>
 
-          {/* RIGHT */}
-          {isOwner && (
-            <div className="flex gap-2">
-              <Button
-                size="lg"
-                variant="secondary"
-                onClick={() => setIsEditProjectOpen(true)}
-              >
-                Edit
-              </Button>
-
-              <Button
-                size="lg"
-                variant="danger"
-                onClick={() => setShowDeleteProject(true)}
-              >
-                Delete
-              </Button>
+                <span className="font-medium text-gray-700">
+                  {project?.owner.firstName} {project?.owner.lastName}
+                </span>
+              </div>
             </div>
-          )}
+
+            {/* RIGHT */}
+            {isOwner && (
+              <div className="flex items-center gap-2">
+                <Button
+                  size="md"
+                  variant="secondary"
+                  onClick={() => setIsEditProjectOpen(true)}
+                >
+                  Edit
+                </Button>
+
+                <Button
+                  size="md"
+                  variant="danger"
+                  onClick={() => setShowDeleteProject(true)}
+                >
+                  Delete
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 

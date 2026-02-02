@@ -1,4 +1,4 @@
-import { type JSX } from "react";
+import type { JSX } from "react";
 import { Navigate } from "react-router-dom";
 
 type Props = {

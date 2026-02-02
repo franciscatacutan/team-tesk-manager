@@ -1,7 +1,7 @@
 import { useProjects } from "../projects/useProjects";
 import ProjectList from "../projects/ProjectList";
 import { useNavigate } from "react-router-dom";
-import CreateProjectModal from "../projects/ProjectFormModal";
+import CreateProjectModal from "../projects/CreateProjectModal";
 import { useState } from "react";
 import Button from "../components/Button";
 

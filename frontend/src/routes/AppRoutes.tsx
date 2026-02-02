@@ -1,21 +1,18 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
 import AuthPage from "../pages/AuthPage";
-import ProtectedRoute from "./ProtectedRoute";
-import ErrorPage from "../pages/ErrorPage";
-import PublicRoute from "./PublicRoute";
 import DashboardPage from "../pages/DashboardPage";
 import ProjectsPage from "../pages/ProjectsPage";
+import ErrorPage from "../pages/ErrorPage";
 
-/*
- * Application Routes
- */
+import ProtectedRoute from "./ProtectedRoute";
+import PublicRoute from "./PublicRoute";
+
 export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        {/*
-         * Public Route
-         */}
+        {/* LOGIN (PUBLIC) */}
         <Route
           path="/login"
           element={
@@ -25,9 +22,17 @@ export default function AppRoutes() {
           }
         />
 
-        {/*
-         * Protected Route
-         */}
+        {/* PROJECTS */}
+        <Route
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <ProjectsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* PROJECT DASHBOARD */}
         <Route
           path="/projects/:id"
           element={
@@ -37,16 +42,18 @@ export default function AppRoutes() {
           }
         />
 
+        {/* ROOT */}
+        <Route path="/" element={<Navigate to="/projects" replace />} />
+
+        {/* EVERYTHING ELSE */}
         <Route
-          path="/projects"
+          path="*"
           element={
             <ProtectedRoute>
-              <ProjectsPage />
+              <ErrorPage />
             </ProtectedRoute>
           }
         />
-        {/* Catch ALL unknown routes */}
-        <Route path="*" element={<ErrorPage />} />
       </Routes>
     </BrowserRouter>
   );

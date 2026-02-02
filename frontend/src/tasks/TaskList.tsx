@@ -27,12 +27,13 @@ export default function TaskList({ projectId, onSelectTask }: Props) {
 
   return (
     <div className="space-y-3">
-      {/*
-       * Render each task item
-       */}
-      {data.map((task) => (
-        <TaskItem key={task.id} task={task} onClick={onSelectTask} />
-      ))}
+      {data.length === 0 ? (
+        <p className="py-8 text-center text-sm text-gray-500">No tasks yet.</p>
+      ) : (
+        data.map((task) => (
+          <TaskItem key={task.id} task={task} onClick={onSelectTask} />
+        ))
+      )}
     </div>
   );
 }
