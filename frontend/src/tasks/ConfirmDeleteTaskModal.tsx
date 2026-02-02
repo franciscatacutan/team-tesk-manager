@@ -1,3 +1,4 @@
+import Button from "../components/Button";
 import Modal from "../components/Modal";
 
 type Props = {
@@ -23,21 +24,13 @@ export default function ConfirmDeleteTaskModal({
       </p>
 
       <div className="flex justify-end gap-3">
-        <button
-          type="button"
-          className="btn bg-gray-200 text-black"
-          onClick={onClose}
-        >
-          Cancel
-        </button>
+        <Button size="lg" onClick={onClose} variant="secondary">
+          CANCEL
+        </Button>
 
-        <button
-          type="button"
-          className="btn bg-red-600 hover:bg-red-700"
-          onClick={onConfirm}
-        >
-          Delete
-        </button>
+        <Button size="lg" onClick={onConfirm} variant="danger">
+          DELETE
+        </Button>
       </div>
     </Modal>
   );

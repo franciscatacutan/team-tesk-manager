@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Modal from "../components/Modal";
 import { useCreateProject } from "./useCreateProject";
+import Button from "../components/Button";
 
 type Props = {
   isOpen: boolean;
@@ -64,17 +65,17 @@ export default function TaskFormModal({ isOpen, onClose }: Props) {
         />
 
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className="btn bg-gray-200 text-black"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
+          <Button size="lg" onClick={onClose} variant="secondary">
+            CANCEL
+          </Button>
 
-          <button className="btn" disabled={createProject.isPending}>
+          <Button
+            size="lg"
+            variant="primary"
+            disabled={createProject.isPending}
+          >
             {createProject.isPending ? "Creating..." : "Create"}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

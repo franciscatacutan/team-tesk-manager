@@ -4,6 +4,7 @@ import type { Task } from "./task.types";
 import { useUsers } from "../users/useUsers";
 import { useUpdateTask } from "./useUpdateTask";
 import { useEffect } from "react";
+import Button from "../components/Button";
 
 type Props = {
   projectId: number;
@@ -109,10 +110,12 @@ export default function TaskEditModal({
         </select>
 
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose}>
-            Cancel
-          </button>
-          <button className="btn">Save</button>
+          <Button size="lg" onClick={onClose} variant="secondary">
+            CANCEL
+          </Button>
+          <Button size="lg" disabled={updateTask.isPending} variant="primary">
+            {updateTask.isPending ? "Saving..." : "Save"}
+          </Button>
         </div>
       </form>
     </Modal>

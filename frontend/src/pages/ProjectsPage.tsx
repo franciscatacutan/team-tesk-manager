@@ -3,6 +3,7 @@ import ProjectList from "../projects/ProjectList";
 import { useNavigate } from "react-router-dom";
 import CreateProjectModal from "../projects/ProjectFormModal";
 import { useState } from "react";
+import Button from "../components/Button";
 
 /*
  * Project page showing projects.
@@ -31,10 +32,13 @@ export default function ProjectsPage() {
             <h1 className="text-3xl font-bold">Projects</h1>
             <p className="text-gray-500">Select a project to view its tasks</p>
           </div>
-
-          <button className="btn" onClick={() => setShowCreate(true)}>
-            + New Project
-          </button>
+          <Button
+            size="lg"
+            variant="primary"
+            onClick={() => setShowCreate(true)}
+          >
+            + Add Project
+          </Button>
         </div>
 
         {/* Content */}

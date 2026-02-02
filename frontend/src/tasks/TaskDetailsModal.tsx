@@ -1,3 +1,4 @@
+import Button from "../components/Button";
 import Modal from "../components/Modal";
 import type { Task } from "./task.types";
 
@@ -57,20 +58,21 @@ export default function TaskDetailsModal({
 
       <div className="flex justify-end gap-2 mt-4">
         {/*
-         * Owner can edit the task
-         */}
-        {isOwner && (
-          <button className="btn" onClick={onEdit}>
-            Edit
-          </button>
-        )}
-        {/*
          * Owner can delete task
          */}
         {isOwner && (
-          <button className="btn-del" onClick={onDelete}>
-            Delete
-          </button>
+          <Button size="lg" onClick={onDelete} variant="danger">
+            DELETE
+          </Button>
+        )}
+
+        {/*
+         * Owner can edit the task
+         */}
+        {isOwner && (
+          <Button size="lg" onClick={onEdit} variant="secondary">
+            EDIT
+          </Button>
         )}
       </div>
     </Modal>

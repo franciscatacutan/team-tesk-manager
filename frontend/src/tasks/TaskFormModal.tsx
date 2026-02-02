@@ -2,6 +2,7 @@ import { useState } from "react";
 import Modal from "../components/Modal";
 import { useCreateTask } from "./useCreateTask";
 import { useUsers } from "../users/useUsers";
+import Button from "../components/Button";
 
 type Props = {
   projectId: number;
@@ -135,17 +136,13 @@ export default function TaskFormModal({ projectId, isOpen, onClose }: Props) {
         </select>
 
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className="btn bg-gray-200 text-black"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
+          <Button size="lg" onClick={onClose} variant="secondary">
+            CANCEL
+          </Button>
 
-          <button type="submit" className="btn" disabled={createTask.isPending}>
+          <Button size="lg" disabled={createTask.isPending} variant="primary">
             {createTask.isPending ? "Saving..." : "Save"}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

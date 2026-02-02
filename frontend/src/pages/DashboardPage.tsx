@@ -14,6 +14,7 @@ import EditProjectModal from "../projects/ProjectEditModal";
 import { useDeleteProject } from "../projects/useDeleteProject";
 import ConfirmDeleteProjectModal from "../projects/ConfirmDeleteProjectModal";
 import { useNavigate } from "react-router-dom";
+import Button from "../components/Button";
 
 /*
  * Dashboard page showing project tasks.
@@ -92,38 +93,46 @@ export default function Dashboard() {
           className="
       max-w-5xl mx-auto
       px-6 py-4
-      flex items-center
-      justify-between
+      flex items-center justify-between
+      gap-4
     "
         >
-          {/* LEFT SIDE */}
+          {/* LEFT */}
           <div>
-            <h1 className="text-2xl font-semibold">{project?.name}</h1>
+            <h1 className="text-2xl font-semibold leading-tight">
+              {project?.name}
+            </h1>
 
             {project?.description && (
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-500 mt-1 max-w-xl">
                 {project.description}
               </p>
             )}
 
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-xs text-gray-400 mt-1">
               Owner: {project?.owner.firstName} {project?.owner.lastName}
             </p>
           </div>
 
-          {/* RIGHT SIDE */}
+          {/* RIGHT */}
           {isOwner && (
-            <button className="btn" onClick={() => setIsEditProjectOpen(true)}>
-              Edit Project
-            </button>
-          )}
-          {isOwner && (
-            <button
-              className="btn bg-red-600 hover:bg-red-700"
-              onClick={() => setShowDeleteProject(true)}
-            >
-              Delete Project
-            </button>
+            <div className="flex gap-2">
+              <Button
+                size="lg"
+                variant="secondary"
+                onClick={() => setIsEditProjectOpen(true)}
+              >
+                Edit
+              </Button>
+
+              <Button
+                size="lg"
+                variant="danger"
+                onClick={() => setShowDeleteProject(true)}
+              >
+                Delete
+              </Button>
+            </div>
           )}
         </div>
       </header>
@@ -131,10 +140,13 @@ export default function Dashboard() {
       <main className="max-w-5xl mx-auto p-4 mt-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Tasks</h2>
-
-          <button className="btn" onClick={() => setIsTaskCreateOpen(true)}>
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={() => setIsTaskCreateOpen(true)}
+          >
             + Add Task
-          </button>
+          </Button>
         </div>
 
         {/*
