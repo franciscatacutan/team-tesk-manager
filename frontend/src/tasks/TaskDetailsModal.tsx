@@ -8,6 +8,7 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   onEdit: () => void;
+  onDelete: () => void;
   onStatusChange: (status: string) => void;
 };
 
@@ -21,6 +22,7 @@ export default function TaskDetailsModal({
   isOpen,
   onClose,
   onEdit,
+  onDelete,
   onStatusChange,
 }: Props) {
   if (!task) return null;
@@ -53,16 +55,24 @@ export default function TaskDetailsModal({
         </select>
       )}
 
-      {/*
-       * Owner can edit the task
-       */}
-      {isOwner && (
-        <div className="flex justify-end mt-4">
+      <div className="flex justify-end gap-2 mt-4">
+        {/*
+         * Owner can edit the task
+         */}
+        {isOwner && (
           <button className="btn" onClick={onEdit}>
             Edit
           </button>
-        </div>
-      )}
+        )}
+        {/*
+         * Owner can delete task
+         */}
+        {isOwner && (
+          <button className="btn-del" onClick={onDelete}>
+            Delete
+          </button>
+        )}
+      </div>
     </Modal>
   );
 }

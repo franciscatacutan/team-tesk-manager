@@ -38,3 +38,15 @@ export const createTask = async (
 
   return data;
 };
+
+// Delete a task within a specific project
+export const deleteTask = async (
+    projectId: number,
+  taskId: number,
+): Promise<void> => {
+  await api.delete(`/projects/${projectId}/tasks/${taskId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};

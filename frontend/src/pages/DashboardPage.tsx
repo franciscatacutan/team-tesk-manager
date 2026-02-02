@@ -5,25 +5,57 @@ import TaskDetailsModal from "../tasks/TaskDetailsModal";
 import TaskEditModal from "../tasks/TaskEditModal";
 import { useUpdateTask } from "../tasks/useUpdateTask";
 import TaskFormModal from "../tasks/TaskFormModal";
+import { getCurrentUserFromToken } from "../auth/auth.utils";
+import ConfirmDeleteTaskModal from "../tasks/ConfirmDeleteTaskModal";
+import { useDeleteTask } from "../tasks/useDeleteTask";
 
 /*
  * Dashboard page showing project tasks.
  */
 export default function Dashboard() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const PROJECT_ID = 3; //TEMPORARY: Replace with actual project selection logic
+
+  // Open Modals and transfer data
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const updateTask = useUpdateTask(selectedTask?.id || 0);
+  const deleteTask = useDeleteTask();
 
-  const currentUserEmail: string = "test1@test.com"; // Temporary
-  const projectOwnerEmail: string = "owner@test.com"; // Temporary
+  //TEMPORARY: Replace with actual project selection logic
+  const PROJECT_ID = 3;
+  const projectOwnerEmail: string = "test1@test.com"; // Temporary
 
-  const updateStatus = useUpdateTask(selectedTask?.id || 0);
+  // Fetch User details from token
+  const user = getCurrentUserFromToken();
+
+  // Set User email
+  const currentUserEmail = user?.sub;
+  // const currentUserId = user?.userId;
+
+  // Checks if Current user is the Project Owner
+  const isOwner = currentUserEmail === projectOwnerEmail;
+  // Checks if Current user is the assignee
+  const isAssignee = selectedTask?.assignedUser?.email === currentUserEmail;
+
+  // Handles Delete Task
+  const handleDeleteTask = () => {
+    if (!selectedTask) return;
+
+    deleteTask.mutate(
+      { projectId: PROJECT_ID, taskId: selectedTask.id },
+      {
+        onSuccess: () => {
+          setIsDeleteOpen(false);
+          setIsDeleteOpen(false);
+        },
+      },
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-5xl mx-auto p-4">
           <h1 className="text-2xl font-bold">My Project</h1>
@@ -31,7 +63,6 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Content */}
       <main className="max-w-5xl mx-auto p-4 mt-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Tasks</h2>
@@ -65,15 +96,19 @@ export default function Dashboard() {
           // Close modal handler
           onClose={() => setIsDetailsOpen(false)}
           // Checks if the current user is the owner
-          isOwner={currentUserEmail === projectOwnerEmail}
+          isOwner={isOwner}
           // Checks if the current user is an the assigned user
-          isAssignee={selectedTask?.assignedUser?.email === currentUserEmail}
+          isAssignee={isAssignee}
           //   Handlers for edit and delete actions
           onEdit={() => {
             setIsDetailsOpen(false);
             setIsEditOpen(true);
           }}
-          onStatusChange={(status) => updateStatus.mutate({ status })}
+          onDelete={() => {
+            setIsDetailsOpen(false);
+            setIsDeleteOpen(true);
+          }}
+          onStatusChange={(status) => updateTask.mutate({ status })}
         />
         {/*
          * Task Edit Modal
@@ -94,6 +129,14 @@ export default function Dashboard() {
           projectId={PROJECT_ID}
           isOpen={isCreateOpen}
           onClose={() => setIsCreateOpen(false)}
+        />
+        {/*
+         * Confirm Delete Modal
+         */}
+        <ConfirmDeleteTaskModal
+          isOpen={isDeleteOpen}
+          onClose={() => setIsDeleteOpen(false)}
+          onConfirm={handleDeleteTask}
         />
       </main>
     </div>
