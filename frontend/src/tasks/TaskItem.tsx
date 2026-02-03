@@ -55,16 +55,6 @@ export default function TaskItem({ task, onClick }: Props) {
         </div>
 
         {/* RIGHT */}
-        {/* <span
-          className="
-        shrink-0
-        rounded-full px-2.5 py-1
-        text-xs font-medium
-        bg-gray-100 text-gray-700
-      "
-        >
-          {task.status}
-        </span> */}
         <span
           className={`
     shrink-0 rounded-full px-2.5 py-1
