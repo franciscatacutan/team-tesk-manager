@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.example.task_manager.project.ProjectEntity;
 import com.example.task_manager.task.TaskEntity;
@@ -20,6 +21,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
+@EntityListeners(AuditingEntityListener.class) // Enable auditing for createdAt and updatedAt fields
 @Table(name = "users")
 public class UserEntity {
   @Id

@@ -29,17 +29,29 @@ export default function TaskDetailsModal({
 }: Props) {
   if (!task) return null;
 
-  // Local status for immediate UI updates
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const [status, setStatus] = useState<"TODO" | "IN_PROGRESS" | "DONE">(
     task.status,
   );
 
-  // Sync when task changes
+  // Track original status
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [initialStatus, setInitialStatus] = useState(task.status);
+
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
-    setStatus(task.status);
-  }, [task]);
+    if (task && isOpen) {
+      setStatus(task.status);
+      setInitialStatus(task.status);
+    }
+  }, [task, isOpen]);
+
+  const hasStatusChanged = status !== initialStatus;
+
+  function handleSaveStatus() {
+    onStatusChange(status);
+    setInitialStatus(status);
+  }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -70,26 +82,31 @@ export default function TaskDetailsModal({
 
       {/* Status */}
       {(isOwner || isAssignee) && (
-        <div className="mb-6 space-y-1">
+        <div className="mb-6 space-y-2">
           <label className="text-sm font-medium text-gray-700">Status</label>
 
-          <select
-            className="input"
-            value={status}
-            onChange={(e) => {
-              const newStatus = e.target.value as
-                | "TODO"
-                | "IN_PROGRESS"
-                | "DONE";
+          <div className="flex gap-2">
+            <select
+              className="input flex-1"
+              value={status}
+              onChange={(e) =>
+                setStatus(e.target.value as "TODO" | "IN_PROGRESS" | "DONE")
+              }
+            >
+              <option value="TODO">To do</option>
+              <option value="IN_PROGRESS">In progress</option>
+              <option value="DONE">Done</option>
+            </select>
 
-              setStatus(newStatus);
-              onStatusChange(newStatus);
-            }}
-          >
-            <option value="TODO">To do</option>
-            <option value="IN_PROGRESS">In progress</option>
-            <option value="DONE">Done</option>
-          </select>
+            <Button
+              size="md"
+              variant="primary"
+              disabled={!hasStatusChanged}
+              onClick={handleSaveStatus}
+            >
+              Save
+            </Button>
+          </div>
         </div>
       )}
 

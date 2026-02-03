@@ -24,14 +24,14 @@ export default function ProjectsPage() {
 
   return (
     <div className="page">
-      {/* Page Container */}
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-5xl w-full mx-auto px-4">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold">Projects</h1>
             <p className="text-gray-500">Select a project to view its tasks</p>
           </div>
+
           <Button
             size="lg"
             variant="primary"
@@ -42,15 +42,23 @@ export default function ProjectsPage() {
         </div>
 
         {/* Content */}
-        {data && (
-          <ProjectList
-            projects={data}
-            onSelect={(id) => navigate(`/projects/${id}`)}
-          />
-        )}
-        {/*
-         * Project Creation Modal
-         */}
+        <div className="min-h-[300px]">
+          {data && data.length > 0 ? (
+            <ProjectList
+              projects={data}
+              onSelect={(id) => navigate(`/projects/${id}`)}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-[300px] border border-dashed rounded-lg text-gray-500">
+              <p className="text-lg font-medium">No projects yet</p>
+              <p className="text-sm">
+                Click “Add Project” to create your first project
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Modal */}
         <CreateProjectModal
           isOpen={showCreate}
           onClose={() => setShowCreate(false)}
