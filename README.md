@@ -45,10 +45,14 @@ This approach prevents secrets from being hardcoded or committed to source contr
 
 # Setting Environment Variables (Windows – PowerShell)
 
-**_Important_**
+**Important**
 PostgreSQL database name must be: taskmanager
 
 Use setx to define persistent environment variables for your user account:
+
+Open PowerShell or Command Prompt as a normal user
+Run the following commands:
+
 setx DB_USERNAME "<your-username>"
 setx DB_PASSWORD "<your-secure-password>"
 setx JWT_SECRET "<your-long-random-secret>"
@@ -58,6 +62,17 @@ Values are stored in plaintext at the OS level
 Avoid weak or short secrets
 Do not commit real values to documentation or version control
 
-## Author
+#SETUP
 
+Frontend
+cd frontend
+npm install
+npm run dev
+
+cd backend
+mvn clean install
+mvn spring-boot:run
+
+
+## Author
 Francis Catacutan
