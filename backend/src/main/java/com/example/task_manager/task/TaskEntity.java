@@ -1,6 +1,7 @@
 package com.example.task_manager.task;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -34,6 +35,13 @@ public class TaskEntity {
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
   private TaskStatus status;
+
+  @Enumerated(EnumType.STRING)
+  private TaskPriority priority;
+
+  private LocalDate startDate;
+
+  private LocalDate dueDate;
 
   // Many-to-one relationship with project
   @ManyToOne
