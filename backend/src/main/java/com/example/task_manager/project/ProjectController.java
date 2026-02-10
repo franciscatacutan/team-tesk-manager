@@ -2,6 +2,7 @@ package com.example.task_manager.project;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
@@ -49,7 +50,7 @@ public class ProjectController {
    * Get project by ID.
    */
   @GetMapping("/{id}")
-  public ResponseEntity<ProjectResponse> getByProjectId(@PathVariable Long id) {
+  public ResponseEntity<ProjectResponse> getByProjectId(@PathVariable UUID id) {
     return ResponseEntity.ok(projectService.getByProjectId(id));
   }
 
@@ -58,7 +59,7 @@ public class ProjectController {
    */
   @PatchMapping("/{id}")
   public ResponseEntity<ProjectResponse> update(
-      @PathVariable Long id,
+      @PathVariable UUID id,
       @Valid @RequestBody UpdateProjectRequest request,
       Principal principal) {
 
@@ -69,7 +70,7 @@ public class ProjectController {
    * Delete project.
    */
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> delete(@PathVariable Long id, Principal principal) {
+  public ResponseEntity<Void> delete(@PathVariable UUID id, Principal principal) {
 
     projectService.delete(id, principal.getName());
     return ResponseEntity.noContent().build();

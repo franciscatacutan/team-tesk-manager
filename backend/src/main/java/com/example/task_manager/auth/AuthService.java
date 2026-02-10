@@ -52,9 +52,7 @@ public class AuthService {
       throw new EmailAlreadyInUseException();
     }
 
-    String token = jwtService.generateToken(user);
-
-    return new AuthResponse(token);
+    return new AuthResponse(jwtService.generateToken(user));
   }
 
   /**
@@ -66,15 +64,14 @@ public class AuthService {
     UserEntity user = userRepository.findByEmail(request.email())
         .orElseThrow(() -> new AuthException());
 
-    // Verify password
+    // Password validation is performed here to keep
+    // credential verification centralized and auditable
     if (!passwordEncoder.matches(
         request.password(),
         user.getPassword())) {
       throw new AuthException();
     }
 
-    String token = jwtService.generateToken(user);
-
-    return new AuthResponse(token);
+    return new AuthResponse(jwtService.generateToken(user));
   }
 }

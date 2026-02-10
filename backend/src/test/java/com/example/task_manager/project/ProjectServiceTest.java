@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,7 +36,7 @@ class ProjectServiceTest {
     @Test
     void shouldDeleteProjectSuccessfully() {
 
-        Long projectId = 10L;
+        UUID projectId = UUID.randomUUID();
         String userEmail = "owner@test.com";
 
         // Owner
@@ -62,7 +63,7 @@ class ProjectServiceTest {
     @Test
     void shouldThrowUnauthorizedWhenNotOwner() {
 
-        Long projectId = 10L;
+        UUID projectId = UUID.randomUUID();
 
         // Other user trying to delete the project
         UserEntity owner = new UserEntity();

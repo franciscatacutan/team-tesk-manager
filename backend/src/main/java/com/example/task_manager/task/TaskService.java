@@ -1,6 +1,7 @@
 package com.example.task_manager.task;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,7 +38,7 @@ public class TaskService {
    * Creates task under project and optionally assigns user.
    */
   public TaskResponse create(
-      Long projectId,
+      UUID projectId,
       CreateTaskRequest request,
       String userEmail) {
 
@@ -61,7 +62,7 @@ public class TaskService {
   /**
    * Returns all tasks for a project.
    */
-  public List<TaskResponse> getByProject(Long projectId) {
+  public List<TaskResponse> getByProject(UUID projectId) {
 
     ProjectEntity project = projectRepository.findById(projectId)
         .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
@@ -81,7 +82,7 @@ public class TaskService {
    * - Project owner OR assigned user can update status
    */
   public TaskResponse update(
-      Long taskId,
+      UUID taskId,
       UpdateTaskRequest request,
       String userEmail) {
 
@@ -132,7 +133,7 @@ public class TaskService {
    * Owner only.
    */
   public void delete(
-      Long taskId,
+      UUID taskId,
       String userEmail) {
 
     TaskEntity task = getOwnedTask(taskId, userEmail);
@@ -144,7 +145,7 @@ public class TaskService {
   /**
    * Resolves assignee by ID or returns null if ID is null.
    */
-  private UserEntity resolveAssignee(Long assigneeId) {
+  private UserEntity resolveAssignee(UUID assigneeId) {
 
     if (assigneeId == null) {
       return null;
@@ -158,7 +159,7 @@ public class TaskService {
    * Ensures task exists and belongs to project owned by user.
    */
   private TaskEntity getOwnedTask(
-      Long taskId,
+      UUID taskId,
       String userEmail) {
 
     TaskEntity task = taskRepository.findById(taskId)
@@ -179,7 +180,7 @@ public class TaskService {
    * Ensures project exists and belongs to user.
    */
   private ProjectEntity getOwnedProject(
-      Long projectId,
+      UUID projectId,
       String userEmail) {
 
     ProjectEntity project = projectRepository.findById(projectId)

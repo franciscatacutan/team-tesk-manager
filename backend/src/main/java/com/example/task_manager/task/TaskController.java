@@ -2,6 +2,7 @@ package com.example.task_manager.task;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
@@ -29,68 +30,68 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TaskController {
 
-    private final TaskService taskService;
+  private final TaskService taskService;
 
-    /**
-     * Create a new task within a project.
-     * Owner only.
-     */
-    @PostMapping
-    public ResponseEntity<TaskResponse> createTask(
-            @PathVariable Long projectId,
-            @Valid @RequestBody CreateTaskRequest request,
-            Principal principal) {
+  /**
+   * Create a new task within a project.
+   * Owner only.
+   */
+  @PostMapping
+  public ResponseEntity<TaskResponse> createTask(
+      @PathVariable UUID projectId,
+      @Valid @RequestBody CreateTaskRequest request,
+      Principal principal) {
 
-        return ResponseEntity.status(
-                HttpStatus.CREATED.value())
-                .body(taskService.create(
-                        projectId,
-                        request,
-                        principal.getName()));
-    }
+    return ResponseEntity.status(
+        HttpStatus.CREATED.value())
+        .body(taskService.create(
+            projectId,
+            request,
+            principal.getName()));
+  }
 
-    /**
-     * Get all tasks for a project.
-     */
-    @GetMapping
-    public ResponseEntity<List<TaskResponse>> getProjectTasks(
-            @PathVariable Long projectId) {
+  /**
+   * Get all tasks for a project.
+   */
+  @GetMapping
+  public ResponseEntity<List<TaskResponse>> getProjectTasks(
+      @PathVariable UUID projectId) {
 
-        return ResponseEntity.ok(taskService.getByProject(projectId));
-    }
+    return ResponseEntity.ok(taskService.getByProject(projectId));
+  }
 
-    /**
-     * Update task details (title, description, assignee).
-     * Owner only.
-     */
-    @PatchMapping("/{taskId}")
-    public ResponseEntity<TaskResponse> updateTask(
-            @PathVariable Long projectId,
-            @PathVariable Long taskId,
-            @Valid @RequestBody UpdateTaskRequest request,
-            Principal principal) {
+  /**
+   * Update task details (title, description, assignee).
+   * Owner only.
+   */
+  @PatchMapping("/{taskId}")
+  public ResponseEntity<TaskResponse> updateTask(
+      @PathVariable UUID projectId,
+      @PathVariable UUID taskId,
+      @Valid @RequestBody UpdateTaskRequest request,
+      Principal principal) {
 
-        return ResponseEntity.ok(
-                taskService.update(
-                        taskId,
-                        request,
-                        principal.getName()));
-    }
+    return ResponseEntity.ok(
+        taskService.update(
+            taskId,
+            request,
+            principal.getName()));
+  }
 
-    /**
-     * Delete a task.
-     * Owner only.
-     */
-    @DeleteMapping("/{taskId}")
-    public ResponseEntity<Void> deleteTask(
-            @PathVariable Long projectId,
-            @PathVariable Long taskId,
-            Principal principal) {
+  /**
+   * Delete a task.
+   * Owner only.
+   */
+  @DeleteMapping("/{taskId}")
+  public ResponseEntity<Void> deleteTask(
+      @PathVariable UUID projectId,
+      @PathVariable UUID taskId,
+      Principal principal) {
 
-        taskService.delete(
-                taskId,
-                principal.getName());
+    taskService.delete(
+        taskId,
+        principal.getName());
 
-        return ResponseEntity.noContent().build();
-    }
+    return ResponseEntity.noContent().build();
+  }
 }

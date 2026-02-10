@@ -1,6 +1,7 @@
 package com.example.task_manager.task.dto;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import com.example.task_manager.task.entity.TaskStatus;
 
@@ -8,7 +9,7 @@ import com.example.task_manager.task.entity.TaskStatus;
  * DTO for task response.
  */
 public record TaskResponse(
-    Long id,
+    UUID id,
     String title,
     String description,
     TaskStatus status,
@@ -20,7 +21,7 @@ public record TaskResponse(
    * DTO for user assigned to task.
    */
   public record TaskUser(
-      Long id,
+      UUID id,
       String firstName,
       String lastName,
       String email) {
