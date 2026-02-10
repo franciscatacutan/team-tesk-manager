@@ -12,13 +12,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.example.task_manager.project.ProjectEntity;
-import com.example.task_manager.project.ProjectRepo;
+import com.example.task_manager.project.ProjectRepository;
+import com.example.task_manager.project.entity.ProjectEntity;
 import com.example.task_manager.task.dto.CreateTaskRequest;
 import com.example.task_manager.task.dto.TaskResponse;
 import com.example.task_manager.task.dto.UpdateTaskRequest;
-import com.example.task_manager.user.UserEntity;
-import com.example.task_manager.user.UserRepo;
+import com.example.task_manager.task.entity.TaskEntity;
+import com.example.task_manager.task.entity.TaskStatus;
+import com.example.task_manager.user.UserRepository;
+import com.example.task_manager.user.entity.UserEntity;
 
 /**
  * Unit tests for TaskService.
@@ -28,13 +30,13 @@ class TaskServiceTest {
 
     // Mocked dependencies
     @Mock
-    private TaskRepo taskRepository;
+    private TaskRepository taskRepository;
 
     @Mock
-    private ProjectRepo projectRepository;
+    private ProjectRepository projectRepository;
 
     @Mock
-    private UserRepo userRepository;
+    private UserRepository userRepository;
 
     @InjectMocks
     private TaskService taskService;

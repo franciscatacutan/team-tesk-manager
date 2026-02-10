@@ -1,4 +1,4 @@
-package com.example.task_manager.user;
+package com.example.task_manager.user.entity;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -8,8 +8,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.example.task_manager.project.ProjectEntity;
-import com.example.task_manager.task.TaskEntity;
+import com.example.task_manager.project.entity.ProjectEntity;
+import com.example.task_manager.task.entity.TaskEntity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

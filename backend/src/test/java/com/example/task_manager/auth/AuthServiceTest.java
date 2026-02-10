@@ -15,10 +15,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.example.task_manager.auth.dto.AuthResponse;
 import com.example.task_manager.auth.dto.RegisterRequest;
+import com.example.task_manager.config.jwt.JwtService;
 import com.example.task_manager.exception.api.EmailAlreadyInUseException;
-import com.example.task_manager.security.JwtService;
-import com.example.task_manager.user.UserEntity;
-import com.example.task_manager.user.UserRepo;
+import com.example.task_manager.user.UserRepository;
+import com.example.task_manager.user.entity.UserEntity;
 
 /**
  * Unit tests for AuthService.
@@ -28,7 +28,7 @@ class AuthServiceTest {
 
     // Mocked dependencies
     @Mock
-    private UserRepo userRepository;
+    private UserRepository userRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;

@@ -1,12 +1,12 @@
-package com.example.task_manager.security;
+package com.example.task_manager.config.security;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.example.task_manager.user.UserEntity;
-import com.example.task_manager.user.UserRepo;
+import com.example.task_manager.user.UserRepository;
+import com.example.task_manager.user.entity.UserEntity;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 public class CustomUserDetailsService
                 implements UserDetailsService {
 
-        private final UserRepo userRepository;
+        private final UserRepository userRepository;
 
         /**
          * Loads user details by email.

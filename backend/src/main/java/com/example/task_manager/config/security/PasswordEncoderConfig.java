@@ -1,4 +1,4 @@
-package com.example.task_manager.security;
+package com.example.task_manager.config.security;
 
 import org.springframework.context.annotation.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -8,7 +8,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  * Configuration class for password encoding.
  */
 @Configuration
-public class PasswordConfig {
+public class PasswordEncoderConfig {
 
   /**
    * Password encoder bean using BCrypt.

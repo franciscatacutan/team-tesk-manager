@@ -13,7 +13,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.example.task_manager.exception.api.UnauthorizedException;
-import com.example.task_manager.user.UserEntity;
+import com.example.task_manager.project.entity.ProjectEntity;
+import com.example.task_manager.user.entity.UserEntity;
 
 /**
  * Unit tests for ProjectService.
@@ -23,7 +24,7 @@ class ProjectServiceTest {
 
     // Mocked dependencies
     @Mock
-    private ProjectRepo projectRepository;
+    private ProjectRepository projectRepository;
 
     @InjectMocks
     private ProjectService projectService;

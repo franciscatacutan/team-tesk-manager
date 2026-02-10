@@ -7,12 +7,12 @@ import org.springframework.stereotype.Service;
 import com.example.task_manager.auth.dto.AuthResponse;
 import com.example.task_manager.auth.dto.LoginRequest;
 import com.example.task_manager.auth.dto.RegisterRequest;
+import com.example.task_manager.config.jwt.JwtService;
 import com.example.task_manager.exception.api.AuthException;
 import com.example.task_manager.exception.api.EmailAlreadyInUseException;
-import com.example.task_manager.security.JwtService;
-import com.example.task_manager.user.UserEntity;
-import com.example.task_manager.user.UserRepo;
-import com.example.task_manager.user.UserRole;
+import com.example.task_manager.user.UserRepository;
+import com.example.task_manager.user.entity.UserEntity;
+import com.example.task_manager.user.entity.UserRole;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthService {
 
-  private final UserRepo userRepository;
+  private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
 

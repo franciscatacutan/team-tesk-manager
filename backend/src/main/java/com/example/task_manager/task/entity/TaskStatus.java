@@ -1,4 +1,4 @@
-package com.example.task_manager.task;
+package com.example.task_manager.task.entity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 

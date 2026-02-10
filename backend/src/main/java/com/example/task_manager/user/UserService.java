@@ -13,9 +13,9 @@ import com.example.task_manager.user.dto.UserResponse;
 @Service
 public class UserService {
 
-  private final UserRepo userRepository;
+  private final UserRepository userRepository;
 
-  public UserService(UserRepo userRepository) {
+  public UserService(UserRepository userRepository) {
     this.userRepository = userRepository;
   }
 

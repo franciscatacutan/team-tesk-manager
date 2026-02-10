@@ -1,6 +1,6 @@
 package com.example.task_manager.task.dto;
 
-import com.example.task_manager.task.TaskStatus;
+import com.example.task_manager.task.entity.TaskStatus;
 
 /**
  * DTO for updating an existing task.

@@ -9,8 +9,9 @@ import com.example.task_manager.exception.api.UnauthorizedException;
 import com.example.task_manager.project.dto.CreateProjectRequest;
 import com.example.task_manager.project.dto.ProjectResponse;
 import com.example.task_manager.project.dto.UpdateProjectRequest;
-import com.example.task_manager.user.UserEntity;
-import com.example.task_manager.user.UserRepo;
+import com.example.task_manager.project.entity.ProjectEntity;
+import com.example.task_manager.user.UserRepository;
+import com.example.task_manager.user.entity.UserEntity;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,8 +22,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ProjectService {
 
-  private final ProjectRepo projectRepository;
-  private final UserRepo userRepository;
+  private final ProjectRepository projectRepository;
+  private final UserRepository userRepository;
 
   /**
    * Creates a new project for the authenticated user.

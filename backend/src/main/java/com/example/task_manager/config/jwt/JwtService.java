@@ -1,4 +1,4 @@
-package com.example.task_manager.security;
+package com.example.task_manager.config.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -6,7 +6,7 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.example.task_manager.user.UserEntity;
+import com.example.task_manager.user.entity.UserEntity;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;

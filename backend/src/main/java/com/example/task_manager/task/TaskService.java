@@ -7,13 +7,15 @@ import org.springframework.stereotype.Service;
 
 import com.example.task_manager.exception.api.ResourceNotFoundException;
 import com.example.task_manager.exception.api.UnauthorizedException;
-import com.example.task_manager.project.ProjectEntity;
-import com.example.task_manager.project.ProjectRepo;
+import com.example.task_manager.project.ProjectRepository;
+import com.example.task_manager.project.entity.ProjectEntity;
 import com.example.task_manager.task.dto.CreateTaskRequest;
 import com.example.task_manager.task.dto.TaskResponse;
 import com.example.task_manager.task.dto.UpdateTaskRequest;
-import com.example.task_manager.user.UserEntity;
-import com.example.task_manager.user.UserRepo;
+import com.example.task_manager.task.entity.TaskEntity;
+import com.example.task_manager.task.entity.TaskStatus;
+import com.example.task_manager.user.UserRepository;
+import com.example.task_manager.user.entity.UserEntity;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,11 +27,11 @@ import lombok.RequiredArgsConstructor;
 public class TaskService {
 
   @Autowired
-  private final TaskRepo taskRepository;
+  private final TaskRepository taskRepository;
   @Autowired
-  private final ProjectRepo projectRepository;
+  private final ProjectRepository projectRepository;
   @Autowired
-  private final UserRepo userRepository;
+  private final UserRepository userRepository;
 
   /**
    * Creates task under project and optionally assigns user.

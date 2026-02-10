@@ -1,4 +1,4 @@
-package com.example.task_manager.user;
+package com.example.task_manager.user.entity;
 
 /**
  * Enum representing the role of a user.

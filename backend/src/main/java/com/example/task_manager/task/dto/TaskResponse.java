@@ -2,7 +2,7 @@ package com.example.task_manager.task.dto;
 
 import java.time.Instant;
 
-import com.example.task_manager.task.TaskStatus;
+import com.example.task_manager.task.entity.TaskStatus;
 
 /**
  * DTO for task response.
