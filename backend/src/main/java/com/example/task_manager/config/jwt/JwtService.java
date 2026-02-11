@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import com.example.task_manager.user.entity.UserEntity;
@@ -52,13 +53,13 @@ public class JwtService {
   /**
    * Validates a JWT token.
    */
-  public boolean isTokenValid(String token) {
-    try {
-      getClaims(token);
-      return true;
-    } catch (Exception e) {
-      return false;
-    }
+  public boolean isTokenValid(String token, UserDetails userDetails) {
+    final String email = extractEmail(token);
+    return email.equals(userDetails.getUsername()) && !isTokenExpired(token);
+  }
+
+  private boolean isTokenExpired(String token) {
+    return getClaims(token).getExpiration().before(new Date());
   }
 
   /**

@@ -1,6 +1,7 @@
 package com.example.task_manager.project;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
@@ -55,7 +56,7 @@ public class ProjectService {
   /**
    * Returns a projects by id.
    */
-  public ProjectResponse getByProjectId(Long id) {
+  public ProjectResponse getByProjectId(UUID id) {
     return projectRepository.findById(id).map(this::mapToResponse)
         .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
   }
@@ -64,7 +65,7 @@ public class ProjectService {
    * Updates an existing project.
    */
   public ProjectResponse update(
-      Long projectId,
+      UUID projectId,
       UpdateProjectRequest request,
       String userEmail) {
 
@@ -85,7 +86,7 @@ public class ProjectService {
    * Deletes a project.
    */
   public void delete(
-      Long projectId,
+      UUID projectId,
       String userEmail) {
 
     ProjectEntity project = getOwnedProject(
@@ -110,7 +111,7 @@ public class ProjectService {
    * Ensures project exists and belongs to user.
    */
   private ProjectEntity getOwnedProject(
-      Long projectId,
+      UUID projectId,
       String userEmail) {
 
     ProjectEntity project = projectRepository.findById(projectId)

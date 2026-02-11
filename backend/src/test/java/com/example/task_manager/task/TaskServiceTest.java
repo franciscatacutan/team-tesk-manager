@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,124 +29,129 @@ import com.example.task_manager.user.entity.UserEntity;
 @ExtendWith(MockitoExtension.class)
 class TaskServiceTest {
 
-    // Mocked dependencies
-    @Mock
-    private TaskRepository taskRepository;
+  // Mocked dependencies
+  @Mock
+  private TaskRepository taskRepository;
 
-    @Mock
-    private ProjectRepository projectRepository;
+  @Mock
+  private ProjectRepository projectRepository;
 
-    @Mock
-    private UserRepository userRepository;
+  @Mock
+  private UserRepository userRepository;
 
-    @InjectMocks
-    private TaskService taskService;
+  @InjectMocks
+  private TaskService taskService;
 
-    /**
-     * Tests successful task creation.
-     */
-    @Test
-    void shouldCreateTaskSuccessfully() {
+  /**
+   * Tests successful task creation.
+   */
+  @Test
+  void shouldCreateTaskSuccessfully() {
 
-        // Test data
-        Long projectId = 10L;
-        String userEmail = "test@test.com";
-        Long assignedUserId = 5L;
+    // Test data
+    UUID projectId = UUID.randomUUID();
+    String userEmail = "test@test.com";
+    UUID assignedUserId = UUID.randomUUID();
 
-        // Assigned user
-        UserEntity user = new UserEntity();
-        user.setId(assignedUserId);
-        user.setEmail(userEmail);
+    // Assigned user
+    UserEntity user = new UserEntity();
+    user.setId(assignedUserId);
+    user.setEmail(userEmail);
 
-        when(userRepository.findById(assignedUserId))
-                .thenReturn(Optional.of(user));
+    when(userRepository.findById(assignedUserId))
+        .thenReturn(Optional.of(user));
 
-        // Project owned by user
-        ProjectEntity project = new ProjectEntity();
-        project.setId(projectId);
-        project.setOwner(user);
+    // Project owned by user
+    ProjectEntity project = new ProjectEntity();
+    project.setId(projectId);
+    project.setOwner(user);
 
-        when(projectRepository.findById(projectId))
-                .thenReturn(Optional.of(project));
+    when(projectRepository.findById(projectId))
+        .thenReturn(Optional.of(project));
 
-        CreateTaskRequest request = new CreateTaskRequest(
-                "Learn JUnit",
-                "Write first unit test",
-                TaskStatus.TODO,
-                assignedUserId);
+    CreateTaskRequest request = new CreateTaskRequest(
+        "Learn JUnit",
+        "Write first unit test",
+        TaskStatus.TODO,
+        assignedUserId);
 
-        TaskEntity savedTask = new TaskEntity();
-        savedTask.setTitle(request.title());
-        savedTask.setDescription(request.description());
-        savedTask.setStatus(request.status());
-        savedTask.setAssignedUser(user);
+    TaskEntity savedTask = new TaskEntity();
+    savedTask.setTitle(request.title());
+    savedTask.setDescription(request.description());
+    savedTask.setStatus(request.status());
+    savedTask.setAssignedUser(user);
 
-        when(taskRepository.save(any(TaskEntity.class)))
-                .thenReturn(savedTask);
+    when(taskRepository.save(any(TaskEntity.class)))
+        .thenReturn(savedTask);
 
-        TaskResponse response = taskService.create(projectId, request, userEmail);
+    TaskResponse response = taskService.create(projectId, request, userEmail);
 
-        assertThat(response.title()).isEqualTo("Learn JUnit");
-        assertThat(response.description()).isEqualTo("Write first unit test");
-        assertThat(response.status()).isEqualTo(TaskStatus.TODO);
-        assertThat(response.assignedUser().id()).isEqualTo(5L);
+    assertThat(response.title()).isEqualTo("Learn JUnit");
+    assertThat(response.description()).isEqualTo("Write first unit test");
+    assertThat(response.status()).isEqualTo(TaskStatus.TODO);
+    assertThat(response.assignedUser().id()).isEqualTo(assignedUserId);
 
-    }
+  }
 
-    /**
-     * Tests successful task update.
-     */
-    @Test
-    void shouldUpdateTaskSuccessfully() {
+  /**
+   * Tests successful task update.
+   */
+  @Test
+  void shouldUpdateTaskSuccessfully() {
+    // Project owner updates task
 
-        Long taskId = 1L;
-        String userEmail = "test@test.com";
-        Long assignedUserId = 5L;
+    // Arrange
+    UUID taskId = UUID.randomUUID();
+    UUID ownerId = UUID.randomUUID();
+    UUID assigneeId = UUID.randomUUID();
 
-        // Assigned user
-        UserEntity owner = new UserEntity();
-        owner.setEmail(userEmail);
+    String ownerEmail = "owner@test.com";
+    String assigneeEmail = "assignee@test.com";
 
-        when(userRepository.findById(assignedUserId))
-                .thenReturn(Optional.of(owner));
+    // Owner user
+    UserEntity owner = new UserEntity();
+    owner.setId(ownerId);
+    owner.setEmail(ownerEmail);
 
-        // Assigned user
-        UserEntity assignee = new UserEntity();
-        assignee.setId(assignedUserId);
+    // Assigned user
+    UserEntity assignee = new UserEntity();
+    assignee.setId(assigneeId);
+    assignee.setEmail(assigneeEmail);
 
-        when(userRepository.findById(assignedUserId))
-                .thenReturn(Optional.of(assignee));
+    when(userRepository.findById(assigneeId))
+        .thenReturn(Optional.of(assignee));
 
-        ProjectEntity project = new ProjectEntity();
-        project.setOwner(owner);
+    ProjectEntity project = new ProjectEntity();
+    project.setOwner(owner);
 
-        // Existing task
-        TaskEntity task = new TaskEntity();
-        task.setId(taskId);
-        task.setTitle("Old Title");
-        task.setDescription("Old Description");
-        task.setStatus(TaskStatus.TODO);
-        task.setProject(project);
-        task.setAssignedUser(assignee);
+    // Create task
+    TaskEntity task = new TaskEntity();
+    task.setId(taskId);
+    task.setTitle("Old Title");
+    task.setDescription("Old Description");
+    task.setStatus(TaskStatus.TODO);
+    task.setProject(project);
+    task.setAssignedUser(assignee);
 
-        when(taskRepository.findById(taskId))
-                .thenReturn(Optional.of(task));
+    when(taskRepository.findById(taskId))
+        .thenReturn(Optional.of(task));
 
-        when(taskRepository.save(any(TaskEntity.class)))
-                .thenReturn(task);
+    when(taskRepository.save(any(TaskEntity.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
 
-        UpdateTaskRequest request = new UpdateTaskRequest(
-                "Updated Title",
-                "Updated Description",
-                TaskStatus.DONE,
-                assignedUserId);
+    UpdateTaskRequest request = new UpdateTaskRequest(
+        "Updated Title",
+        "Updated Description",
+        TaskStatus.DONE,
+        assignee.getId());
 
-        TaskResponse response = taskService.update(taskId, request, userEmail);
+    // Act
+    TaskResponse response = taskService.update(taskId, request, owner.getEmail());
 
-        // Assert that the response has updated values
-        assertThat(response.title()).isEqualTo("Updated Title");
-        assertThat(response.description()).isEqualTo("Updated Description");
-        assertThat(response.status()).isEqualTo(TaskStatus.DONE);
-    }
+    // Assert
+    assertThat(response.title()).isEqualTo("Updated Title");
+    assertThat(response.description()).isEqualTo("Updated Description");
+    assertThat(response.status()).isEqualTo(TaskStatus.DONE);
+  }
 
 }

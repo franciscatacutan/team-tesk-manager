@@ -1,6 +1,7 @@
 package com.example.task_manager.task.entity;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -23,8 +24,8 @@ import lombok.Setter;
 @EntityListeners(AuditingEntityListener.class)
 public class TaskEntity {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+  @GeneratedValue(strategy = GenerationType.UUID)
+  private UUID id;
 
   @Column(nullable = false)
   private String title;
