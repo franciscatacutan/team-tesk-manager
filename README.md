@@ -53,9 +53,14 @@ Use setx to define persistent environment variables for your user account:
 Open PowerShell or Command Prompt as a normal user
 Run the following commands:
 
+For Database
 setx DB_USERNAME "<your-username>"
 setx DB_PASSWORD "<your-secure-password>"
 setx JWT_SECRET "<your-long-random-secret>"
+
+For Super Admin
+setx BOOTSTRAP_ADMIN_EMAIL "<your-super-admin-email>"
+setx BOOTSTRAP_ADMIN_PASSWORD "<your-super-admin-password>"
 
 Restart your terminal or application after running setx
 Values are stored in plaintext at the OS level
@@ -73,6 +78,6 @@ cd backend
 mvn clean install
 mvn spring-boot:run
 
-
 ## Author
+
 Francis Catacutan

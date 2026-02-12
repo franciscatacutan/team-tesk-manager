@@ -1,16 +1,11 @@
 package com.example.task_manager.user.entity;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import com.example.task_manager.project.entity.ProjectEntity;
-import com.example.task_manager.task.entity.TaskEntity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -29,25 +24,17 @@ public class UserEntity {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
-  @Column(nullable = false)
+  @Column(nullable = false, length = 100)
   private String firstName;
 
-  @Column(nullable = false)
+  @Column(nullable = false, length = 100)
   private String lastName;
 
-  @Column(nullable = false, unique = true)
+  @Column(nullable = false, unique = true, length = 150)
   private String email;
 
-  @Column(nullable = false)
+  @Column(nullable = false, length = 255)
   private String password;
-
-  // One-to-many relationship with projects (owner)
-  @OneToMany(mappedBy = "owner")
-  private List<ProjectEntity> projects = new ArrayList<>();
-
-  // One-to-many relationship with tasks (assigned to)
-  @OneToMany(mappedBy = "assignedUser")
-  private List<TaskEntity> assignedTasks = new ArrayList<>();
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
