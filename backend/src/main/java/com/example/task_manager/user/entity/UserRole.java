@@ -5,5 +5,6 @@ package com.example.task_manager.user.entity;
  */
 public enum UserRole {
     USER,
-    ADMIN
+    ADMIN,
+    SUPER_ADMIN
 }
