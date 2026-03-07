@@ -39,6 +39,8 @@ jobs:
         run: |
           npm install -g allure-commandline --save-dev
 
+      - name: Debug env
+        run: env | grep DB
 
       # Start docker environment
       - name: Start containers
