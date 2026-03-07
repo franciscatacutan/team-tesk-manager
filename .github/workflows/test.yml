@@ -42,9 +42,12 @@ jobs:
       # Start docker environment
       - name: Start containers
         env:
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          # DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          # DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          # JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+          JWT_SECRET: 3f9a7e8b6d1c2f5a9e4b7c8d0f6a1e3c9b7d5a4f2e6c1b8d3f9a7c5e1d2b6a4
         run: |
           env | grep DB
           docker compose up -d
