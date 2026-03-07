@@ -5,8 +5,8 @@ services:
     container_name: taskmanager-db
     environment:
       POSTGRES_DB: taskmanager
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5433:5432"
     healthcheck:
