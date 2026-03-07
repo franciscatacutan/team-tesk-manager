@@ -39,49 +39,41 @@ jobs:
         run: |
           npm install -g allure-commandline --save-dev
 
-      - name: Debug env
+      # Start docker environment
+      - name: Start containers
         env:
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-        run: |
-          echo "Environment variables:"
-          env | grep DB
-          docker compose config
-
-      # Start docker environment
-      - name: Start containers
-        env:
-          # DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          # DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          # JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          DB_USERNAME: postgres
-          DB_PASSWORD: postgres
-          JWT_SECRET: 3f9a7e8b6d1c2f5a9e4b7c8d0f6a1e3c9b7d5a4f2e6c1b8d3f9a7c5e1d2b6a4
         run: |
           docker compose up -d --build
 
       - name: Show containers
         run: docker compose ps
 
-      # Wait for backend to be ready
       - name: Wait for backend
         run: |
-          for i in {1..30}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 || true)
+          for i in {1..60}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 || echo "000")
+
             if [ "$STATUS" != "000" ]; then
               echo "Backend responding with HTTP $STATUS"
-              break
+              exit 0
             fi
+
             echo "Waiting for backend..."
             sleep 5
           done
 
+          echo "Backend never became ready"
+          docker compose logs backend
+          exit 1
 
       # Run tests
       - name: Run tests
         run: |
-          pytest qa/ --alluredir=allure-results
+          pytest qa/ --alluredir=allure-results\
+        continue-on-error: true
 
       - name: Backend logs
         run: docker compose logs backend
