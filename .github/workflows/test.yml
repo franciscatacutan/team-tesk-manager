@@ -95,10 +95,6 @@ jobs:
       - name: Generate Allure report
         if: steps.backend_check.outcome == 'success'
         run: |
-          echo "name=GitHub Actions" > allure-results/executor.json
-          echo "type=github" >> allure-results/executor.json
-          echo "buildName=Run ${{ github.run_number }}" >> allure-results/executor.json
-          echo "buildUrl=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> allure-results/executor.json
           rm -rf allure-report
           allure generate allure-results --clean -o allure-report
 
