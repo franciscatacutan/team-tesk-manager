@@ -70,7 +70,6 @@ jobs:
 
       # Checkout gh-pages branch to get previous history
       - name: Checkout gh-pages
-        if: steps.backend_check.outcome == 'success'
         uses: actions/checkout@v4
         with:
           ref: gh-pages
@@ -79,7 +78,6 @@ jobs:
 
       # Copy history if exists
       - name: Restore Allure history
-        if: steps.backend_check.outcome == 'success'
         run: |
           mkdir -p allure-results
           if [ -d "gh-pages/history" ]; then
@@ -88,19 +86,18 @@ jobs:
           fi
 
       - name: Run tests
-        if: steps.backend_check.outcome == 'success'
         run: pytest qa/ --alluredir=allure-results
 
       # Generate new report
       - name: Generate Allure report
-        if: steps.backend_check.outcome == 'success'
+        if: always() && steps.backend_check.outcome == 'success'
         run: |
           rm -rf allure-report
           allure generate allure-results --clean -o allure-report
 
       # Limit history to last 10 runs
       - name: Trim Allure history
-        if: steps.backend_check.outcome == 'success'
+        if: always() && steps.backend_check.outcome == 'success'
         run: |
           if [ -f allure-report/history/history-trend.json ]; then
             jq '.[-10:]' allure-report/history/history-trend.json > tmp.json
@@ -109,7 +106,7 @@ jobs:
 
       # Deploy report to gh-pages
       - name: Deploy report
-        if: steps.backend_check.outcome == 'success'
+        if: always() && steps.backend_check.outcome == 'success'
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
