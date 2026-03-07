@@ -68,12 +68,12 @@ jobs:
       - name: Wait for backend
         run: |
           for i in {1..30}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080)
-            if [ "$STATUS" -ne 000 ]; then
-              echo "Backend ready"
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 || true)
+            if [ "$STATUS" != "000" ]; then
+              echo "Backend responding with HTTP $STATUS"
               break
             fi
-            echo "Waiting..."
+            echo "Waiting for backend..."
             sleep 5
           done
 
