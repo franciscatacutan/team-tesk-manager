@@ -42,6 +42,10 @@ jobs:
 
       # Start docker environment
       - name: Start containers
+        env:
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
           docker compose up -d
 
