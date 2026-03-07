@@ -51,14 +51,15 @@ jobs:
       - name: Show containers
         run: docker compose ps
 
+      # Wait for backend to be ready
       - name: Wait for backend
         run: |
-          for i in {1..60}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 || echo "000")
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 || true)
 
             if [ "$STATUS" != "000" ]; then
               echo "Backend responding with HTTP $STATUS"
-              exit 0
+              break
             fi
 
             echo "Waiting for backend..."
@@ -66,7 +67,7 @@ jobs:
           done
 
           echo "Backend never became ready"
-          docker compose logs backend
+          docker compose logs
           exit 1
 
       # Run tests
@@ -109,10 +110,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: allure-report
-
-      - name: Print docker logs on failure
-        if: always()
-        run: docker compose logs
 
       - name: Stop containers
         if: always()
