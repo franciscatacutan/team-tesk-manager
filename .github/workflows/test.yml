@@ -1,0 +1,107 @@
+name: Auto Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+
+      # Install Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          pip install -r qa/requirements.txt
+
+
+      # Install Allure CLI
+      - name: Install Allure
+        run: |
+          npm install -g allure-commandline --save-dev
+
+
+      # Start docker environment
+      - name: Start containers
+        run: |
+          docker compose up -d
+
+
+      # Wait for backend to be ready
+      - name: Wait for backend
+        run: |
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080)
+            if [ "$STATUS" -ne 000 ]; then
+              echo "Backend ready"
+              break
+            fi
+            echo "Waiting..."
+            sleep 5
+          done
+
+
+      # Run tests
+      - name: Run tests
+        run: |
+          pytest qa/ --alluredir=allure-results
+
+
+      # Checkout gh-pages branch to get previous history
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+        continue-on-error: true
+
+
+      # Copy history if exists
+      - name: Copy Allure history
+        run: |
+          if [ -d "gh-pages/allure-report/history" ]; then
+            mkdir -p allure-results/history
+            cp -r gh-pages/allure-report/history/* allure-results/history
+          fi
+
+
+      # Generate new report
+      - name: Generate Allure report
+        run: |
+          allure generate allure-results --clean -o allure-report
+
+
+      # Deploy report to gh-pages
+      - name: Deploy report
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-report
+
+      - name: Print docker logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down
