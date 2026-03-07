@@ -59,11 +59,10 @@ jobs:
           DB_PASSWORD: postgres
           JWT_SECRET: 3f9a7e8b6d1c2f5a9e4b7c8d0f6a1e3c9b7d5a4f2e6c1b8d3f9a7c5e1d2b6a4
         run: |
-          echo "DB_USERNAME=$DB_USERNAME"
-          echo "DB_PASSWORD=$DB_PASSWORD"
-          echo "JWT_SECRET=$JWT_SECRET"
-          docker compose up -d
+          docker compose up -d --build
 
+      - name: Show containers
+        run: docker compose ps
 
       # Wait for backend to be ready
       - name: Wait for backend
@@ -83,6 +82,9 @@ jobs:
       - name: Run tests
         run: |
           pytest qa/ --alluredir=allure-results
+
+      - name: Backend logs
+        run: docker compose logs backend
 
 
       # Checkout gh-pages branch to get previous history
