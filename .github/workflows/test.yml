@@ -48,9 +48,6 @@ jobs:
         run: |
           docker compose up -d --build
 
-      - name: Show containers
-        run: docker compose ps
-
       # Wait for backend to be ready
       - name: Wait for backend
         run: |
@@ -88,6 +85,9 @@ jobs:
             mkdir -p allure-results/history
             cp -r gh-pages/history/* allure-results/history
           fi
+
+      - name: Run tests
+        run: pytest qa/ --alluredir=allure-results
 
       # Generate new report
       - name: Generate Allure report
