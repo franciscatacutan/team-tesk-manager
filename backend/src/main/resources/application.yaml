@@ -22,3 +22,12 @@ jwt:
 # Frontend API URL
 frontend:
   url: http://localhost:5173
+
+app:
+  bootstrap-admin:
+    email: ${BOOTSTRAP_ADMIN_EMAIL:}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+
+logging:
+  level:
+    org.springframework.security: DEBUG

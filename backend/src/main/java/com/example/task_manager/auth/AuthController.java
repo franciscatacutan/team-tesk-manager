@@ -20,14 +20,6 @@ public class AuthController {
   private final AuthService authService;
 
   /**
-   * Test endpoint to verify auth controller is working.
-   */
-  @GetMapping("/test")
-  public String test() {
-    return "TESTING AUTH CONNECTION SUCCESSFUL";
-  }
-
-  /**
    * Registers a new user.
    */
   @PostMapping("/register")

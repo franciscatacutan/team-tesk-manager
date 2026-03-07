@@ -7,12 +7,12 @@ import org.springframework.stereotype.Service;
 import com.example.task_manager.auth.dto.AuthResponse;
 import com.example.task_manager.auth.dto.LoginRequest;
 import com.example.task_manager.auth.dto.RegisterRequest;
+import com.example.task_manager.config.jwt.JwtService;
 import com.example.task_manager.exception.api.AuthException;
 import com.example.task_manager.exception.api.EmailAlreadyInUseException;
-import com.example.task_manager.security.JwtService;
-import com.example.task_manager.user.UserEntity;
-import com.example.task_manager.user.UserRepo;
-import com.example.task_manager.user.UserRole;
+import com.example.task_manager.user.UserRepository;
+import com.example.task_manager.user.entity.UserEntity;
+import com.example.task_manager.user.entity.UserRole;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthService {
 
-  private final UserRepo userRepository;
+  private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
 
@@ -32,7 +32,6 @@ public class AuthService {
    */
   public AuthResponse register(RegisterRequest request) {
 
-    // Check if email is already in use
     if (userRepository.existsByEmail(request.email())) {
       throw new EmailAlreadyInUseException();
     }
@@ -45,16 +44,13 @@ public class AuthService {
     user.setPassword(
         passwordEncoder.encode(request.password()));
 
-    // Save user and handle potential email uniqueness violation
     try {
       user = userRepository.save(user);
     } catch (DataIntegrityViolationException ex) {
       throw new EmailAlreadyInUseException();
     }
 
-    String token = jwtService.generateToken(user);
-
-    return new AuthResponse(token);
+    return new AuthResponse(jwtService.generateToken(user));
   }
 
   /**
@@ -62,19 +58,15 @@ public class AuthService {
    */
   public AuthResponse login(LoginRequest request) {
 
-    // Find user by email for authentication
     UserEntity user = userRepository.findByEmail(request.email())
         .orElseThrow(() -> new AuthException());
 
-    // Verify password
     if (!passwordEncoder.matches(
         request.password(),
         user.getPassword())) {
       throw new AuthException();
     }
 
-    String token = jwtService.generateToken(user);
-
-    return new AuthResponse(token);
+    return new AuthResponse(jwtService.generateToken(user));
   }
 }
