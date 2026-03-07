@@ -50,18 +50,18 @@ jobs:
           docker compose up -d
 
 
-      # Wait for backend to be ready
-      - name: Wait for backend
-        run: |
-          for i in {1..30}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080)
-            if [ "$STATUS" -ne 000 ]; then
-              echo "Backend ready"
-              break
-            fi
-            echo "Waiting..."
-            sleep 5
-          done
+      # # Wait for backend to be ready
+      # - name: Wait for backend
+      #   run: |
+      #     for i in {1..30}; do
+      #       STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080)
+      #       if [ "$STATUS" -ne 000 ]; then
+      #         echo "Backend ready"
+      #         break
+      #       fi
+      #       echo "Waiting..."
+      #       sleep 5
+      #     done
 
 
       # Run tests
