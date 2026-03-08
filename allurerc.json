@@ -1,0 +1,5 @@
+{
+  "name": "My Test Suite Report",
+  "historyPath": "./test-history/allure-history.jsonl",
+  "appendHistory": true
+}

@@ -77,33 +77,33 @@ jobs:
           path: gh-pages
         continue-on-error: true
 
-      # Copy history if exists
-      - name: Restore Allure history
-        run: |
-          mkdir -p allure-results
-          if [ -d "gh-pages/history" ]; then
-            mkdir -p allure-results/history
-            cp -r gh-pages/history/* allure-results/history
-          fi
+      # # Copy history if exists
+      # - name: Restore Allure history
+      #   run: |
+      #     mkdir -p allure-results
+      #     if [ -d "gh-pages/history" ]; then
+      #       mkdir -p allure-results/history
+      #       cp -r gh-pages/history/* allure-results/history
+      #     fi
 
       - name: Run tests
-        run: pytest qa/ --alluredir=allure-results
+        run: pytest qa/ --alluredir=allure-results --clean-alluredir --allure-no-capture
 
       # Generate new report
       - name: Generate Allure report
         if: always() && steps.backend_check.outcome == 'success'
         run: |
           rm -rf allure-report
-          allure generate allure-results -o allure-report
+          allure generate allure-results -o allure-report --history-limit=5
 
-      # Limit history to last 10 runs
-      - name: Trim Allure history
-        if: always() && steps.backend_check.outcome == 'success'
-        run: |
-          if [ -f allure-report/history/history-trend.json ]; then
-            jq '.[-10:]' allure-report/history/history-trend.json > tmp.json
-            mv tmp.json allure-report/history/history-trend.json
-          fi
+      # # Limit history to last 10 runs
+      # - name: Trim Allure history
+      #   if: always() && steps.backend_check.outcome == 'success'
+      #   run: |
+      #     if [ -f allure-report/history/history-trend.json ]; then
+      #       jq '.[-10:]' allure-report/history/history-trend.json > tmp.json
+      #       mv tmp.json allure-report/history/history-trend.json
+      #     fi
 
       # Deploy report to gh-pages
       - name: Deploy report
