@@ -1,3 +1,4 @@
 .env
 *.pyc
 /allure-report
+/allure-results
