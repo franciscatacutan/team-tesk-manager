@@ -45,3 +45,11 @@ class BaseClient:
             f"{self.base_url}{endpoint}",
             headers=self._headers()
         )
+
+    def send_request(self, method, endpoint, json=None):
+        return requests.request(
+            method=method,
+            url=f"{self.base_url}{endpoint}",
+            json=json,
+            headers=self._headers()
+        )

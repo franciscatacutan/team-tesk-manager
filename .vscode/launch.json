@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+        "name": "Debug Pytest + Allure",
+        "type": "python",
+        "request": "launch",
+        "module": "pytest",
+        "args": [
+            "-s",
+            "-vv",
+            "--alluredir=allure-results",
+            "--clean-alluredir"
+        ],
+        "console": "integratedTerminal",
+        "justMyCode": false,
+        "postDebugTask": "serve-allure-report"
+    }
+  ]
+}

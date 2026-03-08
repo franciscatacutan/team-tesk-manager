@@ -17,7 +17,7 @@ def registered_user(auth_client):
         "email": generate_email(),
         "password": generate_password()
     }
-    response = auth_client.register(test_user)
+    response = auth_client.register(test_user, attach=False)
 
     assert response.status_code == 200, (
         f"Registration failed. "
