@@ -37,7 +37,8 @@ jobs:
       # Install Allure CLI
       - name: Install Allure
         run: |
-          npm install -g allure-commandline --save-dev
+          npm install -g allure
+          allure --version
 
       # Start docker environment
       - name: Start containers
