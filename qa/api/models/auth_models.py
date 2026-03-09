@@ -8,8 +8,16 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class LoginResponse(BaseModel):
-    token: str
-
 class LoginErrorResponse(ErrorResponse):
+    path: str = ENDPOINTS["login"]
+
+
+class RegisterRequest(BaseModel):
+    firstName: str
+    lastName: str
+    email: str
+    password: str
+
+
+class RegisterErrorResponse(ErrorResponse):
     path: str = ENDPOINTS["login"]

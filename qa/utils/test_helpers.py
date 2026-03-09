@@ -46,3 +46,15 @@ def assert_error_response(actual: ErrorResponse, expected: dict):
     for key, value in expected.items():
         actual_value = getattr(actual, key)
         assert actual_value == value, f"{key}: expected {value}, got {actual_value}"
+
+def set_report_parameters(test_params: dict):
+    if hasattr(test_params, "model_dump"):
+        test_params = test_params.model_dump()
+
+    if hasattr(test_params, "items"):
+        for k, v in test_params.items():
+            allure.dynamic.parameter(
+                name=k,
+                value=v.model_dump() if hasattr(v, "model_dump") else v,
+                excluded=True
+            )

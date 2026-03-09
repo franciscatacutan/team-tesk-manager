@@ -23,27 +23,31 @@ class BaseClient:
     def get(self, endpoint):
         return requests.get(
             f"{self.base_url}{endpoint}",
-            headers=self._headers()
+            headers=self._headers(),
+            timeout=5
         )
 
     def post(self, endpoint, json=None):
         return requests.post(
             f"{self.base_url}{endpoint}",
             json=json,
-            headers=self._headers()
+            headers=self._headers(),
+            timeout=5
         )
 
     def put(self, endpoint, json=None):
         return requests.put(
             f"{self.base_url}{endpoint}",
             json=json,
-            headers=self._headers()
+            headers=self._headers(),
+            timeout=5
         )
 
     def delete(self, endpoint):
         return requests.delete(
             f"{self.base_url}{endpoint}",
-            headers=self._headers()
+            headers=self._headers(),
+            timeout=5
         )
 
     def send_request(self, method, endpoint, json=None):
@@ -51,5 +55,6 @@ class BaseClient:
             method=method,
             url=f"{self.base_url}{endpoint}",
             json=json,
-            headers=self._headers()
+            headers=self._headers(),
+            timeout=5
         )

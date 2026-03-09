@@ -16,7 +16,8 @@
       "command": "cmd",
       "args": [
         "/c",
-        "if exist allure-results\\*.json allure generate allure-results -o allure-report --open"
+        // "if exist allure-results\\*.json allure generate allure-results -o allure-report --open"
+        "if exist allure-results\\*.json allure generate allure-results -o allure-report --history-limit=3 && allure serve allure-report --port 63079"
       ]
     },
     {

@@ -52,7 +52,7 @@ login_exceptions = {
         },
     },
     "Missing password": {
-        "request": {"email": "test_auth_user@email.com"},
+        "request": {"email": generate_email()},
         "response": {
             "status": 400,
             "error": "INVALID_REQUEST",
@@ -60,7 +60,7 @@ login_exceptions = {
         },
     },
     "Password is null": {
-        "request": {"email": "test_auth_user@email.com", "password": None},
+        "request": {"email": generate_email(), "password": None},
         "response": {
             "status": 400,
             "error": "INVALID_REQUEST",
@@ -68,7 +68,7 @@ login_exceptions = {
         },
     },
     "Password is not a string": {
-        "request": {"email": "test_auth_user@email.com", "password": None},
+        "request": {"email": generate_email(), "password": None},
         "response": {
             "status": 400,
             "error": "INVALID_REQUEST",
@@ -76,7 +76,7 @@ login_exceptions = {
         },
     },
     "Password is less than minimum length": {
-        "request": LoginRequest(email="test_auth_user@email.com", password="Short1!"),
+        "request": LoginRequest(email=generate_email(), password="Short1!"),
         "response": {
             "status": 422,
             "error": "VALIDATION_ERROR",
@@ -85,7 +85,7 @@ login_exceptions = {
     },
     "Password is not a strong password": {
         "request": LoginRequest(
-            email="test_auth_user@email.com", password="notastrongpassword"
+            email=generate_email(), password="notastrongpassword"
         ),
         "response": {
             "status": 422,
@@ -95,7 +95,7 @@ login_exceptions = {
     },
     "User does not exist": {
         "request": LoginRequest(
-            email="test_auth_user@email.com", password=generate_password()
+            email=generate_email(), password=generate_password()
         ),
         "response": {
             "status": 401,
