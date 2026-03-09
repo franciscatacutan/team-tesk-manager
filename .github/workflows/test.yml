@@ -77,14 +77,13 @@ jobs:
           path: gh-pages
         continue-on-error: true
 
-      # # Copy history if exists
-      # - name: Restore Allure history
-      #   run: |
-      #     mkdir -p allure-results
-      #     if [ -d "gh-pages/history" ]; then
-      #       mkdir -p allure-results/history
-      #       cp -r gh-pages/history/* allure-results/history
-      #     fi
+      # Copy history if exists
+      - name: Restore Allure history
+        run: |
+          if [ -d "gh-pages/test-history" ]; then
+            mkdir -p test-history
+            cp -r gh-pages/test-history/* test-history
+          fi
 
       - name: Run tests
         run: pytest qa/ --alluredir=allure-results --clean-alluredir --allure-no-capture
