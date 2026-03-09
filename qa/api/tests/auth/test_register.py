@@ -7,9 +7,11 @@ from qa.config.settings import ERROR_TAG, SUCCESS_TAG
 from qa.config.settings import BASE_API_URL
 from qa.api.clients.auth_client import AuthClient
 
-@allure.feature("Authentication")
+@allure.parent_suite("API Tests")
+@allure.suite("Auth API Tests")
+@allure.sub_suite("Register API Tests")
 @allure.tag("api")
-class TestLogin:
+class TestRegister:
     client = AuthClient(BASE_API_URL)
 
     @pytest.fixture(scope="class", autouse=True)
