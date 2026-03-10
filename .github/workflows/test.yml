@@ -46,6 +46,8 @@ jobs:
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          BOOTSTRAP_ADMIN_EMAIL: ${{ secrets.BOOTSTRAP_ADMIN_EMAIL }}
+          BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.BOOTSTRAP_ADMIN_PASSWORD }}
         run: |
           docker compose up -d --build
 
@@ -94,15 +96,6 @@ jobs:
         run: |
           rm -rf allure-report
           allure generate allure-results -o allure-report --history-limit=5
-
-      # # Limit history to last 10 runs
-      # - name: Trim Allure history
-      #   if: always() && steps.backend_check.outcome == 'success'
-      #   run: |
-      #     if [ -f allure-report/history/history-trend.json ]; then
-      #       jq '.[-10:]' allure-report/history/history-trend.json > tmp.json
-      #       mv tmp.json allure-report/history/history-trend.json
-      #     fi
 
       # Deploy report to gh-pages
       - name: Deploy report
