@@ -209,9 +209,9 @@ register_exceptions = {
             password=generate_password(),
         ),
         "response": {
-            "status": 401,
-            "error": "INVALID_CREDENTIALS",
-            "message": "Invalid Credentials",
+            "status": 409,
+            "error": "EMAIL_ALREADY_EXISTS",
+            "message": "Email is already in use",
         },
     },
     "Incorrect request method": {

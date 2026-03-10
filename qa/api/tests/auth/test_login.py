@@ -49,7 +49,9 @@ class TestLogin:
 
         # set_report_parameters(test_data)
         with allure.step("Send login request"):
-            response = self.client.login(test_data["request"])
+            response = self.client.login(
+                request=test_data["request"], method=test_data.get("method", None)
+            )
 
         assert response.status_code == test_data["response"]["status"]
         assert_error_response(

@@ -49,7 +49,9 @@ class TestRegister:
 
         set_report_parameters(test_data["request"])
         with allure.step("Send register request"):
-            response = self.client.register(test_data["request"])
+            response = self.client.register(
+                request=test_data["request"], method=test_data.get("method", None)
+            )
 
         assert response.status_code == test_data["response"]["status"]
         assert_error_response(
