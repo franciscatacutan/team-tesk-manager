@@ -23,7 +23,7 @@ login_exceptions = {
         "request": {"password": generate_password()},
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "email: required field",
         },
     },
@@ -31,31 +31,31 @@ login_exceptions = {
         "request": {"email": None, "password": generate_password()},
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "email: must not be blank",
         },
     },
     "Email is not a string": {
-        "request": {"email": None, "password": generate_password()},
+        "request": {"email": 1, "password": generate_password()},
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "email: must be a string",
         },
     },
     "Email is not a valid email": {
         "request": LoginRequest(email="invalidemail", password=generate_password()),
         "response": {
-            "status": 422,
+            "status": 400,
             "error": "VALIDATION_ERROR",
-            "message": "email: value is not a valid email address",
+            "message": "email: must be a well-formed email address",
         },
     },
     "Missing password": {
         "request": {"email": generate_email()},
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "password: required field",
         },
     },
@@ -63,22 +63,22 @@ login_exceptions = {
         "request": {"email": generate_email(), "password": None},
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "password: must not be blank",
         },
     },
     "Password is not a string": {
-        "request": {"email": generate_email(), "password": None},
+        "request": {"email": generate_email(), "password": 2},
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "password: must be a string",
         },
     },
     "Password is less than minimum length": {
         "request": LoginRequest(email=generate_email(), password="Short1!"),
         "response": {
-            "status": 422,
+            "status": 400,
             "error": "VALIDATION_ERROR",
             "message": "password: Password should be at least 8 characters",
         },
@@ -88,7 +88,7 @@ login_exceptions = {
             email=generate_email(), password="notastrongpassword"
         ),
         "response": {
-            "status": 422,
+            "status": 400,
             "error": "VALIDATION_ERROR",
             "message": "password: Password must contain upper, lower, digit, and special character",
         },

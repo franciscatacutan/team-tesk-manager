@@ -46,7 +46,7 @@ register_exceptions = {
         },
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "firstName: required field",
         },
     },
@@ -59,7 +59,7 @@ register_exceptions = {
         },
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "firstName: must not be blank",
         },
     },
@@ -72,7 +72,7 @@ register_exceptions = {
         },
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "firstName: must be a string",
         },
     },
@@ -84,7 +84,7 @@ register_exceptions = {
         },
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "lastName: required field",
         },
     },
@@ -97,7 +97,7 @@ register_exceptions = {
         },
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "lastName: must not be blank",
         },
     },
@@ -110,31 +110,45 @@ register_exceptions = {
         },
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "lastName: must be a string",
         },
     },
     "Missing email": {
-        "request": {"password": generate_password()},
+        "request": {
+            "firstName": "Test",
+            "lastName": "User",
+            "password": generate_password(),
+        },
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "email: required field",
         },
     },
     "Email is null": {
-        "request": {"email": None, "password": generate_password()},
+        "request": {
+            "firstName": "Test",
+            "lastName": "User",
+            "email": None,
+            "password": generate_password(),
+        },
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "email: must not be blank",
         },
     },
     "Email is not a string": {
-        "request": {"email": None, "password": generate_password()},
+        "request": {
+            "firstName": "Test",
+            "lastName": "User",
+            "email": 2,
+            "password": generate_password(),
+        },
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "email: must be a string",
         },
     },
@@ -146,32 +160,42 @@ register_exceptions = {
             password=generate_password(),
         ),
         "response": {
-            "status": 422,
+            "status": 400,
             "error": "VALIDATION_ERROR",
-            "message": "email: value is not a valid email address",
+            "message": "email: must be a well-formed email address",
         },
     },
     "Missing password": {
-        "request": {"email": generate_email()},
+        "request": {"firstName": "Test", "lastName": "User", "email": generate_email()},
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "password: required field",
         },
     },
     "Password is null": {
-        "request": {"email": generate_email(), "password": None},
+        "request": {
+            "firstName": "Test",
+            "lastName": "User",
+            "email": generate_email(),
+            "password": None,
+        },
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "password: must not be blank",
         },
     },
     "Password is not a string": {
-        "request": {"email": generate_email(), "password": None},
+        "request": {
+            "firstName": "Test",
+            "lastName": "User",
+            "email": generate_email(),
+            "password": 3,
+        },
         "response": {
             "status": 400,
-            "error": "INVALID_REQUEST",
+            "error": "VALIDATION_ERROR",
             "message": "password: must be a string",
         },
     },
@@ -180,10 +204,10 @@ register_exceptions = {
             firstName="Test",
             lastName="User",
             email=generate_email(),
-            password="Short1!",
+            password="Short1@",
         ),
         "response": {
-            "status": 422,
+            "status": 400,
             "error": "VALIDATION_ERROR",
             "message": "password: Password should be at least 8 characters",
         },
@@ -196,7 +220,7 @@ register_exceptions = {
             password="notastrongpassword",
         ),
         "response": {
-            "status": 422,
+            "status": 400,
             "error": "VALIDATION_ERROR",
             "message": "password: Password must contain upper, lower, digit, and special character",
         },
