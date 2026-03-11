@@ -2,7 +2,7 @@ import pytest
 import allure
 from qa.api.test_data.login_params import login, login_exceptions
 from qa.api.models.auth_models import LoginErrorResponse, LoginRequest
-from qa.utils.test_helpers import assert_error_response
+from qa.utils.test_helpers import assert_error_response, set_report_parameters
 from qa.config.settings import ERROR_TAG, SUCCESS_TAG
 from qa.config.settings import BASE_API_URL
 from qa.api.clients.auth_client import AuthClient
@@ -27,7 +27,7 @@ class TestLogin:
                 email=registered_user["email"], password=registered_user["password"]
             )
 
-        # set_report_parameters(test_data)
+        set_report_parameters(test_data["request"])
         with allure.step("Send login request"):
             response = self.client.login(test_data["request"])
 
@@ -47,7 +47,7 @@ class TestLogin:
                 email=registered_user["email"], password=registered_user["password"]
             )
 
-        # set_report_parameters(test_data)
+        set_report_parameters(test_data["request"])
         with allure.step("Send login request"):
             response = self.client.login(
                 request=test_data["request"], method=test_data.get("method", None)

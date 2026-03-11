@@ -1,6 +1,6 @@
 from qa.api.clients.base_client import BaseClient
 from qa.api.models.auth_models import LoginRequest
-from qa.utils.test_helpers import attach_api_data
+from qa.utils.test_helpers import attach_api_data, set_report_parameters
 from qa.config.settings import ENDPOINTS
 
 
@@ -11,6 +11,7 @@ class AuthClient(BaseClient):
             request = request.model_dump()
 
         if method:
+            set_report_parameters({"method": method})
             response = self.send_request(
                 method=method, endpoint=ENDPOINTS["register"], json=request
             )
@@ -27,6 +28,7 @@ class AuthClient(BaseClient):
             request = request.model_dump()
 
         if method:
+            set_report_parameters({"method": method})
             response = self.send_request(
                 method=method, endpoint=ENDPOINTS["login"], json=request
             )
