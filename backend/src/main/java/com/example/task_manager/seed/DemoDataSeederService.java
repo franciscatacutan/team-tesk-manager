@@ -30,8 +30,9 @@ import com.example.task_manager.task.dto.UpdateTaskDetailsRequest;
 import com.example.task_manager.task.entity.TaskPriority;
 import com.example.task_manager.task.entity.TaskStatus;
 import com.example.task_manager.team.TeamService;
-import com.example.task_manager.team.dto.AddTeamMemberRequest;
+import com.example.task_manager.team.dto.AddTeamMembersRequest;
 import com.example.task_manager.team.dto.CreateTeamRequest;
+import com.example.task_manager.team.dto.TeamMemberRequest;
 import com.example.task_manager.team.dto.TeamResponse;
 import com.example.task_manager.team.entity.TeamRole;
 import com.example.task_manager.user.UserRepository;
@@ -126,25 +127,31 @@ public class DemoDataSeederService {
       TeamResponse team = teams.get(index);
       List<UserEntity> members = new ArrayList<>();
       members.add(requester);
+      List<TeamMemberRequest> requests = new ArrayList<>();
 
       int memberTarget = Math.min(seededUsers.size(), 3 + (index % 3));
 
       for (int offset = 0; offset < memberTarget; offset++) {
         UserEntity candidate = seededUsers.get((index + offset) % seededUsers.size());
-        if (members.stream().anyMatch(member -> member.getId().equals(candidate.getId()))) {
-          continue;
-        }
+        boolean alreadyAdded = members.stream()
+            .anyMatch(member -> member.getId().equals(candidate.getId()));
 
-        TeamRole role = offset == 0 && index % 2 == 0
+        if (alreadyAdded)
+          continue;
+
+        TeamRole role = (offset == 0 && index % 2 == 0)
             ? TeamRole.ADMIN
             : TeamRole.MEMBER;
 
-        teamService.addMember(
-            team.id(),
-            new AddTeamMemberRequest(candidate.getId(), role),
-            requesterEmail);
-
+        requests.add(new TeamMemberRequest(candidate.getId(), role));
         members.add(candidate);
+      }
+
+      if (!requests.isEmpty()) {
+        teamService.addMembers(
+            team.id(),
+            new AddTeamMembersRequest(requests),
+            requesterEmail);
       }
 
       teamMembers.put(team.id(), members);

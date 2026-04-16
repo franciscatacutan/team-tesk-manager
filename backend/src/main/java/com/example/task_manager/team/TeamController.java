@@ -18,7 +18,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.task_manager.common.PageResponse;
-import com.example.task_manager.team.dto.AddTeamMemberRequest;
+import com.example.task_manager.team.dto.AddTeamMembersRequest;
+import com.example.task_manager.team.dto.AddTeamMembersResponse;
 import com.example.task_manager.team.dto.ChangeTeamRoleRequest;
 import com.example.task_manager.team.dto.CreateTeamRequest;
 import com.example.task_manager.team.dto.TeamActivityResponse;
@@ -79,12 +80,12 @@ public class TeamController {
    * Add members in a team.
    */
   @PostMapping("/{teamId}/members")
-  public ResponseEntity<TeamMemberResponse> addMember(
+  public ResponseEntity<AddTeamMembersResponse> addMembers(
       @PathVariable UUID teamId,
-      @Valid @RequestBody AddTeamMemberRequest request,
+      @Valid @RequestBody AddTeamMembersRequest request,
       Authentication authentication) {
     return ResponseEntity.status(HttpStatus.CREATED)
-        .body(teamService.addMember(teamId, request, authentication.getName()));
+        .body(teamService.addMembers(teamId, request, authentication.getName()));
   }
 
   /**

@@ -31,10 +31,13 @@ import com.example.task_manager.project.ProjectRepository;
 import com.example.task_manager.project.entity.ProjectEntity;
 import com.example.task_manager.task.TaskRepository;
 import com.example.task_manager.task.entity.TaskEntity;
-import com.example.task_manager.team.dto.AddTeamMemberRequest;
+import com.example.task_manager.team.dto.AddTeamMembersRequest;
+import com.example.task_manager.team.dto.AddTeamMembersResponse;
 import com.example.task_manager.team.dto.CreateTeamRequest;
+import com.example.task_manager.team.dto.FailedMember;
 import com.example.task_manager.team.dto.TeamActivityResponse;
 import com.example.task_manager.team.dto.TeamMeResponse;
+import com.example.task_manager.team.dto.TeamMemberRequest;
 import com.example.task_manager.team.dto.TeamMemberResponse;
 import com.example.task_manager.team.dto.TeamMemberSearchRequest;
 import com.example.task_manager.team.dto.TeamResponse;
@@ -237,60 +240,53 @@ public class TeamService {
   }
 
   /**
-   * Adds new member in a team
+   * Adds members in a team
    * New member must be unique for the team
    */
   @Transactional
-  public TeamMemberResponse addMember(
+  public AddTeamMembersResponse addMembers(
       UUID teamId,
-      AddTeamMemberRequest request,
+      AddTeamMembersRequest request,
       String requesterEmail) {
 
     UserEntity requester = getUserByEmail(requesterEmail);
-
     TeamEntity team = getActiveTeam(teamId);
 
     validateCanManageTeam(teamId, requester.getId());
 
-    UserEntity userToAdd = getUserById(request.userId());
+    List<TeamMemberResponse> success = new ArrayList<>();
+    List<FailedMember> failed = new ArrayList<>();
 
-    TeamRole role = request.role() == null
-        ? TeamRole.MEMBER
-        : request.role();
+    for (TeamMemberRequest user : request.members()) {
 
-    if (role == TeamRole.OWNER) {
-      throw new ConflictException("Cannot assign OWNER role");
+      try {
+        TeamMemberEntity member = createMember(team, user);
+
+        teamMemberRepository.flush();
+
+        success.add(mapToMemberResponse(member));
+
+        activityEventService.recordTeamEvent(
+            team,
+            requester,
+            ActivityEventType.TEAM_MEMBER_ADDED,
+            buildTeamActivityDetails(
+                List.of("member", "role"),
+                null,
+                member.getRole().name(),
+                member.getUser().getFullName(),
+                List.of(
+                    activityEventService.change("member", "member", null,
+                        member.getUser().getFullName()),
+                    activityEventService.change("role", "role", null, member.getRole())),
+                member.getUser()),
+            null);
+      } catch (ConflictException ex) {
+        failed.add(new FailedMember(user.userId(), ex.getMessage()));
+      }
     }
 
-    TeamMemberEntity newMember = new TeamMemberEntity();
-    newMember.setTeam(team);
-    newMember.setUser(userToAdd);
-    newMember.setRole(role);
-
-    // Flush immediately so unique-constraint violations are caught here
-    // and mapped to a domain conflict.
-    try {
-      teamMemberRepository.saveAndFlush(newMember);
-    } catch (DataIntegrityViolationException ex) {
-      throw new ConflictException("User already in team");
-    }
-
-    activityEventService.recordTeamEvent(
-        team,
-        requester,
-        ActivityEventType.TEAM_MEMBER_ADDED,
-        buildTeamActivityDetails(
-            List.of("member", "role"),
-            null,
-            role.name(),
-            userToAdd.getFullName(),
-            List.of(
-                activityEventService.change("member", "member", null, userToAdd.getFullName()),
-                activityEventService.change("role", "role", null, role)),
-            userToAdd),
-        null);
-
-    return mapToMemberResponse(newMember);
+    return new AddTeamMembersResponse(success, failed);
   }
 
   /**
@@ -803,6 +799,35 @@ public class TeamService {
     if (!team) {
       new ResourceNotFoundException("Team not found");
     }
+  }
+
+  /**
+   * Add user in a team
+   */
+  private TeamMemberEntity createMember(
+      TeamEntity team,
+      TeamMemberRequest request) {
+
+    UserEntity user = getUserById(request.userId());
+
+    if (teamMemberRepository.existsByTeamIdAndUserId(team.getId(), request.userId())) {
+      throw new ConflictException("User is already a member of the team");
+    }
+
+    TeamRole role = request.role() == null
+        ? TeamRole.MEMBER
+        : request.role();
+
+    if (role == TeamRole.OWNER) {
+      throw new ConflictException("Cannot assign OWNER role");
+    }
+
+    TeamMemberEntity member = new TeamMemberEntity();
+    member.setTeam(team);
+    member.setUser(user);
+    member.setRole(role);
+
+    return teamMemberRepository.save(member);
   }
 
   /**
