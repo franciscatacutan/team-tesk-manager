@@ -35,6 +35,8 @@ import com.example.task_manager.team.dto.AddTeamMembersRequest;
 import com.example.task_manager.team.dto.AddTeamMembersResponse;
 import com.example.task_manager.team.dto.CreateTeamRequest;
 import com.example.task_manager.team.dto.FailedMember;
+import com.example.task_manager.team.dto.RemoveTeamMembersRequest;
+import com.example.task_manager.team.dto.RemoveTeamMembersResponse;
 import com.example.task_manager.team.dto.TeamActivityResponse;
 import com.example.task_manager.team.dto.TeamMeResponse;
 import com.example.task_manager.team.dto.TeamMemberRequest;
@@ -281,7 +283,7 @@ public class TeamService {
                     activityEventService.change("role", "role", null, member.getRole())),
                 member.getUser()),
             null);
-      } catch (ConflictException ex) {
+      } catch (Exception ex) {
         failed.add(new FailedMember(user.userId(), ex.getMessage()));
       }
     }
@@ -295,43 +297,62 @@ public class TeamService {
    * Only Owner can remove an Admin and can't remove themselves
    */
   @Transactional
-  public void removeMember(
+  public RemoveTeamMembersResponse removeMembers(
       UUID teamId,
-      UUID memberUserId,
+      RemoveTeamMembersRequest request,
       String requesterEmail) {
 
     UserEntity requester = getUserByEmail(requesterEmail);
-
     TeamMemberEntity requesterMembership = getMembership(teamId, requester.getId());
 
-    TeamMemberEntity memberToRemove = getMembership(teamId, memberUserId);
-    TeamEntity team = memberToRemove.getTeam();
+    List<UUID> success = new ArrayList<>();
+    List<FailedMember> failed = new ArrayList<>();
 
-    if (memberToRemove.getRole() == TeamRole.OWNER) {
-      throw new ForbiddenException("Transfer ownership before removing OWNER");
+    for (UUID userId : request.userIds()) {
+
+      try {
+        TeamMemberEntity memberToRemove = getMembership(teamId, userId);
+        TeamEntity team = memberToRemove.getTeam();
+
+        if (memberToRemove.getRole() == TeamRole.OWNER) {
+          throw new IllegalStateException("Transfer ownership before removing OWNER");
+        }
+
+        if (requesterMembership.getRole() == TeamRole.ADMIN &&
+            memberToRemove.getRole() != TeamRole.MEMBER) {
+          throw new IllegalStateException("ADMIN can only remove MEMBER");
+        }
+
+        if (!teamMemberRepository.existsByTeamIdAndUserId(teamId, userId)) {
+          throw new ResourceNotFoundException("User is not a member");
+        }
+        teamMemberRepository.delete(memberToRemove);
+
+        teamMemberRepository.flush();
+
+        activityEventService.recordTeamEvent(
+            team,
+            requester,
+            ActivityEventType.TEAM_MEMBER_REMOVED,
+            buildTeamActivityDetails(
+                List.of("member", "role"),
+                memberToRemove.getRole().name(),
+                null,
+                memberToRemove.getUser().getFullName(),
+                List.of(
+                    activityEventService.change("member", "member", memberToRemove.getUser().getFullName(), null),
+                    activityEventService.change("role", "role", memberToRemove.getRole(), null)),
+                memberToRemove.getUser()),
+            null);
+
+        success.add(userId);
+
+      } catch (Exception ex) {
+        failed.add(new FailedMember(userId, ex.getMessage()));
+      }
     }
 
-    if (requesterMembership.getRole() == TeamRole.ADMIN &&
-        memberToRemove.getRole() != TeamRole.MEMBER) {
-      throw new ForbiddenException("ADMIN can only remove MEMBER");
-    }
-
-    activityEventService.recordTeamEvent(
-        team,
-        requester,
-        ActivityEventType.TEAM_MEMBER_REMOVED,
-        buildTeamActivityDetails(
-            List.of("member", "role"),
-            memberToRemove.getRole().name(),
-            null,
-            memberToRemove.getUser().getFullName(),
-            List.of(
-                activityEventService.change("member", "member", memberToRemove.getUser().getFullName(), null),
-                activityEventService.change("role", "role", memberToRemove.getRole(), null)),
-            memberToRemove.getUser()),
-        null);
-
-    teamMemberRepository.delete(memberToRemove);
+    return new RemoveTeamMembersResponse(success, failed);
   }
 
   /**

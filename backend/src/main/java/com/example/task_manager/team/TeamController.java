@@ -22,6 +22,8 @@ import com.example.task_manager.team.dto.AddTeamMembersRequest;
 import com.example.task_manager.team.dto.AddTeamMembersResponse;
 import com.example.task_manager.team.dto.ChangeTeamRoleRequest;
 import com.example.task_manager.team.dto.CreateTeamRequest;
+import com.example.task_manager.team.dto.RemoveTeamMembersRequest;
+import com.example.task_manager.team.dto.RemoveTeamMembersResponse;
 import com.example.task_manager.team.dto.TeamActivityResponse;
 import com.example.task_manager.team.dto.TeamMeResponse;
 import com.example.task_manager.team.dto.TeamMemberResponse;
@@ -91,13 +93,12 @@ public class TeamController {
   /**
    * Remove a member of a team.
    */
-  @DeleteMapping("/{teamId}/members/{userId}")
-  public ResponseEntity<Void> removeMember(
+  @DeleteMapping("/{teamId}/members")
+  public ResponseEntity<RemoveTeamMembersResponse> removeMember(
       @PathVariable UUID teamId,
-      @PathVariable UUID userId,
+      @Valid @RequestBody RemoveTeamMembersRequest request,
       Authentication authentication) {
-    teamService.removeMember(teamId, userId, authentication.getName());
-    return ResponseEntity.noContent().build();
+    return ResponseEntity.ok(teamService.removeMembers(teamId, request, authentication.getName()));
   }
 
   /**
