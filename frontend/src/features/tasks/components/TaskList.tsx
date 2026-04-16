@@ -13,9 +13,10 @@ import { formatDate } from "../../../common/utils/dateFormatter";
 import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
 import { TaskStatusLabel, TaskStatusStyles } from "../utils/taskStatus";
 import PriorityBadge from "../../../common/components/PriorityBadge";
-import Pagination, {
+import {
+  Pagination,
   type PaginationProps,
-} from "../../../common/components/Pagination";
+} from "../../../common/components/pagination/Pagination";
 
 interface Props {
   tasks: Task[];
@@ -198,8 +199,14 @@ export default function TaskList({
       {pagination.totalPages > 1 && (
         <Pagination
           page={pagination.page}
+          size={pagination.size}
           totalPages={pagination.totalPages}
+          totalElements={pagination.totalElements}
           onPageChange={pagination.onPageChange}
+          onSizeChange={(size) => {
+            pagination.onPageChange(0);
+            pagination.onSizeChange(size);
+          }}
         />
       )}
     </div>

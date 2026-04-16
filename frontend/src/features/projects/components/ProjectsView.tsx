@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useState } from "react";
 import { useDebounce } from "../../../common/hooks/useDebounce";
-import Pagination from "../../../common/components/Pagination";
+// import Pagination from "../../../common/components/pagination/PaginationControls";
 import { useProjects } from "../hooks/useProjects";
 import { CreateProjectModal } from "./CreateProjectModal";
 import ProjectCard from "./ProjectCard";
@@ -11,6 +11,7 @@ import type { DeletedFilter } from "../../../common/types/deletedFilter.types";
 import { useTeamMe } from "../../teams/hooks/useTeamMe";
 import { getProjectPermissions } from "../utils/projectPermissions";
 import { getUserFromToken } from "../../users/api/userApi";
+import { Pagination } from "../../../common/components/pagination/Pagination";
 
 export default function ProjectsPage() {
   const { teamId } = useParams<{
@@ -20,6 +21,7 @@ export default function ProjectsPage() {
   const navigate = useNavigate();
 
   const [page, setPage] = useState(0);
+  const [size, setSize] = useState(12);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [sort, setSort] = useState("createdAt,desc");
@@ -29,7 +31,7 @@ export default function ProjectsPage() {
 
   const { data, isLoading } = useProjects(teamId || "", {
     page,
-    size: 12,
+    size,
     search: debouncedSearch,
     status,
     sort,
@@ -37,6 +39,8 @@ export default function ProjectsPage() {
   });
 
   const projects = data?.content ?? [];
+  const totalPages = data?.totalPages ?? 0;
+  const totalElements = data?.totalElements ?? 0;
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
@@ -115,8 +119,8 @@ export default function ProjectsPage() {
           </p>
         </div>
       ) : (
-        <>
-          <div className="flex flex-col h-full min-h-0 overflow-y-auto p-1">
+        <div className="flex flex-col h-full min-h-0">
+          <div className="flex-1 overflow-y-auto p-1">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {projects.map((project) => (
                 <ProjectCard
@@ -128,14 +132,21 @@ export default function ProjectsPage() {
             </div>
           </div>
 
-          {(data?.totalPages ?? 0) > 1 && (
+          {totalPages > 1 && (
             <Pagination
               page={page}
-              totalPages={data?.totalPages ?? 0}
+              size={size}
+              totalPages={totalPages}
+              totalElements={totalElements}
               onPageChange={setPage}
+              onSizeChange={(size) => {
+                setPage(0);
+                setSize(size);
+              }}
+              options={[12, 24, 36]}
             />
           )}
-        </>
+        </div>
       )}
     </div>
   );

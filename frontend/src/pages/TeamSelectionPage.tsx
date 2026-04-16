@@ -16,12 +16,12 @@ import {
   SelectValue,
 } from "../components/ui/select";
 
-import Pagination from "../common/components/Pagination";
 import { CreateTeamModal } from "../features/teams/components/CreateTeamModal";
 import type { DeletedFilter } from "../common/types/deletedFilter.types";
 import TeamCard from "../features/teams/components/TeamCard";
 import { getTeamPermissions } from "../features/teams/utils/teamPermissions";
 import { getUserFromToken } from "../features/users/api/userApi";
+import { Pagination } from "../common/components/pagination/Pagination";
 
 export default function TeamSelectionPage() {
   const navigate = useNavigate();
@@ -29,6 +29,7 @@ export default function TeamSelectionPage() {
   const [open, setOpen] = useState(false);
 
   const [page, setPage] = useState(0);
+  const [size, setSize] = useState(12);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("createdAt,desc");
   const [deletedFilter, setDeletedFilter] = useState<DeletedFilter>("ACTIVE");
@@ -37,7 +38,7 @@ export default function TeamSelectionPage() {
 
   const { data, isLoading } = useTeams({
     page,
-    size: 12,
+    size,
     search: debouncedSearch,
     sort,
     deletedFilter,
@@ -159,7 +160,9 @@ export default function TeamSelectionPage() {
                   <SelectContent>
                     <SelectItem value="createdAt,desc">Newest</SelectItem>
                     <SelectItem value="createdAt,asc">Oldest</SelectItem>
-                    <SelectItem value="lastActivityAt,desc">Last Activity</SelectItem>
+                    <SelectItem value="lastActivityAt,desc">
+                      Last Activity
+                    </SelectItem>
                     <SelectItem value="name,asc">Name (A-Z)</SelectItem>
                     <SelectItem value="name,desc">Name (Z-A)</SelectItem>
                   </SelectContent>
@@ -179,8 +182,8 @@ export default function TeamSelectionPage() {
             ))}
           </div>
         ) : teams.length > 0 ? (
-          <>
-            <div className="flex flex-col h-full min-h-0 overflow-y-auto p-1">
+          <div className="flex flex-col h-full min-h-0">
+            <div className="flex-1 overflow-y-auto p-1">
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {teams.map((team) => (
                   <TeamCard
@@ -195,11 +198,18 @@ export default function TeamSelectionPage() {
             {totalPages > 1 && (
               <Pagination
                 page={page}
+                size={size}
                 totalPages={totalPages}
+                totalElements={totalElements}
                 onPageChange={setPage}
+                onSizeChange={(size) => {
+                  setPage(0);
+                  setSize(size);
+                }}
+                options={[12, 24, 36]}
               />
             )}
-          </>
+          </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-border/70 bg-background/75 px-6 py-16 text-center">
             <h2 className="text-lg font-semibold text-foreground">

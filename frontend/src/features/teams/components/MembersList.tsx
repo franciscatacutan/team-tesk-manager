@@ -1,8 +1,6 @@
 import { useMemo, useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 
-import type { PaginationProps } from "../../../common/components/Pagination";
-import Pagination from "../../../common/components/Pagination";
 import { formatDate } from "../../../common/utils/dateFormatter";
 
 import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
@@ -45,6 +43,10 @@ import TransferOwnershipModal from "./TransferOwnershipModal";
 import type { TeamPermissions } from "../../teams/utils/teamPermissions";
 import { useTeamMe } from "../../teams/hooks/useTeamMe";
 import type { TeamMember, TeamRole } from "../types/team.type";
+import {
+  Pagination,
+  type PaginationProps,
+} from "../../../common/components/pagination/Pagination";
 
 interface Props {
   permissions: TeamPermissions;
@@ -334,8 +336,14 @@ export default function MembersList({
       {pagination.totalPages > 1 && (
         <Pagination
           page={pagination.page}
+          size={pagination.size}
           totalPages={pagination.totalPages}
+          totalElements={pagination.totalElements}
           onPageChange={pagination.onPageChange}
+          onSizeChange={(size) => {
+            pagination.onPageChange(0);
+            pagination.onSizeChange(size);
+          }}
         />
       )}
 

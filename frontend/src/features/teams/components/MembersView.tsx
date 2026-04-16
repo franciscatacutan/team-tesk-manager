@@ -20,6 +20,7 @@ export default function MembersPage() {
   const [transferOpen, setTransferOpen] = useState(false);
 
   const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
   const [search, setSearch] = useState("");
   const [role, setRole] = useState<string>("ALL");
   const [sort, setSort] = useState("joinedAt,desc");
@@ -39,6 +40,7 @@ export default function MembersPage() {
 
   const members = membersData?.content ?? [];
   const totalPages = membersData?.totalPages ?? 0;
+  const totalElements = membersData?.totalElements ?? 0;
 
   const { data: availableUsersData } = useAvailableUsers(teamId || "", {
     search: debouncedSearch,
@@ -80,8 +82,14 @@ export default function MembersPage() {
         role={role}
         pagination={{
           page,
+          size,
           totalPages,
+          totalElements,
           onPageChange: setPage,
+          onSizeChange: (size) => {
+            setPage(0);
+            setSize(size);
+          },
         }}
         sort={sort}
         onSortChange={setSort}

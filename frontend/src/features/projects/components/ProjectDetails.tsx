@@ -40,6 +40,7 @@ export default function ProjectDetails() {
   const [createOpen, setCreateOpen] = useState(false);
 
   const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [sort, setSort] = useState("createdAt,desc");
@@ -60,7 +61,7 @@ export default function ProjectDetails() {
 
   const { data: tasksData } = useTasks(teamId || "", projectId || "", {
     page,
-    size: 10,
+    size,
     search: debouncedSearch,
     status,
     sort,
@@ -69,6 +70,7 @@ export default function ProjectDetails() {
 
   const tasks = tasksData?.content ?? [];
   const totalPages = tasksData?.totalPages ?? 0;
+  const totalElements = tasksData?.totalElements ?? 0;
 
   const updateStatus = useUpdateTaskStatus(teamId || "", projectId || "");
 
@@ -125,15 +127,7 @@ export default function ProjectDetails() {
         <TabsList className="inline-flex gap-1 rounded-xl border border-border/60 bg-background/70 p-1 shadow-sm">
           <TabsTrigger
             value="list"
-            className="
-      flex items-center gap-2 px-3 py-1.5 text-sm rounded-md
-      data-[state=active]:bg-background
-      data-[state=active]:shadow-sm
-      data-[state=active]:text-foreground
-      text-muted-foreground
-      hover:bg-muted
-      transition-all
-    "
+            className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
           >
             <LayoutList className="h-4 w-4" />
             List
@@ -141,15 +135,7 @@ export default function ProjectDetails() {
 
           <TabsTrigger
             value="board"
-            className="
-      flex items-center gap-2 px-3 py-1.5 text-sm rounded-md
-      data-[state=active]:bg-background
-      data-[state=active]:shadow-sm
-      data-[state=active]:text-foreground
-      text-muted-foreground
-      hover:bg-muted
-      transition-all
-    "
+            className=" flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
           >
             <Kanban className="h-4 w-4" />
             Board
@@ -157,15 +143,7 @@ export default function ProjectDetails() {
 
           <TabsTrigger
             value="activity"
-            className="
-      flex items-center gap-2 px-3 py-1.5 text-sm rounded-md
-      data-[state=active]:bg-background
-      data-[state=active]:shadow-sm
-      data-[state=active]:text-foreground
-      text-muted-foreground
-      hover:bg-muted
-      transition-all
-    "
+            className=" flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
           >
             <ListCheck className="h-4 w-4" />
             Activity
@@ -214,8 +192,14 @@ export default function ProjectDetails() {
               projectId={projectId}
               pagination={{
                 page,
+                size,
                 totalPages,
+                totalElements,
                 onPageChange: setPage,
+                onSizeChange: (size) => {
+                  setPage(0);
+                  setSize(size);
+                },
               }}
               sort={sort}
               onSortChange={setSort}
