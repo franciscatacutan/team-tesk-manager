@@ -20,10 +20,17 @@ import {
   TEAM_ROLE_LABEL,
   TEAM_ROLE_STYLES,
 } from "../../../common/constants/team.constants";
+import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
 
 const schema = z.object({
-  userIds: z.array(z.string()).min(1, "Select at least one user."),
-  role: z.enum(["ADMIN", "MEMBER"]),
+  members: z
+    .array(
+      z.object({
+        userId: z.string(),
+        role: z.enum(["ADMIN", "MEMBER"]),
+      }),
+    )
+    .min(1, "Select at least one user."),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -39,39 +46,76 @@ export function AddMemberForm({ teamId, users, onOpenChange }: Props) {
     resolver: zodResolver(schema),
     mode: "onChange",
     defaultValues: {
-      userIds: [],
-      role: "MEMBER",
+      members: [],
     },
   });
 
-  const role = useWatch({
+  const selectedMembers = useWatch({
     control: form.control,
-    name: "role",
+    name: "members",
   });
-  const selectedUserIds = useWatch({
-    control: form.control,
-    name: "userIds",
-  });
-  const selectedCount = selectedUserIds.length;
+  const selectedCount = selectedMembers.length;
 
   const addMember = useAddMembers(teamId);
 
   const onSubmit = (data: FormValues) => {
-    addMember.mutate(
-      {
-        members: data.userIds.map((userId) => ({
-          userId,
-          role: data.role,
-        })),
+    addMember.mutate(data, {
+      onSuccess: () => {
+        form.reset();
+        onOpenChange(false);
       },
+    });
+  };
+
+  function handleSelectedUsersChange(userIds: string[]) {
+    const currentMembers = form.getValues("members");
+    const membersByUserId = new Map(
+      currentMembers.map((member) => [member.userId, member]),
+    );
+
+    form.setValue(
+      "members",
+      userIds.map(
+        (userId) => membersByUserId.get(userId) ?? { userId, role: "MEMBER" },
+      ),
       {
-        onSuccess: () => {
-          form.reset();
-          onOpenChange(false);
-        },
+        shouldDirty: true,
+        shouldValidate: true,
       },
     );
-  };
+  }
+
+  function handleRoleChange(userId: string, role: "ADMIN" | "MEMBER") {
+    form.setValue(
+      "members",
+      selectedMembers.map((member) =>
+        member.userId === userId ? { ...member, role } : member,
+      ),
+      {
+        shouldDirty: true,
+        shouldValidate: true,
+      },
+    );
+  }
+
+  const selectedUserIds = selectedMembers.map((member) => member.userId);
+  const selectedUsers = selectedMembers
+    .map((member) => {
+      const user = users.find((candidate) => candidate.id === member.userId);
+
+      if (!user) return null;
+
+      return {
+        ...member,
+        user,
+      };
+    })
+    .filter(
+      (
+        entry,
+      ): entry is { userId: string; role: "ADMIN" | "MEMBER"; user: User } =>
+        !!entry,
+    );
 
   return (
     <form
@@ -85,67 +129,108 @@ export function AddMemberForm({ teamId, users, onOpenChange }: Props) {
 
         <Controller
           control={form.control}
-          name="userIds"
-          render={({ field }) => (
+          name="members"
+          render={() => (
             <MultiUserSelector
               users={users}
-              value={field.value}
+              value={selectedUserIds}
               placeholder="Search and select users..."
-              onChange={field.onChange}
+              onChange={handleSelectedUsersChange}
             />
           )}
         />
 
-        {form.formState.errors.userIds && (
+        {form.formState.errors.members && (
           <p className="text-xs text-destructive">
-            {form.formState.errors.userIds.message}
+            {form.formState.errors.members.message}
           </p>
         )}
       </div>
 
-      <div className="space-y-2">
-        <label className="text-xs font-medium text-muted-foreground">
-          Role
-        </label>
+      {selectedUsers.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <label className="text-xs font-medium text-muted-foreground">
+              Roles Per User
+            </label>
 
-        <Select
-          value={role}
-          onValueChange={(value) =>
-            form.setValue("role", value as "ADMIN" | "MEMBER")
-          }
-        >
-          <SelectTrigger className="h-10 w-full">
-            <SelectValue />
-          </SelectTrigger>
+            <span className="text-xs text-muted-foreground sm:text-right">
+              New selections default to Member
+            </span>
+          </div>
 
-          <SelectContent>
-            <SelectItem value="MEMBER">
-              <span
-                className={cn(
-                  "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
-                  TEAM_ROLE_STYLES.MEMBER,
-                )}
+          <div className="h-[calc(40vh-2rem)] overflow-y-auto space-y-2 rounded-2xl border border-border/70 bg-muted/20 p-2">
+            {selectedUsers.map(({ userId, role, user }) => (
+              <div
+                key={userId}
+                className="flex flex-col gap-3 rounded-xl border border-border/60 bg-background px-3 py-3 shadow-xs sm:flex-row sm:items-center"
               >
-                {TEAM_ROLE_LABEL.MEMBER}
-              </span>{" "}
-            </SelectItem>
+                <div className="flex flex-1 items-center gap-3">
+                  <Avatar className="h-9 w-9 shrink-0 ring-1 ring-border/50">
+                    <AvatarFallback className="text-[10px]">
+                      {user.lastName?.[0]}
+                      {user.firstName?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
 
-            <SelectItem value="ADMIN">
-              <span
-                className={cn(
-                  "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
-                  TEAM_ROLE_STYLES.ADMIN,
-                )}
-              >
-                {TEAM_ROLE_LABEL.ADMIN}
-              </span>{" "}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium text-foreground">
+                      {user.firstName} {user.lastName}
+                    </div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {user.email}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="sm:w-auto">
+                  <div className="mb-1 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground sm:hidden">
+                    Role
+                  </div>
+
+                  <Select
+                    value={role}
+                    onValueChange={(value) =>
+                      handleRoleChange(userId, value as "ADMIN" | "MEMBER")
+                    }
+                  >
+                    <SelectTrigger className="h-10 rounded-xl border-border/70 bg-background shadow-none sm:w-36">
+                      <SelectValue />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      <SelectItem value="MEMBER">
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+                            TEAM_ROLE_STYLES.MEMBER,
+                          )}
+                        >
+                          {TEAM_ROLE_LABEL.MEMBER}
+                        </span>
+                      </SelectItem>
+
+                      <SelectItem value="ADMIN">
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+                            TEAM_ROLE_STYLES.ADMIN,
+                          )}
+                        >
+                          {TEAM_ROLE_LABEL.ADMIN}
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <Separator />
 
-      <div className="flex justify-end gap-2 pt-4">
+      <div className="flex flex-col-reverse gap-2 pt-4 sm:flex-row sm:justify-end">
         <Button
           type="button"
           variant="ghost"
