@@ -2,7 +2,11 @@ import { apiClient } from "../../../api/apiClients";
 import type { BaseQueryParams } from "../../../common/types/baseQuery.types";
 import type { PageResponse } from "../../../common/types/pageResponse.types";
 import type { User } from "../../users/types/userType";
-import type { AddMemberInput, TeamMember } from "../types/team.type";
+import type {
+  AddMembersInput,
+  RemoveMembersInput,
+  TeamMember,
+} from "../types/team.type";
 
 export const getTeamMembers = async (
   teamId: string,
@@ -22,20 +26,20 @@ export const getAvailableUsers = async (
   return response.data;
 };
 
-export const addMember = async (
+export const addMembers = async (
   teamId: string,
-  data: AddMemberInput,
+  data: AddMembersInput,
 ): Promise<TeamMember> => {
   const res = await apiClient.post(`/teams/${teamId}/members`, data);
 
   return res.data;
 };
 
-export const removeMember = async (
+export const removeMembers = async (
   teamId: string,
-  userId: string,
+  data: RemoveMembersInput,
 ): Promise<void> => {
-  await apiClient.delete(`/teams/${teamId}/members/${userId}`);
+  await apiClient.delete(`/teams/${teamId}/members`, { data });
 };
 
 export const updateMemberRole = async (

@@ -8,10 +8,10 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 
-import UserSelector from "../../../common/components/UserSelector";
+import MultiUserSelector from "../../../common/components/MultiUserSelector";
 import { Separator } from "../../../components/ui/separator";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { useAddMember } from "../hooks/useAddMember";
+import { useAddMembers } from "../hooks/useAddMembers";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { User } from "../../users/types/userType";
@@ -22,7 +22,7 @@ import {
 } from "../../../common/constants/team.constants";
 
 const schema = z.object({
-  userId: z.string(),
+  userIds: z.array(z.string()).min(1, "Select at least one user."),
   role: z.enum(["ADMIN", "MEMBER"]),
 });
 
@@ -39,6 +39,7 @@ export function AddMemberForm({ teamId, users, onOpenChange }: Props) {
     resolver: zodResolver(schema),
     mode: "onChange",
     defaultValues: {
+      userIds: [],
       role: "MEMBER",
     },
   });
@@ -47,20 +48,29 @@ export function AddMemberForm({ teamId, users, onOpenChange }: Props) {
     control: form.control,
     name: "role",
   });
-  const selectedUserId = useWatch({
+  const selectedUserIds = useWatch({
     control: form.control,
-    name: "userId",
+    name: "userIds",
   });
+  const selectedCount = selectedUserIds.length;
 
-  const addMember = useAddMember(teamId);
+  const addMember = useAddMembers(teamId);
 
   const onSubmit = (data: FormValues) => {
-    addMember.mutate(data, {
-      onSuccess: () => {
-        form.reset();
-        onOpenChange(false);
+    addMember.mutate(
+      {
+        members: data.userIds.map((userId) => ({
+          userId,
+          role: data.role,
+        })),
       },
-    });
+      {
+        onSuccess: () => {
+          form.reset();
+          onOpenChange(false);
+        },
+      },
+    );
   };
 
   return (
@@ -70,25 +80,25 @@ export function AddMemberForm({ teamId, users, onOpenChange }: Props) {
     >
       <div className="space-y-2">
         <label className="text-xs font-medium text-muted-foreground">
-          User
+          Users
         </label>
 
         <Controller
           control={form.control}
-          name="userId"
+          name="userIds"
           render={({ field }) => (
-            <UserSelector
+            <MultiUserSelector
               users={users}
               value={field.value}
-              placeholder="Search user..."
-              onChange={(val) => field.onChange(val ?? "")}
+              placeholder="Search and select users..."
+              onChange={field.onChange}
             />
           )}
         />
 
-        {form.formState.errors.userId && (
+        {form.formState.errors.userIds && (
           <p className="text-xs text-destructive">
-            {form.formState.errors.userId.message}
+            {form.formState.errors.userIds.message}
           </p>
         )}
       </div>
@@ -147,10 +157,14 @@ export function AddMemberForm({ teamId, users, onOpenChange }: Props) {
 
         <Button
           type="submit"
-          disabled={!selectedUserId || addMember.isPending}
+          disabled={selectedCount === 0 || addMember.isPending}
           className="h-9 px-4"
         >
-          {addMember.isPending ? "Adding..." : "Add member"}
+          {addMember.isPending
+            ? "Adding..."
+            : selectedCount > 0
+              ? `Add ${selectedCount} member${selectedCount === 1 ? "" : "s"}`
+              : "Add members"}
         </Button>
       </div>
     </form>

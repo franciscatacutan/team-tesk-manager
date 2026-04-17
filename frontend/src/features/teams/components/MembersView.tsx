@@ -7,16 +7,19 @@ import MembersHeader from "./MembersHeader";
 import MembersToolbar from "./MembersToolbar";
 import MembersList from "./MembersList";
 import { useAvailableUsers } from "../hooks/useAvailableUsers";
-import AddMemberModal from "./AddMemberModal";
+import AddMembersModal from "./AddMembersModal";
 import TransferOwnershipModal from "./TransferOwnershipModal";
 import { getTeamPermissions } from "../utils/teamPermissions";
 import { getUserFromToken } from "../../users/api/userApi";
 import { useTeamMe } from "../hooks/useTeamMe";
+import RemoveMultiMembersModal from "./RemoveMultiMemberModal";
 
 export default function MembersPage() {
   const { teamId } = useParams<{ teamId: string }>();
 
-  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [addMembersOpen, setAddMembersOpen] = useState(false);
+  const [removeMembersOpen, setRemoveMembersOpen] = useState(false);
+
   const [transferOpen, setTransferOpen] = useState(false);
 
   const [page, setPage] = useState(0);
@@ -61,7 +64,8 @@ export default function MembersPage() {
   return (
     <section className="flex flex-col h-full min-h-0 gap-6">
       <MembersHeader
-        setAddMemberOpen={() => setAddMemberOpen(true)}
+        setAddMembersOpen={() => setAddMembersOpen(true)}
+        setRemoveMembersOpen={() => setRemoveMembersOpen(true)}
         setTransferOpen={() => setTransferOpen(true)}
         permissions={permissions}
       />
@@ -95,12 +99,20 @@ export default function MembersPage() {
         onSortChange={setSort}
       />
 
-      <AddMemberModal
+      <RemoveMultiMembersModal
+        users={members}
+        teamId={teamId}
+        open={removeMembersOpen}
+        isLoading={false}
+        onOpenChange={setRemoveMembersOpen}
+      />
+
+      <AddMembersModal
         users={availableUsers}
         teamId={teamId}
-        open={addMemberOpen}
+        open={addMembersOpen}
         isLoading={false}
-        onOpenChange={setAddMemberOpen}
+        onOpenChange={setAddMembersOpen}
       />
 
       <TransferOwnershipModal

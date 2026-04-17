@@ -25,7 +25,6 @@ import {
 } from "../../../components/ui/table";
 
 import { useUpdateMemberRole } from "../hooks/useUpdateMemberRole";
-import { useRemoveMember } from "../hooks/useRemoveMember";
 import RemoveMemberModal from "./RemoveMemberModal";
 import {
   Select,
@@ -77,7 +76,6 @@ export default function MembersList({
   const [transferOpen, setTransferOpen] = useState(false);
 
   const updateRole = useUpdateMemberRole(teamId);
-  const removeMember = useRemoveMember(teamId);
 
   const filtered = useMemo(() => {
     return members.filter((m) => {
@@ -129,13 +127,6 @@ export default function MembersList({
   };
 
   const isUpdating = updateRole.isPending;
-
-  const handleRemove = () => {
-    if (!selectedMember) return;
-
-    removeMember.mutate(selectedMember.id);
-    setRemoveOpen(false);
-  };
 
   if (isLoading) {
     return (
@@ -356,11 +347,10 @@ export default function MembersList({
       />
 
       <RemoveMemberModal
+        teamId={teamId}
         open={removeOpen}
         onClose={() => setRemoveOpen(false)}
         member={selectedMember}
-        onConfirm={handleRemove}
-        isLoading={removeMember.isPending}
       />
     </section>
   );

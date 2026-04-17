@@ -24,7 +24,7 @@ import { useTeam } from "../hooks/useTeam";
 import { useTeamActivities } from "../hooks/useTeamActivities";
 import { useTeamMe } from "../hooks/useTeamMe";
 import { useTeamMembers } from "../hooks/useTeamMembers";
-import AddMemberModal from "./AddMemberModal";
+import AddMembersModal from "./AddMembersModal";
 import TeamHeader from "./TeamHeader";
 import TeamOverviewCard from "./TeamOverviewCard";
 import { getTeamPermissions } from "../utils/teamPermissions";
@@ -322,7 +322,7 @@ export default function TeamOverview() {
         onOpenChange={setCreateOpen}
       />
 
-      <AddMemberModal
+      <AddMembersModal
         users={availableUsers}
         teamId={team.id}
         open={addMemberOpen}

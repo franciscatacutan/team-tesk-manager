@@ -7,22 +7,37 @@ import {
 
 import { Button } from "../../../components/ui/button";
 import type { TeamMember } from "../types/team.type";
+import { useRemoveMembers } from "../hooks/useRemoveMembers";
 
 interface Props {
+  teamId: string;
   open: boolean;
   onClose: () => void;
   member: TeamMember | null;
-  onConfirm: () => void;
-  isLoading: boolean;
 }
 
 export default function RemoveMemberModal({
+  teamId,
   open,
   onClose,
   member,
-  onConfirm,
-  isLoading,
 }: Props) {
+  const removeMember = useRemoveMembers(teamId);
+
+  const handleRemove = () => {
+    if (!member?.id) return;
+    removeMember.mutate(
+      {
+        userIds: [member.id],
+      },
+      {
+        onSuccess: () => {
+          onClose();
+        },
+      },
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
@@ -45,10 +60,10 @@ export default function RemoveMemberModal({
 
           <Button
             variant="destructive"
-            onClick={onConfirm}
-            disabled={isLoading}
+            onClick={handleRemove}
+            disabled={removeMember.isPending}
           >
-            {isLoading ? "Removing..." : "Remove"}
+            {removeMember.isPending ? "Removing..." : "Remove"}
           </Button>
         </div>
       </DialogContent>

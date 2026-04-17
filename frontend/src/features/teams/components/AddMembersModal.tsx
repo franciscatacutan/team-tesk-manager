@@ -15,7 +15,7 @@ interface Props {
   users: User[];
 }
 
-export default function AddMemberModal({
+export default function AddMembersModal({
   teamId,
   open,
   isLoading,
@@ -31,7 +31,7 @@ export default function AddMemberModal({
       <DialogContent className="sm p-0 rounded-xl" aria-describedby={undefined}>
         <div className="px-6 pt-6 pb-3 border-b">
           <DialogTitle className="text-base font-semibold">
-            Add member
+            Add members
           </DialogTitle>
 
           <p className="text-sm text-muted-foreground mt-1">

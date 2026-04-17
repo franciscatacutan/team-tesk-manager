@@ -1,16 +1,18 @@
-import { ArrowLeftRight, Plus, Users } from "lucide-react";
+import { ArrowLeftRight, Minus, Plus, Users } from "lucide-react";
 
 import { Button } from "../../../components/ui/button";
 import type { TeamPermissions } from "../../teams/utils/teamPermissions";
 
 interface Props {
-  setAddMemberOpen: () => void;
+  setRemoveMembersOpen: () => void;
+  setAddMembersOpen: () => void;
   setTransferOpen: () => void;
   permissions: TeamPermissions;
 }
 
 export default function MembersHeader({
-  setAddMemberOpen,
+  setRemoveMembersOpen,
+  setAddMembersOpen,
   setTransferOpen,
   permissions,
 }: Props) {
@@ -32,9 +34,15 @@ export default function MembersHeader({
 
         <div className="flex flex-wrap items-center gap-2">
           {permissions.canAddMember && (
-            <Button className="rounded-xl" onClick={setAddMemberOpen}>
+            <Button className="rounded-xl" onClick={setAddMembersOpen}>
               <Plus className="h-4 w-4" />
-              Add member
+              Add members
+            </Button>
+          )}
+          {permissions.canRemoveMember && (
+            <Button className="rounded-xl" onClick={setRemoveMembersOpen}>
+              <Minus className="h-4 w-4" />
+              Remove members
             </Button>
           )}
           {permissions.canTransferOwnership && (

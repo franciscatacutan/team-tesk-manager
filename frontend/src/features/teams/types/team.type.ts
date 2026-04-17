@@ -14,9 +14,12 @@ export interface Team {
   lastActivityAt: string;
 }
 
-export interface AddMemberInput {
-  userId: string;
-  role: "ADMIN" | "MEMBER";
+export interface AddMembersInput {
+  members: { userId: string; role: "ADMIN" | "MEMBER" }[];
+}
+
+export interface RemoveMembersInput {
+  userIds: string[];
 }
 
 export interface UpdateTeamInput {
