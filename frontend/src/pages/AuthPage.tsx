@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useLogin } from "../features/auth/hooks/useLogin";
 import { useRegister } from "../features/auth/hooks/useRegister";
 
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -22,12 +22,15 @@ export default function AuthPage() {
   const register = useRegister();
 
   const [isRegister, setIsRegister] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -50,12 +53,15 @@ export default function AuthPage() {
     }
 
     if (form.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+      newErrors.password = "Minimum 6 characters";
     }
 
     if (isRegister) {
-      if (!form.firstName) newErrors.firstName = "First name required";
-      if (!form.lastName) newErrors.lastName = "Last name required";
+      if (!form.firstName) newErrors.firstName = "Required";
+      if (!form.lastName) newErrors.lastName = "Required";
+      if (form.password !== form.confirmPassword) {
+        newErrors.confirmPassword = "Passwords do not match";
+      }
     }
 
     setErrors(newErrors);
@@ -85,16 +91,18 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 px-4">
-      <Card className="w-full max-w-md shadow-lg border-muted">
-        <CardHeader className="text-center space-y-1">
-          <CardTitle className="text-2xl">
-            {isRegister ? "Create account" : "Welcome back"}
+    // <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/40 to-background px-4">
+    <div className="min-h-screen flex items-center justify-center bg-main-layout bg-cover bg-center px-4">
+      <Card className="w-full max-w-md rounded-2xl border-border/60 shadow-xl">
+        <CardHeader className="space-y-2 text-center">
+          <CardTitle className="text-2xl font-semibold">
+            {isRegister ? "Create your account" : "Welcome back"}
           </CardTitle>
+
           <CardDescription>
             {isRegister
               ? "Enter your details to get started"
-              : "Login to your account"}
+              : "Sign in to continue"}
           </CardDescription>
         </CardHeader>
 
@@ -102,65 +110,86 @@ export default function AuthPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {isRegister && (
               <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Input
-                    name="firstName"
-                    placeholder="First name"
-                    value={form.firstName}
-                    onChange={handleChange}
-                  />
-                  {errors.firstName && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.firstName}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Input
-                    name="lastName"
-                    placeholder="Last name"
-                    value={form.lastName}
-                    onChange={handleChange}
-                  />
-                  {errors.lastName && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.lastName}
-                    </p>
-                  )}
-                </div>
+                <Input
+                  name="firstName"
+                  placeholder="First name"
+                  value={form.firstName}
+                  onChange={handleChange}
+                />
+                <Input
+                  name="lastName"
+                  placeholder="Last name"
+                  value={form.lastName}
+                  onChange={handleChange}
+                />
               </div>
             )}
-            <div>
-              <Input
-                name="email"
-                type="email"
-                placeholder="Email"
-                value={form.email}
-                onChange={handleChange}
-              />
-              {errors.email && (
-                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-              )}
-            </div>
-            <div>
+
+            <Input
+              name="email"
+              type="email"
+              placeholder="Email"
+              value={form.email}
+              onChange={handleChange}
+            />
+
+            <div className="relative">
               <Input
                 name="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 value={form.password}
                 onChange={handleChange}
+                className="pr-10"
               />
-              {errors.password && (
-                <p className="text-red-500 text-xs mt-1">{errors.password}</p>
-              )}
+
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
+
+            {isRegister && (
+              <div className="relative">
+                <Input
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Confirm password"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff size={16} />
+                  ) : (
+                    <Eye size={16} />
+                  )}
+                </button>
+              </div>
+            )}
+
+            {Object.values(errors).length > 0 && (
+              <div className="text-xs text-destructive space-y-1">
+                {Object.values(errors).map((err, i) => (
+                  <p key={i}>{err}</p>
+                ))}
+              </div>
+            )}
+
             {serverError && (
-              <div className="text-red-600 text-sm text-center">
+              <div className="text-sm text-destructive text-center">
                 {serverError}
               </div>
             )}
-            <Button type="submit" className="w-full" disabled={isLoading}>
+
+            <Button type="submit" className="w-full h-11" disabled={isLoading}>
               {isLoading ? (
                 <span className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -169,36 +198,34 @@ export default function AuthPage() {
               ) : isRegister ? (
                 "Create account"
               ) : (
-                "Login"
+                "Sign in"
               )}
             </Button>
           </form>
 
-          <p className="text-sm text-center mt-4">
+          <div className="text-center text-sm mt-4">
             {isRegister ? (
               <>
                 Already have an account?{" "}
                 <button
-                  type="button"
-                  className="text-primary hover:underline"
                   onClick={() => setIsRegister(false)}
+                  className="cursor-pointer text-primary hover:underline"
                 >
-                  Login
+                  Sign in
                 </button>
               </>
             ) : (
               <>
                 Don’t have an account?{" "}
                 <button
-                  type="button"
-                  className="text-primary hover:underline"
                   onClick={() => setIsRegister(true)}
+                  className="text-primary hover:underline"
                 >
-                  Sign up
+                  Create account
                 </button>
               </>
             )}
-          </p>
+          </div>
         </CardContent>
       </Card>
     </div>
