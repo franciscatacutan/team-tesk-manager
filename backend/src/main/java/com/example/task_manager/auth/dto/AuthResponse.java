@@ -9,6 +9,7 @@ import com.example.task_manager.user.entity.UserRole;
  */
 public record AuthResponse(
     String token,
+    long expiresInSeconds,
     User user) {
   public record User(
       UUID userId,

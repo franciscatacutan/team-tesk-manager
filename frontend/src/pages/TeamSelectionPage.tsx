@@ -219,10 +219,12 @@ export default function TeamSelectionPage() {
               Try changing the search or filters, or create a new team to get
               started.
             </p>
-            <Button className="mt-5 rounded-xl" onClick={() => setOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Create team
-            </Button>
+            {permissions.canViewDeleteTeam && (
+              <Button className="mt-5 rounded-xl" onClick={() => setOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Create team
+              </Button>
+            )}
           </div>
         )}
       </div>

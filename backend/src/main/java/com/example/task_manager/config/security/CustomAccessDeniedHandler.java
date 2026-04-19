@@ -1,8 +1,7 @@
 package com.example.task_manager.config.security;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import tools.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.time.Instant;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
@@ -11,8 +10,9 @@ import org.springframework.stereotype.Component;
 
 import com.example.task_manager.exception.ErrorResponse;
 
-import java.io.IOException;
-import java.time.Instant;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import tools.jackson.databind.ObjectMapper;
 
 /*
 * Exception for Global Role Access

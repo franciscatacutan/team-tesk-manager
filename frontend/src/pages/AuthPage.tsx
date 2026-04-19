@@ -70,7 +70,7 @@ export default function AuthPage() {
 
     if (isRegister) {
       register.mutate(form, {
-        onSuccess: () => setIsRegister(false),
+        onSuccess: () => navigate("/teams"),
         onError: () => setServerError("Registration failed"),
       });
     } else {

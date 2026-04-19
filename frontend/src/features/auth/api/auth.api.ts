@@ -18,3 +18,12 @@ export const register = async (payload: {
   );
   return data;
 };
+
+export const refresh = async () => {
+  const { data } = await apiClient.post<AuthResponse>("/auth/refresh");
+  return data;
+};
+
+export const logout = async () => {
+  await apiClient.post("/auth/logout");
+};

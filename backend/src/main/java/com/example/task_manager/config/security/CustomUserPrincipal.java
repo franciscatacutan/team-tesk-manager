@@ -20,12 +20,16 @@ import com.example.task_manager.user.entity.UserRole;
 public class CustomUserPrincipal implements UserDetails {
 
   private final UUID id;
+  private final String firstName;
+  private final String lastName;
   private final String email;
   private final String password;
   private final UserRole role;
 
   public CustomUserPrincipal(UserEntity user) {
     this.id = user.getId();
+    this.firstName = user.getFirstName();
+    this.lastName = user.getLastName();
     this.email = user.getEmail();
     this.password = user.getPassword();
     this.role = user.getRole();
@@ -37,6 +41,14 @@ public class CustomUserPrincipal implements UserDetails {
 
   public UserRole getRole() {
     return role;
+  }
+
+  public String getFirstName() {
+    return firstName;
+  }
+
+  public String getLastName() {
+    return lastName;
   }
 
   @Override

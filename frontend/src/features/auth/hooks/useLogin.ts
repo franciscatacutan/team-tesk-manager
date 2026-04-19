@@ -9,8 +9,13 @@ export const useLogin = () => {
     mutationFn: api.login,
     onSuccess: (data) => {
       authStorage.setToken(data.token);
-
-      queryClient.setQueryData(["me"], data.user);
+      queryClient.setQueryData(["me"], {
+        id: data.user.userId,
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        email: data.user.email,
+        role: data.user.role,
+      });
     },
   });
 };

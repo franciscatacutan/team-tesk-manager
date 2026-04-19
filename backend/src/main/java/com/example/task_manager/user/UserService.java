@@ -1,6 +1,7 @@
 package com.example.task_manager.user;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -15,6 +16,7 @@ import com.example.task_manager.exception.api.ConflictException;
 import com.example.task_manager.exception.api.ForbiddenException;
 import com.example.task_manager.exception.api.ResourceNotFoundException;
 import com.example.task_manager.exception.api.UserNotFoundException;
+import com.example.task_manager.auth.RefreshTokenService;
 import com.example.task_manager.user.dto.AdminResetPasswordRequest;
 import com.example.task_manager.user.dto.UpdatePasswordRequest;
 import com.example.task_manager.user.dto.UpdateUserProfileRequest;
@@ -34,6 +36,7 @@ public class UserService {
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
+  private final RefreshTokenService refreshTokenService;
 
   /*
    * Fetch all User
@@ -60,7 +63,7 @@ public class UserService {
   @Transactional
   public void updateUserRole(UUID targetUserId, UpdateUserRoleRequest request, String requester) {
 
-    UserEntity currentUser = userRepository.findByEmail(requester)
+    UserEntity currentUser = userRepository.findByEmailIgnoreCase(normalizeEmail(requester))
         .orElseThrow(UserNotFoundException::new);
 
     UserEntity targetUser = userRepository.findById(targetUserId)
@@ -100,11 +103,12 @@ public class UserService {
     }
 
     if (request.email() != null) {
-      if (!request.email().equalsIgnoreCase(user.getEmail())
-          && userRepository.existsByEmail(request.email())) {
+      String normalizedEmail = normalizeEmail(request.email());
+      if (!normalizedEmail.equalsIgnoreCase(user.getEmail())
+          && userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
         throw new ConflictException("Email already exists");
       }
-      user.setEmail(request.email());
+      user.setEmail(normalizedEmail);
     }
 
     return mapToResponse(user);
@@ -135,6 +139,7 @@ public class UserService {
     }
 
     target.setPassword(passwordEncoder.encode(request.newPassword()));
+    refreshTokenService.revokeAllForUser(target.getId());
 
   }
 
@@ -160,6 +165,7 @@ public class UserService {
     assertCanManageTargetUser(requester, target);
 
     target.setPassword(passwordEncoder.encode(request.newPassword()));
+    refreshTokenService.revokeAllForUser(target.getId());
   }
 
   public UserResponse getByEmail(String email) {
@@ -169,7 +175,7 @@ public class UserService {
   }
 
   private UserEntity getUserByEmail(String email) {
-    return userRepository.findByEmail(email)
+    return userRepository.findByEmailIgnoreCase(normalizeEmail(email))
         .orElseThrow(UserNotFoundException::new);
   }
 
@@ -200,6 +206,10 @@ public class UserService {
         user.getLastName(),
         user.getEmail(),
         user.getRole());
+  }
+
+  private String normalizeEmail(String email) {
+    return email.trim().toLowerCase(Locale.ROOT);
   }
 
 }

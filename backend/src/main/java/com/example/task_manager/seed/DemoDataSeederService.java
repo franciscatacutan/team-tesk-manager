@@ -90,7 +90,8 @@ public class DemoDataSeederService {
           email,
           "Demo" + number,
           "User" + number,
-          SHARED_PASSWORD));
+          SHARED_PASSWORD),
+          null, null);
 
       UserEntity user = userRepository.findByEmail(email)
           .orElseThrow();

@@ -1,0 +1,11 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+
+server:
+  address: localhost
+  port: 8080
+
+frontend:
+  url: http://localhost:5173

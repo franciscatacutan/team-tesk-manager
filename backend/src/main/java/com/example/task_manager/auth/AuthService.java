@@ -1,13 +1,21 @@
 package com.example.task_manager.auth;
 
+import java.util.Locale;
+
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.task_manager.auth.dto.AuthResponse;
 import com.example.task_manager.auth.dto.LoginRequest;
 import com.example.task_manager.auth.dto.RegisterRequest;
+import com.example.task_manager.auth.dto.AuthResponse.User;
 import com.example.task_manager.config.jwt.JwtService;
+import com.example.task_manager.config.security.CustomUserPrincipal;
 import com.example.task_manager.exception.api.AuthException;
 import com.example.task_manager.exception.api.EmailAlreadyInUseException;
 import com.example.task_manager.user.UserRepository;
@@ -25,24 +33,24 @@ public class AuthService {
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
+  private final AuthenticationManager authenticationManager;
   private final JwtService jwtService;
+  private final RefreshTokenService refreshTokenService;
 
-  /**
-   * Registers a new user.
-   */
-  public AuthResponse register(RegisterRequest request) {
+  @Transactional
+  public AuthSession register(RegisterRequest request, String ipAddress, String userAgent) {
+    String normalizedEmail = normalizeEmail(request.email());
 
-    if (userRepository.existsByEmail(request.email())) {
+    if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
       throw new EmailAlreadyInUseException();
     }
 
     UserEntity user = new UserEntity();
     user.setFirstName(request.firstName());
     user.setLastName(request.lastName());
-    user.setEmail(request.email());
+    user.setEmail(normalizedEmail);
     user.setRole(UserRole.USER);
-    user.setPassword(
-        passwordEncoder.encode(request.password()));
+    user.setPassword(passwordEncoder.encode(request.password()));
 
     try {
       user = userRepository.save(user);
@@ -50,37 +58,66 @@ public class AuthService {
       throw new EmailAlreadyInUseException();
     }
 
-    AuthResponse.User userDetails = new AuthResponse.User(
-        user.getId(),
-        user.getFirstName(),
-        user.getLastName(),
-        user.getEmail(),
-        user.getRole());
-
-    return new AuthResponse(jwtService.generateToken(user), userDetails);
+    RefreshTokenService.RefreshTokenSession refreshTokenSession = refreshTokenService.createSession(user, ipAddress,
+        userAgent);
+    return new AuthSession(buildAuthResponse(user), refreshTokenSession.token());
   }
 
-  /**
-   * Logs in an existing user.
-   */
-  public AuthResponse login(LoginRequest request) {
+  @Transactional
+  public AuthSession login(LoginRequest request, String ipAddress, String userAgent) {
+    String normalizedEmail = normalizeEmail(request.email());
 
-    UserEntity user = userRepository.findByEmail(request.email())
-        .orElseThrow(() -> new AuthException());
+    try {
+      var authentication = authenticationManager.authenticate(
+          UsernamePasswordAuthenticationToken.unauthenticated(normalizedEmail, request.password()));
 
-    if (!passwordEncoder.matches(
-        request.password(),
-        user.getPassword())) {
+      CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+      UserEntity user = userRepository.findById(principal.getId())
+          .orElseThrow(AuthException::new);
+
+      RefreshTokenService.RefreshTokenSession refreshTokenSession = refreshTokenService.createSession(user, ipAddress,
+          userAgent);
+      return new AuthSession(buildAuthResponse(user), refreshTokenSession.token());
+    } catch (AuthenticationException ex) {
       throw new AuthException();
     }
+  }
 
-    AuthResponse.User userDetails = new AuthResponse.User(
+  @Transactional
+  public AuthSession refresh(String rawRefreshToken, String ipAddress, String userAgent) {
+    RefreshTokenService.RefreshTokenSession refreshTokenSession = refreshTokenService.rotate(
+        rawRefreshToken,
+        ipAddress,
+        userAgent);
+    UserEntity user = refreshTokenService.getUserForRefreshToken(refreshTokenSession.token());
+    return new AuthSession(buildAuthResponse(user), refreshTokenSession.token());
+  }
+
+  @Transactional
+  public void logout(String rawRefreshToken) {
+    refreshTokenService.revoke(rawRefreshToken);
+  }
+
+  private User buildUserDetails(UserEntity user) {
+    return new User(
         user.getId(),
         user.getFirstName(),
         user.getLastName(),
         user.getEmail(),
         user.getRole());
+  }
 
-    return new AuthResponse(jwtService.generateToken(user), userDetails);
+  private AuthResponse buildAuthResponse(UserEntity user) {
+    return new AuthResponse(
+        jwtService.generateToken(user),
+        jwtService.getAccessTokenExpirationSeconds(),
+        buildUserDetails(user));
+  }
+
+  private String normalizeEmail(String email) {
+    return email.trim().toLowerCase(Locale.ROOT);
+  }
+
+  public record AuthSession(AuthResponse response, String refreshToken) {
   }
 }
