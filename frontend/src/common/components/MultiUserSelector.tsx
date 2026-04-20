@@ -23,6 +23,8 @@ import type { User } from "../../features/users/types/userType";
 interface Props {
   users: User[] | TeamMember[];
   value?: string[];
+  search: string;
+  onSearchChange: (value: string) => void;
   placeholder?: string;
   className?: string;
   popoverClassName?: string;
@@ -33,6 +35,8 @@ interface Props {
 export default function MultiUserSelector({
   users,
   value = [],
+  search,
+  onSearchChange,
   placeholder = "Select users",
   className,
   popoverClassName,
@@ -141,7 +145,11 @@ export default function MultiUserSelector({
       >
         <Command className="min-h-0">
           <div className="border-b border-border/60 px-1 pb-1 pt-1">
-            <CommandInput placeholder="Search teammates..." />
+            <CommandInput
+              value={search}
+              onValueChange={onSearchChange}
+              placeholder="Search users..."
+            />
           </div>
 
           <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">

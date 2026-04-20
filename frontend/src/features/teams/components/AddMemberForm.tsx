@@ -38,10 +38,18 @@ type FormValues = z.infer<typeof schema>;
 interface Props {
   teamId: string;
   users: User[];
+  search: string;
+  onSearchChange: (value: string) => void;
   onOpenChange: (open: boolean) => void;
 }
 
-export function AddMemberForm({ teamId, users, onOpenChange }: Props) {
+export function AddMemberForm({
+  teamId,
+  users,
+  search,
+  onSearchChange,
+  onOpenChange,
+}: Props) {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     mode: "onChange",
@@ -132,6 +140,8 @@ export function AddMemberForm({ teamId, users, onOpenChange }: Props) {
           name="members"
           render={() => (
             <MultiUserSelector
+              search={search}
+              onSearchChange={onSearchChange}
               users={users}
               value={selectedUserIds}
               placeholder="Search and select users..."

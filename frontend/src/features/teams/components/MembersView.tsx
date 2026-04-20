@@ -6,7 +6,6 @@ import { useDebounce } from "../../../common/hooks/useDebounce";
 import MembersHeader from "./MembersHeader";
 import MembersToolbar from "./MembersToolbar";
 import MembersList from "./MembersList";
-import { useAvailableUsers } from "../hooks/useAvailableUsers";
 import AddMembersModal from "./AddMembersModal";
 import TransferOwnershipModal from "./TransferOwnershipModal";
 import { getTeamPermissions } from "../utils/teamPermissions";
@@ -45,10 +44,6 @@ export default function MembersPage() {
   const totalPages = membersData?.totalPages ?? 0;
   const totalElements = membersData?.totalElements ?? 0;
 
-  const { data: availableUsersData } = useAvailableUsers(teamId || "", {
-    search: debouncedSearch,
-  });
-
   const user = getUserFromToken();
   if (!user?.role) return;
 
@@ -56,8 +51,6 @@ export default function MembersPage() {
     globalRole: user.role,
     teamRole: teamMe?.role,
   });
-
-  const availableUsers = availableUsersData?.content ?? [];
 
   if (!teamId) return <div className="p-6">Invalid team</div>;
 
@@ -100,7 +93,6 @@ export default function MembersPage() {
       />
 
       <RemoveMultiMembersModal
-        users={members}
         teamId={teamId}
         open={removeMembersOpen}
         isLoading={false}
@@ -108,7 +100,6 @@ export default function MembersPage() {
       />
 
       <AddMembersModal
-        users={availableUsers}
         teamId={teamId}
         open={addMembersOpen}
         isLoading={false}

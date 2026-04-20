@@ -8,14 +8,14 @@ import { Button } from "../../../components/ui/button";
 import MultiUserSelector from "../../../common/components/MultiUserSelector";
 import { useState } from "react";
 import { useRemoveMembers } from "../hooks/useRemoveMembers";
-import type { TeamMember } from "../types/team.type";
+import { useDebounce } from "@/common/hooks/useDebounce";
+import { useTeamMembers } from "../hooks/useTeamMembers";
 
 interface Props {
   teamId: string;
   open: boolean;
   isLoading: boolean;
   onOpenChange: (open: boolean) => void;
-  users: TeamMember[];
 }
 
 export default function RemoveMultiMembersModal({
@@ -23,9 +23,20 @@ export default function RemoveMultiMembersModal({
   open,
   isLoading,
   onOpenChange,
-  users,
 }: Props) {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
+
+  const debouncedSearch = useDebounce(search, 400);
+
+  const { data: membersData } = useTeamMembers(teamId || "", {
+    page: 0,
+    size: 1000,
+    search: debouncedSearch,
+    sort: undefined,
+  });
+
+  const members = membersData?.content ?? [];
 
   const removeMembers = useRemoveMembers(teamId);
 
@@ -62,7 +73,9 @@ export default function RemoveMultiMembersModal({
 
         <div className="px-6 py-5 space-y-6">
           <MultiUserSelector
-            users={users}
+            search={search}
+            onSearchChange={setSearch}
+            users={members}
             value={selectedUserIds}
             placeholder="Search and select users..."
             onChange={setSelectedUserIds}

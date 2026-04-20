@@ -1,18 +1,19 @@
+import { useDebounce } from "@/common/hooks/useDebounce";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
 } from "../../../components/ui/dialog";
 
-import type { User } from "../../users/types/userType";
+import { useAvailableUsers } from "../hooks/useAvailableUsers";
 import { AddMemberForm } from "./AddMemberForm";
+import { useState } from "react";
 
 interface Props {
   teamId: string;
   open: boolean;
   isLoading: boolean;
   onOpenChange: (open: boolean) => void;
-  users: User[];
 }
 
 export default function AddMembersModal({
@@ -20,8 +21,16 @@ export default function AddMembersModal({
   open,
   isLoading,
   onOpenChange,
-  users,
 }: Props) {
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 400);
+
+  const { data: availableUsersData } = useAvailableUsers(teamId || "", {
+    search: debouncedSearch,
+  });
+
+  const users = availableUsersData?.content ?? [];
+
   if (isLoading) {
     return <div className="text-sm text-muted-foreground">Loading...</div>;
   }
@@ -43,6 +52,8 @@ export default function AddMembersModal({
         </div>
 
         <AddMemberForm
+          search={search}
+          onSearchChange={setSearch}
           teamId={teamId}
           users={users}
           onOpenChange={onOpenChange}
