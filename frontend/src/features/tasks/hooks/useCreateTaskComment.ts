@@ -14,11 +14,11 @@ export const useCreateTaskComment = (
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["taskUpdates", teamId, projectId, taskId],
+        queryKey: ["taskActivities", teamId, projectId, taskId],
       });
 
       queryClient.invalidateQueries({
-        queryKey: ["projectActivity", teamId, projectId],
+        queryKey: ["projectActivities", teamId, projectId],
       });
     },
   });

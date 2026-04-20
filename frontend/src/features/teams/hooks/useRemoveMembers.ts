@@ -12,7 +12,13 @@ export const useRemoveMembers = (teamId: string) => {
         queryKey: ["teamMembers", teamId],
       });
       queryClient.invalidateQueries({
+        queryKey: ["availableUsers", teamId],
+      });
+      queryClient.invalidateQueries({
         queryKey: ["team", teamId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["teams"],
       });
     },
   });
