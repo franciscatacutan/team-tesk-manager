@@ -3,6 +3,7 @@ package com.example.task_manager.team;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -85,12 +86,12 @@ public class TeamService {
 
     UserEntity owner = getUserByEmail(userEmail);
 
-    String trimmedName = request.name().trim();
+    String trimmedName = request.name().trim().toLowerCase(Locale.ROOT);
 
     validateExistByOwnerAndName(owner.getId(), trimmedName);
 
     TeamEntity team = new TeamEntity();
-    team.setName(trimmedName);
+    team.setName(request.name().trim());
     team.setDescription(request.description());
     team.setOwner(owner);
 
@@ -150,15 +151,15 @@ public class TeamService {
 
     if (request.name() != null) {
 
-      String trimmedName = request.name().trim();
-
-      if (trimmedName.isEmpty()) {
+      if (request.name().isEmpty()) {
         throw new BadRequestInputException("Team name cannot be blank");
       }
 
+      String trimmedName = request.name().trim().toLowerCase(Locale.ROOT);
+
       validateExistByOwnerAndName(requester.getId(), trimmedName);
 
-      team.setName(trimmedName);
+      team.setName(request.name().trim());
     }
 
     if (request.description() != null) {
@@ -759,10 +760,10 @@ public class TeamService {
   }
 
   /**
-   * Checks if a Team Name is under an Owner
+   * Checks if a Team Name is unique for an Owner
    */
   private void validateExistByOwnerAndName(UUID ownerId, String name) {
-    boolean team = teamRepository.existsByOwnerIdAndNameAndDeletedAtIsNull(ownerId, name);
+    boolean team = teamRepository.existsByOwnerIdAndNameIgnoreCaseAndDeletedAtIsNull(ownerId, name);
 
     if (team) {
       throw new ConflictException("Team name already exists for User");

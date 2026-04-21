@@ -31,7 +31,7 @@ public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID>, J
 
   boolean existsByIdAndTeamId(UUID projectId, UUID teamId);
 
-  boolean existsByTeamIdAndNameAndDeletedAtIsNull(UUID teamId, String name);
+  boolean existsByTeamIdAndNameIgnoreCaseAndDeletedAtIsNull(UUID teamId, String name);
 
   @Modifying(clearAutomatically = true)
   @Query("""

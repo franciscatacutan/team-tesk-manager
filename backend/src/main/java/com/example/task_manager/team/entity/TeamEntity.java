@@ -24,7 +24,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.Setter;
@@ -36,9 +35,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @EntityListeners(AuditingEntityListener.class) // Enable auditing for createdAt and updatedAt fields
-@Table(name = "teams", uniqueConstraints = {
-    @UniqueConstraint(name = "uk_team_owner_name", columnNames = { "owner_id", "name" })
-}, indexes = {
+@Table(name = "teams", indexes = {
     @Index(name = "idx_team_owner_id_deleted", columnList = "owner_id, deleted_at"),
     @Index(name = "idx_team_name", columnList = "name"),
     @Index(name = "idx_team_deleted", columnList = "deleted_at")

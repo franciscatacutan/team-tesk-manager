@@ -3,6 +3,7 @@ package com.example.task_manager.project;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -76,10 +77,9 @@ public class ProjectService {
 
     TeamMemberEntity requesterMembership = canManageTeamProject(teamId, requester.getId());
 
-    if (projectRepository.existsByTeamIdAndNameAndDeletedAtIsNull(
-        teamId, request.name().trim())) {
-      throw new ConflictException("Project name already exists in this team");
-    }
+    String trimmedName = request.name().trim().toLowerCase(Locale.ROOT);
+
+    validateExistByTeamAndName(teamId, trimmedName);
 
     ProjectEntity project = new ProjectEntity();
     project.setName(request.name().trim());
@@ -136,24 +136,20 @@ public class ProjectService {
     String previousDescription = project.getDescription();
 
     if (request.name() != null) {
-      String trimmed = request.name().trim();
 
-      if (trimmed.isEmpty()) {
+      if (request.name().isEmpty()) {
         throw new BadRequestInputException("Project name cannot be blank");
       }
+      String trimmedName = request.name().trim().toLowerCase(Locale.ROOT);
 
-      if (!trimmed.equals(project.getName()) &&
-          projectRepository.existsByTeamIdAndNameAndDeletedAtIsNull(teamId, trimmed)) {
-        throw new ConflictException("Project name already exists in this team");
-      }
+      validateExistByTeamAndName(teamId, trimmedName);
 
-      project.setName(trimmed);
+      project.setName(request.name().trim());
     }
 
     if (request.description() != null) {
       project.setDescription(request.description().trim());
     }
-
     ProjectDetailsUpdateMessage updateMessage = buildProjectUpdateMessage(
         previousName,
         previousDescription,
@@ -581,6 +577,18 @@ public class ProjectService {
         "Project updated: " + String.join(", ", fields),
         fields,
         changes);
+  }
+
+  /**
+   * Checks if a Project Name is unique for an active project
+   */
+  private void validateExistByTeamAndName(UUID teamId, String name) {
+
+    boolean project = projectRepository.existsByTeamIdAndNameIgnoreCaseAndDeletedAtIsNull(teamId, name);
+
+    if (project) {
+      throw new ConflictException("Project name already exists for Team");
+    }
   }
 
   private record ProjectDetailsUpdateMessage(

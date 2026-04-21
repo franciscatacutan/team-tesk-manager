@@ -17,7 +17,7 @@ import com.example.task_manager.team.entity.TeamEntity;
  * Repository interface for Team entities.
  */
 public interface TeamRepository extends JpaRepository<TeamEntity, UUID>, JpaSpecificationExecutor<TeamEntity> {
-  boolean existsByOwnerIdAndNameAndDeletedAtIsNull(UUID teamId, String name);
+  boolean existsByOwnerIdAndNameIgnoreCaseAndDeletedAtIsNull(UUID teamId, String name);
 
   boolean existsByIdAndDeletedAtIsNull(UUID id);
 
