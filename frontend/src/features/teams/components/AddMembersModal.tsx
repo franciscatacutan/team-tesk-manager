@@ -8,8 +8,10 @@ import {
 import { useAvailableUsers } from "../hooks/useAvailableUsers";
 import { AddMemberForm } from "./AddMemberForm";
 import { useState } from "react";
+import type { TeamRole } from "../types/team.type";
 
 interface Props {
+  userTeamRole: TeamRole;
   teamId: string;
   open: boolean;
   isLoading: boolean;
@@ -17,6 +19,7 @@ interface Props {
 }
 
 export default function AddMembersModal({
+  userTeamRole,
   teamId,
   open,
   isLoading,
@@ -52,6 +55,7 @@ export default function AddMembersModal({
         </div>
 
         <AddMemberForm
+          userTeamRole={userTeamRole}
           search={search}
           onSearchChange={setSearch}
           teamId={teamId}

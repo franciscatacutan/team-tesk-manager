@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type { PageResponse } from "../../../common/types/pageResponse.types";
 import type { User } from "../../users/types/userType";
 import { getAvailableUsers } from "../api/teamMemberApi";
@@ -15,6 +15,6 @@ export const useAvailableUsers = (teamId: string, params: Params) => {
         search: params?.search,
         size: 1000,
       }),
-    placeholderData: keepPreviousData,
+    staleTime: 1000 * 60 * 5,
   });
 };

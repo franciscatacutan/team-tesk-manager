@@ -39,6 +39,7 @@ export default function MembersPage() {
     },
   );
   const { data: teamMe } = useTeamMe(teamId || "");
+  if (!teamMe?.role) return;
 
   const members = membersData?.content ?? [];
   const totalPages = membersData?.totalPages ?? 0;
@@ -93,6 +94,7 @@ export default function MembersPage() {
       />
 
       <RemoveMultiMembersModal
+        userTeamRole={teamMe.role}
         teamId={teamId}
         open={removeMembersOpen}
         isLoading={false}
@@ -100,6 +102,7 @@ export default function MembersPage() {
       />
 
       <AddMembersModal
+        userTeamRole={teamMe.role}
         teamId={teamId}
         open={addMembersOpen}
         isLoading={false}

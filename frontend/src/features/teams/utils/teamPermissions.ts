@@ -43,7 +43,7 @@ export function getTeamPermissions({
 
     canTransferOwnership: isOwner && isSystemAdmin,
 
-    canChangeRole: canManage,
+    canChangeRole: isOwner,
 
     canAddMember: canManage,
 

@@ -21,6 +21,7 @@ import {
   TEAM_ROLE_STYLES,
 } from "../../../common/constants/team.constants";
 import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
+import type { TeamRole } from "../types/team.type";
 
 const schema = z.object({
   members: z
@@ -36,6 +37,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 interface Props {
+  userTeamRole: TeamRole;
   teamId: string;
   users: User[];
   search: string;
@@ -44,6 +46,7 @@ interface Props {
 }
 
 export function AddMemberForm({
+  userTeamRole,
   teamId,
   users,
   search,
@@ -197,41 +200,51 @@ export function AddMemberForm({
                   <div className="mb-1 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground sm:hidden">
                     Role
                   </div>
+                  {userTeamRole === "OWNER" ? (
+                    <Select
+                      value={role}
+                      onValueChange={(value) =>
+                        handleRoleChange(userId, value as "ADMIN" | "MEMBER")
+                      }
+                    >
+                      <SelectTrigger className="h-10 rounded-xl border-border/70 bg-background shadow-none sm:w-36">
+                        <SelectValue />
+                      </SelectTrigger>
 
-                  <Select
-                    value={role}
-                    onValueChange={(value) =>
-                      handleRoleChange(userId, value as "ADMIN" | "MEMBER")
-                    }
-                  >
-                    <SelectTrigger className="h-10 rounded-xl border-border/70 bg-background shadow-none sm:w-36">
-                      <SelectValue />
-                    </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MEMBER">
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+                              TEAM_ROLE_STYLES.MEMBER,
+                            )}
+                          >
+                            {TEAM_ROLE_LABEL.MEMBER}
+                          </span>
+                        </SelectItem>
 
-                    <SelectContent>
-                      <SelectItem value="MEMBER">
-                        <span
-                          className={cn(
-                            "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
-                            TEAM_ROLE_STYLES.MEMBER,
-                          )}
-                        >
-                          {TEAM_ROLE_LABEL.MEMBER}
-                        </span>
-                      </SelectItem>
-
-                      <SelectItem value="ADMIN">
-                        <span
-                          className={cn(
-                            "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
-                            TEAM_ROLE_STYLES.ADMIN,
-                          )}
-                        >
-                          {TEAM_ROLE_LABEL.ADMIN}
-                        </span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                        <SelectItem value="ADMIN">
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+                              TEAM_ROLE_STYLES.ADMIN,
+                            )}
+                          >
+                            {TEAM_ROLE_LABEL.ADMIN}
+                          </span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+                        TEAM_ROLE_STYLES.MEMBER,
+                      )}
+                    >
+                      {TEAM_ROLE_LABEL.MEMBER}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}

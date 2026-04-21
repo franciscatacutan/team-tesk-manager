@@ -14,6 +14,9 @@ export const useAddMembers = (teamId: string) => {
         queryKey: ["teamMembers", teamId],
       });
       queryClient.invalidateQueries({
+        queryKey: ["allTeamMembers", teamId],
+      });
+      queryClient.invalidateQueries({
         queryKey: ["availableUsers", teamId],
       });
       queryClient.invalidateQueries({

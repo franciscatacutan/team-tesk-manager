@@ -6,12 +6,14 @@ import {
 
 import { Button } from "../../../components/ui/button";
 import MultiUserSelector from "../../../common/components/MultiUserSelector";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRemoveMembers } from "../hooks/useRemoveMembers";
 import { useDebounce } from "@/common/hooks/useDebounce";
-import { useTeamMembers } from "../hooks/useTeamMembers";
+import { useAllTeamMembers } from "../hooks/useAllTeamMembers";
+import type { TeamRole } from "../types/team.type";
 
 interface Props {
+  userTeamRole: TeamRole;
   teamId: string;
   open: boolean;
   isLoading: boolean;
@@ -19,6 +21,7 @@ interface Props {
 }
 
 export default function RemoveMultiMembersModal({
+  userTeamRole,
   teamId,
   open,
   isLoading,
@@ -29,16 +32,27 @@ export default function RemoveMultiMembersModal({
 
   const debouncedSearch = useDebounce(search, 400);
 
-  const { data: membersData } = useTeamMembers(teamId || "", {
-    page: 0,
-    size: 1000,
+  const { data: membersData } = useAllTeamMembers(teamId || "", {
     search: debouncedSearch,
-    sort: undefined,
   });
 
-  const members = membersData?.content ?? [];
-
   const removeMembers = useRemoveMembers(teamId);
+
+  const removableMembers = useMemo(() => {
+    const members = membersData?.content ?? [];
+
+    if (!userTeamRole) return [];
+
+    if (userTeamRole === "OWNER") {
+      return members.filter((m) => m.teamRole !== "OWNER");
+    }
+
+    if (userTeamRole === "ADMIN") {
+      return members.filter((m) => m.teamRole === "MEMBER");
+    }
+
+    return [];
+  }, [membersData?.content, userTeamRole]);
 
   const handleRemove = () => {
     if (selectedUserIds.length === 0) return;
@@ -75,7 +89,7 @@ export default function RemoveMultiMembersModal({
           <MultiUserSelector
             search={search}
             onSearchChange={setSearch}
-            users={members}
+            users={removableMembers}
             value={selectedUserIds}
             placeholder="Search and select users..."
             onChange={setSelectedUserIds}

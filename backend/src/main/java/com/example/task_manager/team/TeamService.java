@@ -293,7 +293,7 @@ public class TeamService {
 
   /**
    * Removes a member in a team
-   * Only Team Admin and Owner can remove member
+   * Team Admin and Owner can remove member
    * Only Owner can remove an Admin and can't remove themselves
    */
   @Transactional
@@ -304,6 +304,8 @@ public class TeamService {
 
     UserEntity requester = getUserByEmail(requesterEmail);
     TeamMemberEntity requesterMembership = getMembership(teamId, requester.getId());
+
+    validateCanManageTeam(teamId, requester.getId());
 
     List<UUID> success = new ArrayList<>();
     List<FailedMember> failed = new ArrayList<>();
@@ -419,7 +421,7 @@ public class TeamService {
 
     validateActiveTeam(teamId);
 
-    validateCanManageTeam(teamId, requester.getId());
+    validateOwner(teamId, requester.getId());
 
     TeamMemberEntity targetMember = getMembership(teamId, targetUserId);
 
