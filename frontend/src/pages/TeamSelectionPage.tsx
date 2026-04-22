@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, Sparkles } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 
 import { useTeams } from "../features/teams/hooks/useTeams";
 import { useDebounce } from "../common/hooks/useDebounce";
 
 import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
 
 import {
   Select,
@@ -22,6 +21,10 @@ import TeamCard from "../features/teams/components/TeamCard";
 import { getTeamPermissions } from "../features/teams/utils/teamPermissions";
 import { getUserFromToken } from "../features/users/api/userApi";
 import { Pagination } from "../common/components/pagination/Pagination";
+import SearchBar from "@/common/components/SearchBar";
+import { SortControl } from "@/common/components/SortControl";
+import type { SortOrder, SortField } from "@/common/types/sort.types";
+import { BASE_SORT_OPTIONS } from "@/common/constants/sortOptions";
 
 export default function TeamSelectionPage() {
   const navigate = useNavigate();
@@ -31,7 +34,11 @@ export default function TeamSelectionPage() {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(12);
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState("createdAt,desc");
+  const [sortField, setSortField] = useState<SortField>("createdAt");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+
+  const sort = `${sortField},${sortOrder}`;
+
   const [deletedFilter, setDeletedFilter] = useState<DeletedFilter>("ACTIVE");
 
   const debouncedSearch = useDebounce(search, 400);
@@ -53,8 +60,13 @@ export default function TeamSelectionPage() {
     setPage(0);
   };
 
-  const handleSortChange = (value: string) => {
-    setSort(value);
+  const handleSortField = (value: string) => {
+    setSortField(value as SortField);
+    setPage(0);
+  };
+
+  const handleSortOrder = () => {
+    setSortOrder((value) => (value === "asc" ? "desc" : "asc"));
     setPage(0);
   };
 
@@ -115,15 +127,7 @@ export default function TeamSelectionPage() {
 
         <section className="rounded-2xl border border-border/60 bg-background/92 p-4 shadow-sm">
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-            <div className="relative w-full">
-              <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search teams..."
-                value={search}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="h-10 rounded-xl border-border/70 bg-background pl-9 shadow-none"
-              />
-            </div>
+            <SearchBar search={search} searchChange={handleSearchChange} />
 
             <div className="grid gap-2 sm:grid-cols-2 lg:min-w-88">
               {permissions.canViewDeleteTeam && (
@@ -152,21 +156,13 @@ export default function TeamSelectionPage() {
                 <label className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
                   Sort
                 </label>
-                <Select value={sort} onValueChange={handleSortChange}>
-                  <SelectTrigger className="h-10 rounded-xl border-border/70 bg-background shadow-none">
-                    <SelectValue placeholder="Sort" />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    <SelectItem value="createdAt,desc">Newest</SelectItem>
-                    <SelectItem value="createdAt,asc">Oldest</SelectItem>
-                    <SelectItem value="lastActivityAt,desc">
-                      Last Activity
-                    </SelectItem>
-                    <SelectItem value="name,asc">Name (A-Z)</SelectItem>
-                    <SelectItem value="name,desc">Name (Z-A)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <SortControl
+                  field={sortField}
+                  order={sortOrder}
+                  options={BASE_SORT_OPTIONS}
+                  onFieldChange={handleSortField}
+                  onToggleOrder={handleSortOrder}
+                />
               </div>
             </div>
           </div>
