@@ -24,7 +24,8 @@ import { Pagination } from "../common/components/pagination/Pagination";
 import SearchBar from "@/common/components/SearchBar";
 import { SortControl } from "@/common/components/SortControl";
 import type { SortOrder, SortField } from "@/common/types/sort.types";
-import { BASE_SORT_OPTIONS } from "@/common/constants/sortOptions";
+import { BASE_SORT_OPTIONS } from "@/common/constants/sort.constants";
+// import { FilterPopover } from "@/common/components/FilterPopover";
 
 export default function TeamSelectionPage() {
   const navigate = useNavigate();
@@ -75,6 +76,14 @@ export default function TeamSelectionPage() {
     setPage(0);
   };
 
+  // function handleFilterChange(key: string, value: string) {
+  //   setPage(0);
+
+  //   if (key === "deletedFilter") {
+  //     setDeletedFilter(value as DeletedFilter);
+  //   }
+  // }
+
   const openTeam = (teamId: string) => {
     navigate(`/teams/${teamId}`);
   };
@@ -84,6 +93,10 @@ export default function TeamSelectionPage() {
   const permissions = getTeamPermissions({
     globalRole: user?.role,
   });
+
+  // const filterValues = {
+  //   deletedFilter,
+  // };
 
   return (
     <div className="min-h-0 h-full bg-muted/10 px-4 py-6 sm:px-6 lg:px-8">
@@ -150,6 +163,11 @@ export default function TeamSelectionPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                // <FilterPopover
+                //   config={DELETED_FILTER}
+                //   values={filterValues}
+                //   onChange={handleFilterChange}
+                // />
               )}
 
               <div className="space-y-1">
