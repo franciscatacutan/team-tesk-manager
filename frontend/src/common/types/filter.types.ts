@@ -1,6 +1,7 @@
 export type FilterOption = {
   label: string;
   value: string;
+  isDefault?: boolean;
 };
 
 export type FilterGroup = {

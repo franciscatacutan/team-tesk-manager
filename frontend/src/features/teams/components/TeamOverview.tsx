@@ -19,7 +19,6 @@ import {
 import { CreateProjectModal } from "../../projects/components/CreateProjectModal";
 import { getUserFromToken } from "../../users/api/userApi";
 import { useProjects } from "../../projects/hooks/useProjects";
-import { useAvailableUsers } from "../hooks/useAvailableUsers";
 import { useTeam } from "../hooks/useTeam";
 import { useTeamActivities } from "../hooks/useTeamActivities";
 import { useTeamMe } from "../hooks/useTeamMe";
@@ -61,8 +60,6 @@ export default function TeamOverview() {
     size: 5,
     sort: "createdAt,desc",
   });
-  const { data: availableUsersData } = useAvailableUsers(teamId || "", {});
-
   const user = getUserFromToken();
 
   const permissions = getTeamPermissions({
@@ -73,8 +70,6 @@ export default function TeamOverview() {
   const projects = projectsData?.content ?? [];
   const members = membersData?.content ?? [];
   const activities = activitiesData?.content ?? [];
-  const availableUsers = availableUsersData?.content ?? [];
-
   const projectCount = projectsData?.totalElements ?? 0;
   const memberCount = membersData?.totalElements ?? 0;
   const activityCount = activitiesData?.totalElements ?? 0;
@@ -323,7 +318,7 @@ export default function TeamOverview() {
       />
 
       <AddMembersModal
-        users={availableUsers}
+        userTeamRole={teamMe?.role ?? "MEMBER"}
         teamId={team.id}
         open={addMemberOpen}
         isLoading={false}

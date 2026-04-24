@@ -1,10 +1,12 @@
 package com.example.task_manager.team;
 
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.data.jpa.domain.Specification;
 
 import com.example.task_manager.team.entity.TeamMemberEntity;
+import com.example.task_manager.team.entity.TeamRole;
 import com.example.task_manager.user.entity.UserEntity;
 
 import jakarta.persistence.criteria.Join;
@@ -19,12 +21,14 @@ public class TeamMemberSpecification {
       UUID teamId,
       String search,
       UUID requesterId,
+      Set<TeamRole> roles,
       boolean isGlobalAdmin,
       boolean isTeamMember) {
 
     return Specification
         .where(belongsToTeam(teamId))
         .and(search(search))
+        .and(hasRoles(roles))
         .and(isAccessibleByUser(teamId, isGlobalAdmin, isTeamMember));
   }
 
@@ -83,6 +87,17 @@ public class TeamMemberSpecification {
       }
 
       return cb.disjunction();
+    };
+  }
+
+  private static Specification<TeamMemberEntity> hasRoles(Set<TeamRole> roles) {
+    return (root, query, cb) -> {
+
+      if (roles == null || roles.isEmpty()) {
+        return cb.conjunction();
+      }
+
+      return root.get("role").in(roles);
     };
   }
 }

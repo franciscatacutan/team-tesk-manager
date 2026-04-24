@@ -116,6 +116,10 @@ export default function TaskBoard({
     params,
     onOpenTask,
   };
+  const statuses: TaskStatus[] =
+    params.status && isTaskStatus(params.status)
+      ? [params.status]
+      : ["TODO", "IN_PROGRESS", "IN_REVIEW", "ON_HOLD", "DONE", "CANCELLED"];
 
   return (
     <div className="flex h-full min-h-0 gap-4 overflow-x-auto pb-2">
@@ -125,12 +129,9 @@ export default function TaskBoard({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <BoardColumn id="TODO" {...commonProps} />
-        <BoardColumn id="IN_PROGRESS" {...commonProps} />
-        <BoardColumn id="IN_REVIEW" {...commonProps} />
-        <BoardColumn id="ON_HOLD" {...commonProps} />
-        <BoardColumn id="DONE" {...commonProps} />
-        <BoardColumn id="CANCELLED" {...commonProps} />
+        {statuses.map((status) => (
+          <BoardColumn key={status} id={status} {...commonProps} />
+        ))}
         <DragOverlay dropAnimation={dropAnimation}>
           {activeTask ? (
             <TaskCard task={activeTask} onOpen={onOpenTask} />

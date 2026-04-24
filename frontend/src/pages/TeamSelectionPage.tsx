@@ -7,16 +7,11 @@ import { useDebounce } from "../common/hooks/useDebounce";
 
 import { Button } from "../components/ui/button";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
-
 import { CreateTeamModal } from "../features/teams/components/CreateTeamModal";
-import type { DeletedFilter } from "../common/types/deletedFilter.types";
+import {
+  DELETED_FILTER,
+  type DeletedFilter,
+} from "../common/types/deletedFilter.types";
 import TeamCard from "../features/teams/components/TeamCard";
 import { getTeamPermissions } from "../features/teams/utils/teamPermissions";
 import { getUserFromToken } from "../features/users/api/userApi";
@@ -25,7 +20,7 @@ import SearchBar from "@/common/components/SearchBar";
 import { SortControl } from "@/common/components/SortControl";
 import type { SortOrder, SortField } from "@/common/types/sort.types";
 import { BASE_SORT_OPTIONS } from "@/common/constants/sort.constants";
-// import { FilterPopover } from "@/common/components/FilterPopover";
+import { FilterPopover } from "@/common/components/FilterPopover";
 
 export default function TeamSelectionPage() {
   const navigate = useNavigate();
@@ -71,18 +66,15 @@ export default function TeamSelectionPage() {
     setPage(0);
   };
 
-  const handleDeletedFilterChange = (value: DeletedFilter) => {
-    setDeletedFilter(value);
+  function handleFilterChange(key: string, value: string | string[]) {
     setPage(0);
-  };
 
-  // function handleFilterChange(key: string, value: string) {
-  //   setPage(0);
-
-  //   if (key === "deletedFilter") {
-  //     setDeletedFilter(value as DeletedFilter);
-  //   }
-  // }
+    if (key === "deletedFilter") {
+      setDeletedFilter((typeof value === "string" && value
+        ? value
+        : "ACTIVE") as DeletedFilter);
+    }
+  }
 
   const openTeam = (teamId: string) => {
     navigate(`/teams/${teamId}`);
@@ -94,9 +86,9 @@ export default function TeamSelectionPage() {
     globalRole: user?.role,
   });
 
-  // const filterValues = {
-  //   deletedFilter,
-  // };
+  const filterValues = {
+    deletedFilter,
+  };
 
   return (
     <div className="min-h-0 h-full bg-muted/10 px-4 py-6 sm:px-6 lg:px-8">
@@ -144,30 +136,16 @@ export default function TeamSelectionPage() {
 
             <div className="grid gap-2 sm:grid-cols-2 lg:min-w-88">
               {permissions.canViewDeleteTeam && (
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                    Visibility
-                  </label>
-                  <Select
-                    value={deletedFilter}
-                    onValueChange={handleDeletedFilterChange}
-                  >
-                    <SelectTrigger className="h-10 rounded-xl border-border/70 bg-background shadow-none">
-                      <SelectValue placeholder="Visibility" />
-                    </SelectTrigger>
-
-                    <SelectContent>
-                      <SelectItem value="ACTIVE">Active</SelectItem>
-                      <SelectItem value="DELETED">Deleted</SelectItem>
-                      <SelectItem value="ALL">All</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                // <FilterPopover
-                //   config={DELETED_FILTER}
-                //   values={filterValues}
-                //   onChange={handleFilterChange}
-                // />
+                <FilterPopover
+                  label="Visibility"
+                  config={DELETED_FILTER}
+                  values={filterValues}
+                  onChange={handleFilterChange}
+                  onClear={() => {
+                    setDeletedFilter("ACTIVE");
+                    setPage(0);
+                  }}
+                />
               )}
 
               <div className="space-y-1">

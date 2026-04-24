@@ -8,7 +8,7 @@ export const DELETED_FILTER: FilterGroup[] = [
     label: "Visibility",
     type: "single",
     options: [
-      { label: "Active", value: "ACTIVE" },
+      { label: "Active", value: "ACTIVE", isDefault: true },
       { label: "Deleted", value: "DELETED" },
       { label: "All", value: "ALL" },
     ],

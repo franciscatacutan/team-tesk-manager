@@ -574,6 +574,7 @@ public class TeamService {
         teamId,
         request.search(),
         requester.getId(),
+        request.roles(),
         isGlobalAdmin,
         isTeamMember);
 

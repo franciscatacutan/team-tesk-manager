@@ -6,6 +6,7 @@ import type { PageResponse } from "../../../common/types/pageResponse.types";
 
 export interface TaskQueryParams {
   search?: string;
+  status?: string;
   sort?: string;
   deletedFilter: DeletedFilter;
 }

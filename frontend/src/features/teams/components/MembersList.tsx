@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 
 import { formatDate } from "../../../common/utils/dateFormatter";
@@ -52,8 +52,6 @@ interface Props {
   teamId: string;
   members: TeamMember[];
   isLoading: boolean;
-  search: string;
-  role: string;
   pagination: PaginationProps;
   sort: string;
   onSortChange: (sort: string) => void;
@@ -64,8 +62,6 @@ export default function MembersList({
   teamId,
   members,
   isLoading,
-  search,
-  role,
   pagination,
   sort,
   onSortChange,
@@ -76,20 +72,6 @@ export default function MembersList({
   const [transferOpen, setTransferOpen] = useState(false);
 
   const updateRole = useUpdateMemberRole(teamId);
-
-  const filtered = useMemo(() => {
-    return members.filter((m) => {
-      const fullName = `${m.firstName} ${m.lastName}`.toLowerCase();
-
-      const matchesSearch =
-        fullName.includes(search.toLowerCase()) ||
-        m.email.toLowerCase().includes(search.toLowerCase());
-
-      const matchesRole = role === "ALL" || m.teamRole === role;
-
-      return matchesSearch && matchesRole;
-    });
-  }, [members, search, role]);
 
   const handleSort = (field: string) => {
     const [currentField, direction] = sort.split(",");
@@ -136,7 +118,7 @@ export default function MembersList({
     );
   }
 
-  if (!filtered.length) {
+  if (!members.length) {
     return (
       <div className="rounded-2xl border border-dashed border-border/70 bg-background/70 px-6 py-14 text-center">
         <h2 className="text-base font-semibold text-foreground">
@@ -186,7 +168,7 @@ export default function MembersList({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((member) => {
+            {members.map((member) => {
               return (
                 <TableRow key={member.id} className="hover:bg-muted/20">
                   <TableCell className="px-4 py-3">

@@ -12,6 +12,7 @@ import { getTeamPermissions } from "../utils/teamPermissions";
 import { getUserFromToken } from "../../users/api/userApi";
 import { useTeamMe } from "../hooks/useTeamMe";
 import RemoveMultiMembersModal from "./RemoveMultiMemberModal";
+import type { TeamRole } from "../types/team.type";
 
 export default function MembersPage() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -24,7 +25,7 @@ export default function MembersPage() {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [search, setSearch] = useState("");
-  const [role, setRole] = useState<string>("ALL");
+  const [role, setRole] = useState<TeamRole[]>([]);
   const [sort, setSort] = useState("joinedAt,desc");
 
   const debouncedSearch = useDebounce(search, 400);
@@ -36,6 +37,7 @@ export default function MembersPage() {
       size: 10,
       search: debouncedSearch,
       sort,
+      role,
     },
   );
   const { data: teamMe } = useTeamMe(teamId || "");
@@ -53,6 +55,14 @@ export default function MembersPage() {
     teamRole: teamMe?.role,
   });
 
+  function handleFilterChange(key: string, value: string | string[]) {
+    setPage(0);
+
+    if (key === "rolesFilter") {
+      setRole(Array.isArray(value) ? (value as TeamRole[]) : []);
+    }
+  }
+
   if (!teamId) return <div className="p-6">Invalid team</div>;
 
   return (
@@ -68,7 +78,7 @@ export default function MembersPage() {
         search={search}
         onSearchChange={setSearch}
         role={role}
-        onRoleChange={setRole}
+        handleFilterChange={handleFilterChange}
       />
 
       <MembersList
@@ -76,8 +86,6 @@ export default function MembersPage() {
         teamId={teamId}
         members={members}
         isLoading={membersLoading}
-        search={debouncedSearch}
-        role={role}
         pagination={{
           page,
           size,

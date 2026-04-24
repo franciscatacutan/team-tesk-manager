@@ -167,6 +167,7 @@ export default function ProjectDetails() {
               projectId={projectId}
               params={{
                 search: debouncedSearch,
+                status,
                 sort,
                 deletedFilter,
               }}
