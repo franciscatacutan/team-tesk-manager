@@ -13,6 +13,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import com.example.task_manager.project.entity.ProjectEntity;
+import com.example.task_manager.project.entity.ProjectStatus;
 
 /**
  * Repository interface for Project entities.
@@ -43,6 +44,10 @@ public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID>, J
   int softDeleteByTeamId(UUID teamId, Instant deletedAt);
 
   List<ProjectEntity> findAllByTeamIdAndDeletedAtIsNull(UUID teamId);
+
+  long countByTeamIdAndDeletedAtIsNull(UUID teamId);
+
+  long countByTeamIdAndStatusAndDeletedAtIsNull(UUID teamId, ProjectStatus status);
 
   @Modifying
   @Query("""

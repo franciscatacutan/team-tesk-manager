@@ -822,7 +822,7 @@ public class TeamService {
   private void validateActiveTeam(UUID teamId) {
     boolean team = teamRepository.existsByIdAndDeletedAtIsNull(teamId);
     if (!team) {
-      new ResourceNotFoundException("Team not found");
+      throw new ResourceNotFoundException("Team not found");
     }
   }
 

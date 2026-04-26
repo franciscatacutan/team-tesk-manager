@@ -24,7 +24,8 @@ import lombok.Setter;
     @UniqueConstraint(name = "uk_task_project_number", columnNames = { "project_id", "task_number" })
 }, indexes = {
     @Index(name = "idx_task_project_deleted", columnList = "project_id, deleted_at"),
-    @Index(name = "idx_task_assignee_deleted", columnList = "assignee_id, deleted_at")
+    @Index(name = "idx_task_assignee_deleted", columnList = "assignee_id, deleted_at"),
+    @Index(name = "idx_task_team_status_due", columnList = "status, planned_due_date, deleted_at")
 })
 @EntityListeners(AuditingEntityListener.class)
 public class TaskEntity {
@@ -69,6 +70,14 @@ public class TaskEntity {
   @JoinColumn(name = "support_id")
   private UserEntity support;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "created_by")
+  private UserEntity createdBy;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "completed_by")
+  private UserEntity completedBy;
+
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private Instant createdAt;
@@ -78,6 +87,8 @@ public class TaskEntity {
   private Instant updatedAt;
 
   private Instant lastActivityAt;
+
+  private Instant statusChangedAt;
 
   private Instant deletedAt;
 

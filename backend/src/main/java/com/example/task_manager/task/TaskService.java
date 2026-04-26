@@ -97,6 +97,8 @@ public class TaskService {
     task.setPriority(request.priority());
     task.setPlannedStartDate(request.plannedStartDate());
     task.setPlannedDueDate(request.plannedDueDate());
+    task.setCreatedBy(requester);
+    task.setStatusChangedAt(Instant.now());
 
     task.setAssignee(assigneeMember.getUser());
     task.setSupport(request.supportId() == null
@@ -250,15 +252,18 @@ public class TaskService {
 
     if (newStatus == TaskStatus.DONE) {
       task.setActualCompletionDate(Instant.now());
+      task.setCompletedBy(requester);
     }
 
     if (current == TaskStatus.DONE && newStatus != null) {
       task.setActualCompletionDate(null);
+      task.setCompletedBy(null);
     }
 
     String message = "Status changed from " + current + " to " + newStatus;
 
     task.setStatus(newStatus);
+    task.setStatusChangedAt(Instant.now());
     activityEventService.recordTaskEvent(
         task,
         requester,
@@ -851,7 +856,7 @@ public class TaskService {
   private void validateActiveTask(UUID taskId) {
     boolean task = taskRepository.existsByIdAndDeletedAtIsNull(taskId);
     if (!task) {
-      new ResourceNotFoundException("Task not found");
+      throw new ResourceNotFoundException("Task not found");
     }
   }
 
@@ -873,7 +878,7 @@ public class TaskService {
   private void validateExistingTask(UUID taskId) {
     boolean task = taskRepository.existsById(taskId);
     if (!task) {
-      new ResourceNotFoundException("Task not found");
+      throw new ResourceNotFoundException("Task not found");
     }
   }
 
@@ -895,6 +900,10 @@ public class TaskService {
    * Checks if Start Date < Due Date
    */
   private void validateDates(Instant start, Instant due) {
+    if (start == null || due == null) {
+      throw new BadRequestInputException("Start date and due date are required");
+    }
+
     if (due.isBefore(start)) {
       throw new ConflictException("Due date must be after start date");
     }
@@ -922,6 +931,10 @@ public class TaskService {
    * - Task status cannot be set to todo
    */
   private void validateStatusTransition(TaskStatus current, TaskStatus next) {
+    if (next == null) {
+      throw new BadRequestInputException("Task status is required");
+    }
+
     if (next == TaskStatus.TODO && current != TaskStatus.TODO) {
       throw new BadRequestInputException("Cannot transition back to TODO");
     }

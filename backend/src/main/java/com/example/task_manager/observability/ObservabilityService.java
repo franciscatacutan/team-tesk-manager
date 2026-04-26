@@ -1,0 +1,298 @@
+package com.example.task_manager.observability;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.task_manager.activity.dto.ActivityEventDetails;
+import com.example.task_manager.activity.dto.ActivityEventType;
+import com.example.task_manager.activity.entity.ActivityEventEntity;
+import com.example.task_manager.activity.ActivityEventRepository;
+import com.example.task_manager.common.PageResponse;
+import com.example.task_manager.exception.api.ForbiddenException;
+import com.example.task_manager.exception.api.ResourceNotFoundException;
+import com.example.task_manager.observability.dto.AuditLogResponse;
+import com.example.task_manager.observability.dto.SystemEventResponse;
+import com.example.task_manager.observability.dto.TeamInsightsResponse;
+import com.example.task_manager.observability.entity.AuditAction;
+import com.example.task_manager.observability.entity.AuditLogEntity;
+import com.example.task_manager.observability.entity.SystemEventEntity;
+import com.example.task_manager.observability.entity.SystemEventSeverity;
+import com.example.task_manager.project.ProjectRepository;
+import com.example.task_manager.project.entity.ProjectStatus;
+import com.example.task_manager.task.TaskRepository;
+import com.example.task_manager.task.entity.TaskEntity;
+import com.example.task_manager.task.entity.TaskPriority;
+import com.example.task_manager.task.entity.TaskStatus;
+import com.example.task_manager.team.TeamMemberRepository;
+import com.example.task_manager.user.UserRepository;
+import com.example.task_manager.user.entity.UserEntity;
+
+import lombok.RequiredArgsConstructor;
+
+/**
+ * Owns audit logging, operational events, and query-friendly analytics.
+ */
+@Service
+@RequiredArgsConstructor
+public class ObservabilityService {
+  private static final Duration INSIGHT_WINDOW = Duration.ofDays(7);
+
+  private final AuditLogRepository auditLogRepository;
+  private final SystemEventRepository systemEventRepository;
+  private final ActivityEventRepository activityEventRepository;
+  private final TaskRepository taskRepository;
+  private final ProjectRepository projectRepository;
+  private final TeamMemberRepository teamMemberRepository;
+  private final UserRepository userRepository;
+
+  @Transactional
+  public void recordFromActivity(ActivityEventEntity event) {
+    AuditLogEntity audit = new AuditLogEntity();
+    audit.setTeamId(event.getTeamId());
+    audit.setProjectId(event.getProjectId());
+    audit.setTaskId(event.getTaskId());
+    audit.setEntityType(event.getEntityType());
+    audit.setEntityId(event.getEntityId());
+    audit.setAction(toAuditAction(event.getEventType()));
+    audit.setEventType(event.getEventType());
+    audit.setActor(event.getUser());
+    audit.setSummary(event.getMessage());
+    audit.setMetadata(event.getDetails());
+
+    auditLogRepository.save(audit);
+
+    if (isOperationallySignificant(event.getEventType())) {
+      recordSystemEvent(
+          SystemEventSeverity.INFO,
+          "DOMAIN",
+          event.getEventType().name(),
+          "ActivityEventService",
+          event.getTeamId(),
+          event.getProjectId(),
+          event.getTaskId(),
+          event.getMessage(),
+          event.getUser(),
+          event.getDetails());
+    }
+  }
+
+  @Transactional
+  public SystemEventEntity recordSystemEvent(
+      SystemEventSeverity severity,
+      String category,
+      String eventName,
+      String source,
+      UUID teamId,
+      UUID projectId,
+      UUID taskId,
+      String message,
+      UserEntity actor,
+      ActivityEventDetails context) {
+
+    SystemEventEntity event = new SystemEventEntity();
+    event.setSeverity(severity);
+    event.setCategory(category);
+    event.setEventName(eventName);
+    event.setSource(source);
+    event.setTeamId(teamId);
+    event.setProjectId(projectId);
+    event.setTaskId(taskId);
+    event.setMessage(message);
+    event.setActor(actor);
+    event.setContext(context);
+
+    return systemEventRepository.save(event);
+  }
+
+  @Transactional(readOnly = true)
+  public TeamInsightsResponse getTeamInsights(UUID teamId, Authentication authentication) {
+    validateCanReadTeamObservability(teamId, authentication);
+
+    Instant now = Instant.now();
+    Instant since = now.minus(INSIGHT_WINDOW);
+
+    long totalTasks = taskRepository.countByProjectTeamIdAndDeletedAtIsNull(teamId);
+    long done = taskRepository.countByProjectTeamIdAndStatusAndDeletedAtIsNull(teamId, TaskStatus.DONE);
+
+    TeamInsightsResponse.TaskMetrics taskMetrics = new TeamInsightsResponse.TaskMetrics(
+        totalTasks,
+        taskRepository.countByProjectTeamIdAndStatusAndDeletedAtIsNull(teamId, TaskStatus.TODO),
+        taskRepository.countByProjectTeamIdAndStatusAndDeletedAtIsNull(teamId, TaskStatus.IN_PROGRESS),
+        taskRepository.countByProjectTeamIdAndStatusAndDeletedAtIsNull(teamId, TaskStatus.IN_REVIEW),
+        taskRepository.countByProjectTeamIdAndStatusAndDeletedAtIsNull(teamId, TaskStatus.ON_HOLD),
+        done,
+        taskRepository.countByProjectTeamIdAndStatusAndDeletedAtIsNull(teamId, TaskStatus.CANCELLED),
+        taskRepository.countOverdueOpenTasks(teamId, now, List.of(TaskStatus.DONE, TaskStatus.CANCELLED)),
+        taskRepository.countByProjectTeamIdAndPriorityAndDeletedAtIsNull(teamId, TaskPriority.HIGH),
+        taskRepository.countByProjectTeamIdAndPriorityAndDeletedAtIsNull(teamId, TaskPriority.CRITICAL));
+
+    TeamInsightsResponse.ProjectMetrics projectMetrics = new TeamInsightsResponse.ProjectMetrics(
+        projectRepository.countByTeamIdAndDeletedAtIsNull(teamId),
+        projectRepository.countByTeamIdAndStatusAndDeletedAtIsNull(teamId, ProjectStatus.ACTIVE),
+        projectRepository.countByTeamIdAndStatusAndDeletedAtIsNull(teamId, ProjectStatus.ON_HOLD),
+        projectRepository.countByTeamIdAndStatusAndDeletedAtIsNull(teamId, ProjectStatus.COMPLETED));
+
+    long completedLast7Days = taskRepository
+        .countByProjectTeamIdAndStatusAndActualCompletionDateAfterAndDeletedAtIsNull(teamId, TaskStatus.DONE, since);
+
+    TeamInsightsResponse.FlowMetrics flowMetrics = new TeamInsightsResponse.FlowMetrics(
+        completedLast7Days,
+        totalTasks == 0 ? 0 : roundPercent((double) done / totalTasks * 100),
+        averageCycleTimeHours(teamId));
+
+    TeamInsightsResponse.ActivityMetrics activityMetrics = new TeamInsightsResponse.ActivityMetrics(
+        activityEventRepository.countByTeamIdAndCreatedAtAfter(teamId, since),
+        auditLogRepository.countByTeamIdAndOccurredAtAfter(teamId, since),
+        systemEventRepository.countByTeamIdAndOccurredAtAfter(teamId, since));
+
+    return new TeamInsightsResponse(teamId, now, taskMetrics, projectMetrics, flowMetrics, activityMetrics);
+  }
+
+  @Transactional(readOnly = true)
+  public PageResponse<AuditLogResponse> getAuditLogs(
+      UUID teamId,
+      Pageable pageable,
+      Authentication authentication) {
+
+    validateCanReadTeamObservability(teamId, authentication);
+
+    Page<AuditLogEntity> page = auditLogRepository.findByTeamId(teamId, pageable);
+
+    return new PageResponse<>(
+        page.map(this::toAuditLogResponse).getContent(),
+        page.getNumber(),
+        page.getSize(),
+        page.getTotalElements(),
+        page.getTotalPages(),
+        page.isFirst(),
+        page.isLast());
+  }
+
+  @Transactional(readOnly = true)
+  public PageResponse<SystemEventResponse> getSystemEvents(
+      UUID teamId,
+      Pageable pageable,
+      Authentication authentication) {
+
+    validateCanReadTeamObservability(teamId, authentication);
+
+    Page<SystemEventEntity> page = systemEventRepository.findByTeamId(teamId, pageable);
+
+    return new PageResponse<>(
+        page.map(this::toSystemEventResponse).getContent(),
+        page.getNumber(),
+        page.getSize(),
+        page.getTotalElements(),
+        page.getTotalPages(),
+        page.isFirst(),
+        page.isLast());
+  }
+
+  private double averageCycleTimeHours(UUID teamId) {
+    List<TaskEntity> completedTasks = taskRepository
+        .findTop500ByProjectTeamIdAndStatusAndActualStartDateIsNotNullAndActualCompletionDateIsNotNullAndDeletedAtIsNullOrderByActualCompletionDateDesc(
+            teamId,
+            TaskStatus.DONE);
+
+    return completedTasks.stream()
+        .mapToLong(task -> Duration.between(task.getActualStartDate(), task.getActualCompletionDate()).toMinutes())
+        .average()
+        .stream()
+        .map(minutes -> Math.round((minutes / 60.0) * 100.0) / 100.0)
+        .findFirst()
+        .orElse(0);
+  }
+
+  private AuditAction toAuditAction(ActivityEventType eventType) {
+    return switch (eventType) {
+      case TEAM_CREATED, PROJECT_CREATED, TASK_CREATED -> AuditAction.CREATE;
+      case TEAM_DELETED, PROJECT_DELETED, TASK_DELETED -> AuditAction.DELETE;
+      case PROJECT_STATUS_CHANGED, TASK_STATUS_CHANGED -> AuditAction.STATUS_CHANGE;
+      case TASK_ASSIGNEE_CHANGED, TASK_SUPPORT_ASSIGNED, TASK_SUPPORT_CHANGED, TASK_SUPPORT_REMOVED ->
+        AuditAction.ASSIGNMENT_CHANGE;
+      case TASK_COMMENTED -> AuditAction.COMMENT;
+      case TEAM_MEMBER_ADDED, TEAM_MEMBER_REMOVED, TEAM_MEMBER_ROLE_CHANGED -> AuditAction.MEMBERSHIP_CHANGE;
+      case TEAM_OWNERSHIP_TRANSFERRED -> AuditAction.OWNERSHIP_TRANSFER;
+      case TEAM_UPDATED, PROJECT_UPDATED, TASK_UPDATED -> AuditAction.UPDATE;
+    };
+  }
+
+  private boolean isOperationallySignificant(ActivityEventType eventType) {
+    return switch (eventType) {
+      case TEAM_DELETED, PROJECT_DELETED, TASK_DELETED, TEAM_OWNERSHIP_TRANSFERRED, PROJECT_STATUS_CHANGED,
+          TASK_STATUS_CHANGED ->
+        true;
+      default -> false;
+    };
+  }
+
+  private double roundPercent(double value) {
+    return Math.round(value * 100.0) / 100.0;
+  }
+
+  private void validateCanReadTeamObservability(UUID teamId, Authentication authentication) {
+    UserEntity requester = userRepository.findByEmail(authentication.getName())
+        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+    boolean isGlobalAdmin = authentication.getAuthorities().stream()
+        .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
+
+    if (!isGlobalAdmin && !teamMemberRepository.existsByTeamIdAndUserId(teamId, requester.getId())) {
+      throw new ForbiddenException("User is not a team member");
+    }
+  }
+
+  private AuditLogResponse toAuditLogResponse(AuditLogEntity entity) {
+    AuditLogResponse.User actor = new AuditLogResponse.User(
+        entity.getActor().getId(),
+        entity.getActor().getFirstName(),
+        entity.getActor().getLastName(),
+        entity.getActor().getEmail());
+
+    return new AuditLogResponse(
+        entity.getId(),
+        entity.getTeamId(),
+        entity.getProjectId(),
+        entity.getTaskId(),
+        entity.getEntityType(),
+        entity.getEntityId(),
+        entity.getAction(),
+        entity.getEventType(),
+        actor,
+        entity.getSummary(),
+        entity.getMetadata(),
+        entity.getOccurredAt());
+  }
+
+  private SystemEventResponse toSystemEventResponse(SystemEventEntity entity) {
+    SystemEventResponse.User actor = entity.getActor() == null
+        ? null
+        : new SystemEventResponse.User(
+            entity.getActor().getId(),
+            entity.getActor().getFirstName(),
+            entity.getActor().getLastName(),
+            entity.getActor().getEmail());
+
+    return new SystemEventResponse(
+        entity.getId(),
+        entity.getSeverity(),
+        entity.getCategory(),
+        entity.getEventName(),
+        entity.getSource(),
+        entity.getTeamId(),
+        entity.getProjectId(),
+        entity.getTaskId(),
+        entity.getMessage(),
+        actor,
+        entity.getContext(),
+        entity.getOccurredAt());
+  }
+}
