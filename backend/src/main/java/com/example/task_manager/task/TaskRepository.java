@@ -82,14 +82,30 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID>, JpaSpec
 
   long countByProjectTeamIdAndPriorityAndDeletedAtIsNull(UUID teamId, TaskPriority priority);
 
+  long countByProjectIdAndDeletedAtIsNull(UUID projectId);
+
+  long countByProjectIdAndStatusAndDeletedAtIsNull(UUID projectId, TaskStatus status);
+
+  long countByProjectIdAndPriorityAndDeletedAtIsNull(UUID projectId, TaskPriority priority);
+
   long countByProjectTeamIdAndStatusAndActualCompletionDateAfterAndDeletedAtIsNull(
       UUID teamId,
+      TaskStatus status,
+      Instant actualCompletionDate);
+
+  long countByProjectIdAndStatusAndActualCompletionDateAfterAndDeletedAtIsNull(
+      UUID projectId,
       TaskStatus status,
       Instant actualCompletionDate);
 
   List<TaskEntity>
       findTop500ByProjectTeamIdAndStatusAndActualStartDateIsNotNullAndActualCompletionDateIsNotNullAndDeletedAtIsNullOrderByActualCompletionDateDesc(
           UUID teamId,
+          TaskStatus status);
+
+  List<TaskEntity>
+      findTop500ByProjectIdAndStatusAndActualStartDateIsNotNullAndActualCompletionDateIsNotNullAndDeletedAtIsNullOrderByActualCompletionDateDesc(
+          UUID projectId,
           TaskStatus status);
 
   @Query("""
@@ -101,6 +117,16 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID>, JpaSpec
         AND t.status NOT IN :terminalStatuses
       """)
   long countOverdueOpenTasks(UUID teamId, Instant now, List<TaskStatus> terminalStatuses);
+
+  @Query("""
+      SELECT COUNT(t)
+      FROM TaskEntity t
+      WHERE t.project.id = :projectId
+        AND t.deletedAt IS NULL
+        AND t.plannedDueDate < :now
+        AND t.status NOT IN :terminalStatuses
+      """)
+  long countOverdueOpenTasksByProject(UUID projectId, Instant now, List<TaskStatus> terminalStatuses);
 
   @Modifying
   @Query("""

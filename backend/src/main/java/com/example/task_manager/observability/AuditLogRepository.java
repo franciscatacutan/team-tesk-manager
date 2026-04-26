@@ -13,4 +13,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLogEntity, UUID> 
   long countByTeamIdAndOccurredAtAfter(UUID teamId, Instant occurredAt);
 
   Page<AuditLogEntity> findByTeamId(UUID teamId, Pageable pageable);
+
+  long countByProjectIdAndOccurredAtAfter(UUID projectId, Instant occurredAt);
+
+  Page<AuditLogEntity> findByProjectId(UUID projectId, Pageable pageable);
 }

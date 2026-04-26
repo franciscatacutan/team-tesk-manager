@@ -15,9 +15,15 @@ public record ProjectResponse(
     ProjectStatus status,
     UUID teamId,
     ProjectUserSummary createdBy,
+    ProjectUserSummary completedBy,
+    Instant plannedStartDate,
+    Instant plannedDueDate,
+    Instant actualStartDate,
+    Instant actualCompletionDate,
     Instant createdAt,
     Instant updatedAt,
     Instant lastActivityAt,
+    Instant statusChangedAt,
     boolean deleted) {
 
   /**

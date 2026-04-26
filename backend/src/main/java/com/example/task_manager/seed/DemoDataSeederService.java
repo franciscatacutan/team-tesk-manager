@@ -176,7 +176,9 @@ public class DemoDataSeederService {
           team.id(),
           new CreateProjectRequest(
               "Demo Project " + number + " [" + batchId + "]",
-              "Seeded project " + number + " used to populate project lists and history."),
+              "Seeded project " + number + " used to populate project lists and history.",
+              Instant.now().plus(number, ChronoUnit.DAYS),
+              Instant.now().plus(number + 30, ChronoUnit.DAYS)),
           requesterEmail);
 
       if (number % 5 == 0) {

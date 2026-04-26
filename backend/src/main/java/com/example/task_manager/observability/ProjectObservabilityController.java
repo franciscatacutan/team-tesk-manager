@@ -16,43 +16,16 @@ import com.example.task_manager.common.PageResponse;
 import com.example.task_manager.observability.dto.AuditLogResponse;
 import com.example.task_manager.observability.dto.ProjectInsightsResponse;
 import com.example.task_manager.observability.dto.SystemEventResponse;
-import com.example.task_manager.observability.dto.TeamInsightsResponse;
 
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/teams/{teamId}/insights")
+@RequestMapping("/api/teams/{teamId}/projects/{projectId}/insights")
 @RequiredArgsConstructor
-public class ObservabilityController {
+public class ProjectObservabilityController {
   private final ObservabilityService observabilityService;
 
   @GetMapping("/summary")
-  public ResponseEntity<TeamInsightsResponse> getTeamInsights(
-      @PathVariable UUID teamId,
-      Authentication authentication) {
-
-    return ResponseEntity.ok(observabilityService.getTeamInsights(teamId, authentication));
-  }
-
-  @GetMapping("/audit-logs")
-  public ResponseEntity<PageResponse<AuditLogResponse>> getAuditLogs(
-      @PathVariable UUID teamId,
-      @PageableDefault(size = 20, sort = "occurredAt", direction = Sort.Direction.DESC) Pageable pageable,
-      Authentication authentication) {
-
-    return ResponseEntity.ok(observabilityService.getAuditLogs(teamId, pageable, authentication));
-  }
-
-  @GetMapping("/system-events")
-  public ResponseEntity<PageResponse<SystemEventResponse>> getSystemEvents(
-      @PathVariable UUID teamId,
-      @PageableDefault(size = 20, sort = "occurredAt", direction = Sort.Direction.DESC) Pageable pageable,
-      Authentication authentication) {
-
-    return ResponseEntity.ok(observabilityService.getSystemEvents(teamId, pageable, authentication));
-  }
-
-  @GetMapping("/projects/{projectId}/summary")
   public ResponseEntity<ProjectInsightsResponse> getProjectInsights(
       @PathVariable UUID teamId,
       @PathVariable UUID projectId,
@@ -61,7 +34,7 @@ public class ObservabilityController {
     return ResponseEntity.ok(observabilityService.getProjectInsights(teamId, projectId, authentication));
   }
 
-  @GetMapping("/projects/{projectId}/audit-logs")
+  @GetMapping("/audit-logs")
   public ResponseEntity<PageResponse<AuditLogResponse>> getProjectAuditLogs(
       @PathVariable UUID teamId,
       @PathVariable UUID projectId,
@@ -71,7 +44,7 @@ public class ObservabilityController {
     return ResponseEntity.ok(observabilityService.getProjectAuditLogs(teamId, projectId, pageable, authentication));
   }
 
-  @GetMapping("/projects/{projectId}/system-events")
+  @GetMapping("/system-events")
   public ResponseEntity<PageResponse<SystemEventResponse>> getProjectSystemEvents(
       @PathVariable UUID teamId,
       @PathVariable UUID projectId,

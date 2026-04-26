@@ -1,7 +1,9 @@
 package com.example.task_manager.observability;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,13 +21,18 @@ import com.example.task_manager.common.PageResponse;
 import com.example.task_manager.exception.api.ForbiddenException;
 import com.example.task_manager.exception.api.ResourceNotFoundException;
 import com.example.task_manager.observability.dto.AuditLogResponse;
+import com.example.task_manager.observability.dto.ProjectInsightsResponse;
 import com.example.task_manager.observability.dto.SystemEventResponse;
 import com.example.task_manager.observability.dto.TeamInsightsResponse;
 import com.example.task_manager.observability.entity.AuditAction;
 import com.example.task_manager.observability.entity.AuditLogEntity;
+import com.example.task_manager.observability.entity.KpiSnapshotEntity;
+import com.example.task_manager.observability.entity.MetricScope;
+import com.example.task_manager.observability.entity.MetricSnapshotEntity;
 import com.example.task_manager.observability.entity.SystemEventEntity;
 import com.example.task_manager.observability.entity.SystemEventSeverity;
 import com.example.task_manager.project.ProjectRepository;
+import com.example.task_manager.project.entity.ProjectEntity;
 import com.example.task_manager.project.entity.ProjectStatus;
 import com.example.task_manager.task.TaskRepository;
 import com.example.task_manager.task.entity.TaskEntity;
@@ -47,6 +54,8 @@ public class ObservabilityService {
 
   private final AuditLogRepository auditLogRepository;
   private final SystemEventRepository systemEventRepository;
+  private final MetricSnapshotRepository metricSnapshotRepository;
+  private final KpiSnapshotRepository kpiSnapshotRepository;
   private final ActivityEventRepository activityEventRepository;
   private final TaskRepository taskRepository;
   private final ProjectRepository projectRepository;
@@ -81,6 +90,10 @@ public class ObservabilityService {
           event.getMessage(),
           event.getUser(),
           event.getDetails());
+    }
+
+    if (event.getProjectId() != null) {
+      snapshotProjectMetrics(event.getProjectId());
     }
   }
 
@@ -177,6 +190,69 @@ public class ObservabilityService {
   }
 
   @Transactional(readOnly = true)
+  public ProjectInsightsResponse getProjectInsights(
+      UUID teamId,
+      UUID projectId,
+      Authentication authentication) {
+
+    ProjectEntity project = validateCanReadProjectObservability(teamId, projectId, authentication);
+
+    Instant now = Instant.now();
+    Instant since = now.minus(INSIGHT_WINDOW);
+
+    long totalTasks = taskRepository.countByProjectIdAndDeletedAtIsNull(projectId);
+    long done = taskRepository.countByProjectIdAndStatusAndDeletedAtIsNull(projectId, TaskStatus.DONE);
+
+    ProjectInsightsResponse.TaskMetrics taskMetrics = new ProjectInsightsResponse.TaskMetrics(
+        totalTasks,
+        taskRepository.countByProjectIdAndStatusAndDeletedAtIsNull(projectId, TaskStatus.TODO),
+        taskRepository.countByProjectIdAndStatusAndDeletedAtIsNull(projectId, TaskStatus.IN_PROGRESS),
+        taskRepository.countByProjectIdAndStatusAndDeletedAtIsNull(projectId, TaskStatus.IN_REVIEW),
+        taskRepository.countByProjectIdAndStatusAndDeletedAtIsNull(projectId, TaskStatus.ON_HOLD),
+        done,
+        taskRepository.countByProjectIdAndStatusAndDeletedAtIsNull(projectId, TaskStatus.CANCELLED),
+        taskRepository.countOverdueOpenTasksByProject(projectId, now, List.of(TaskStatus.DONE, TaskStatus.CANCELLED)),
+        taskRepository.countByProjectIdAndPriorityAndDeletedAtIsNull(projectId, TaskPriority.HIGH),
+        taskRepository.countByProjectIdAndPriorityAndDeletedAtIsNull(projectId, TaskPriority.CRITICAL));
+
+    long completedLast7Days = taskRepository
+        .countByProjectIdAndStatusAndActualCompletionDateAfterAndDeletedAtIsNull(projectId, TaskStatus.DONE, since);
+
+    ProjectInsightsResponse.FlowMetrics flowMetrics = new ProjectInsightsResponse.FlowMetrics(
+        completedLast7Days,
+        totalTasks == 0 ? 0 : roundPercent((double) done / totalTasks * 100),
+        averageProjectCycleTimeHours(projectId));
+
+    ProjectInsightsResponse.ActivityMetrics activityMetrics = new ProjectInsightsResponse.ActivityMetrics(
+        activityEventRepository.countByProjectIdAndCreatedAtAfter(projectId, since),
+        auditLogRepository.countByProjectIdAndOccurredAtAfter(projectId, since),
+        systemEventRepository.countByProjectIdAndOccurredAtAfter(projectId, since));
+
+    ProjectInsightsResponse.HealthMetrics healthMetrics = new ProjectInsightsResponse.HealthMetrics(
+        project.getPlannedDueDate() != null
+            && project.getActualCompletionDate() == null
+            && project.getPlannedDueDate().isBefore(now),
+        project.getPlannedDueDate() == null ? 0 : ChronoUnit.DAYS.between(now, project.getPlannedDueDate()),
+        project.getActualCompletionDate() != null
+            && project.getPlannedDueDate() != null
+            && !project.getActualCompletionDate().isAfter(project.getPlannedDueDate()));
+
+    return new ProjectInsightsResponse(
+        teamId,
+        projectId,
+        project.getStatus(),
+        project.getPlannedStartDate(),
+        project.getPlannedDueDate(),
+        project.getActualStartDate(),
+        project.getActualCompletionDate(),
+        now,
+        taskMetrics,
+        flowMetrics,
+        activityMetrics,
+        healthMetrics);
+  }
+
+  @Transactional(readOnly = true)
   public PageResponse<SystemEventResponse> getSystemEvents(
       UUID teamId,
       Pageable pageable,
@@ -196,10 +272,67 @@ public class ObservabilityService {
         page.isLast());
   }
 
+  @Transactional(readOnly = true)
+  public PageResponse<AuditLogResponse> getProjectAuditLogs(
+      UUID teamId,
+      UUID projectId,
+      Pageable pageable,
+      Authentication authentication) {
+
+    validateCanReadProjectObservability(teamId, projectId, authentication);
+
+    Page<AuditLogEntity> page = auditLogRepository.findByProjectId(projectId, pageable);
+
+    return new PageResponse<>(
+        page.map(this::toAuditLogResponse).getContent(),
+        page.getNumber(),
+        page.getSize(),
+        page.getTotalElements(),
+        page.getTotalPages(),
+        page.isFirst(),
+        page.isLast());
+  }
+
+  @Transactional(readOnly = true)
+  public PageResponse<SystemEventResponse> getProjectSystemEvents(
+      UUID teamId,
+      UUID projectId,
+      Pageable pageable,
+      Authentication authentication) {
+
+    validateCanReadProjectObservability(teamId, projectId, authentication);
+
+    Page<SystemEventEntity> page = systemEventRepository.findByProjectId(projectId, pageable);
+
+    return new PageResponse<>(
+        page.map(this::toSystemEventResponse).getContent(),
+        page.getNumber(),
+        page.getSize(),
+        page.getTotalElements(),
+        page.getTotalPages(),
+        page.isFirst(),
+        page.isLast());
+  }
+
   private double averageCycleTimeHours(UUID teamId) {
     List<TaskEntity> completedTasks = taskRepository
         .findTop500ByProjectTeamIdAndStatusAndActualStartDateIsNotNullAndActualCompletionDateIsNotNullAndDeletedAtIsNullOrderByActualCompletionDateDesc(
             teamId,
+            TaskStatus.DONE);
+
+    return completedTasks.stream()
+        .mapToLong(task -> Duration.between(task.getActualStartDate(), task.getActualCompletionDate()).toMinutes())
+        .average()
+        .stream()
+        .map(minutes -> Math.round((minutes / 60.0) * 100.0) / 100.0)
+        .findFirst()
+        .orElse(0);
+  }
+
+  private double averageProjectCycleTimeHours(UUID projectId) {
+    List<TaskEntity> completedTasks = taskRepository
+        .findTop500ByProjectIdAndStatusAndActualStartDateIsNotNullAndActualCompletionDateIsNotNullAndDeletedAtIsNullOrderByActualCompletionDateDesc(
+            projectId,
             TaskStatus.DONE);
 
     return completedTasks.stream()
@@ -248,6 +381,61 @@ public class ObservabilityService {
     if (!isGlobalAdmin && !teamMemberRepository.existsByTeamIdAndUserId(teamId, requester.getId())) {
       throw new ForbiddenException("User is not a team member");
     }
+  }
+
+  private ProjectEntity validateCanReadProjectObservability(
+      UUID teamId,
+      UUID projectId,
+      Authentication authentication) {
+
+    ProjectEntity project = projectRepository.findByIdAndTeamId(projectId, teamId)
+        .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+    validateCanReadTeamObservability(teamId, authentication);
+
+    return project;
+  }
+
+  private void snapshotProjectMetrics(UUID projectId) {
+    Instant now = Instant.now();
+    long totalTasks = taskRepository.countByProjectIdAndDeletedAtIsNull(projectId);
+    long doneTasks = taskRepository.countByProjectIdAndStatusAndDeletedAtIsNull(projectId, TaskStatus.DONE);
+    long cancelledTasks = taskRepository.countByProjectIdAndStatusAndDeletedAtIsNull(projectId, TaskStatus.CANCELLED);
+    long openTasks = Math.max(0, totalTasks - doneTasks - cancelledTasks);
+    long overdueTasks = taskRepository.countOverdueOpenTasksByProject(
+        projectId,
+        now,
+        List.of(TaskStatus.DONE, TaskStatus.CANCELLED));
+    double completionRate = totalTasks == 0 ? 0 : roundPercent((double) doneTasks / totalTasks * 100);
+
+    saveProjectMetric(projectId, "project.tasks.total", totalTasks, "count");
+    saveProjectMetric(projectId, "project.tasks.open", openTasks, "count");
+    saveProjectMetric(projectId, "project.tasks.overdue", overdueTasks, "count");
+    saveProjectKpi(projectId, "project.completion_rate", completionRate, "percent", now);
+  }
+
+  private void saveProjectMetric(UUID projectId, String metricKey, double value, String unit) {
+    MetricSnapshotEntity metric = new MetricSnapshotEntity();
+    metric.setMetricKey(metricKey);
+    metric.setScope(MetricScope.PROJECT);
+    metric.setScopeId(projectId);
+    metric.setValue(BigDecimal.valueOf(value));
+    metric.setUnit(unit);
+
+    metricSnapshotRepository.save(metric);
+  }
+
+  private void saveProjectKpi(UUID projectId, String kpiKey, double value, String unit, Instant now) {
+    KpiSnapshotEntity kpi = new KpiSnapshotEntity();
+    kpi.setKpiKey(kpiKey);
+    kpi.setScope(MetricScope.PROJECT);
+    kpi.setScopeId(projectId);
+    kpi.setPeriodStart(now.minus(INSIGHT_WINDOW));
+    kpi.setPeriodEnd(now);
+    kpi.setValue(BigDecimal.valueOf(value));
+    kpi.setUnit(unit);
+
+    kpiSnapshotRepository.save(kpi);
   }
 
   private AuditLogResponse toAuditLogResponse(AuditLogEntity entity) {

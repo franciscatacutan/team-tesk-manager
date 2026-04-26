@@ -23,7 +23,8 @@ import lombok.Setter;
 @EntityListeners(AuditingEntityListener.class) // Enable auditing for createdAt and updatedAt fields
 @Table(name = "projects", indexes = {
     @Index(name = "idx_project_team_deleted", columnList = "team_id, deleted_at"),
-    @Index(name = "idx_project_team_name", columnList = "team_id, name")
+    @Index(name = "idx_project_team_name", columnList = "team_id, name"),
+    @Index(name = "idx_project_team_status_due", columnList = "team_id, status, planned_due_date, deleted_at")
 
 })
 public class ProjectEntity {
@@ -50,8 +51,20 @@ public class ProjectEntity {
   @JoinColumn(name = "created_by", nullable = false)
   private UserEntity createdBy;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "completed_by")
+  private UserEntity completedBy;
+
   @Column(name = "next_task_number", nullable = false)
   private Long nextTaskNumber = 1L;
+
+  private Instant plannedStartDate;
+
+  private Instant plannedDueDate;
+
+  private Instant actualStartDate;
+
+  private Instant actualCompletionDate;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
@@ -62,6 +75,8 @@ public class ProjectEntity {
   private Instant updatedAt;
 
   private Instant lastActivityAt;
+
+  private Instant statusChangedAt;
 
   private Instant deletedAt;
 

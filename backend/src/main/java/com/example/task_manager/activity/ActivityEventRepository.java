@@ -37,4 +37,6 @@ public interface ActivityEventRepository extends JpaRepository<ActivityEventEnti
   Page<ActivityEventEntity> findTeamActivity(UUID teamId, Pageable pageable);
 
   long countByTeamIdAndCreatedAtAfter(UUID teamId, Instant createdAt);
+
+  long countByProjectIdAndCreatedAtAfter(UUID projectId, Instant createdAt);
 }

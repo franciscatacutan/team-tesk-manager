@@ -80,6 +80,7 @@ public class ProjectService {
     String trimmedName = request.name().trim().toLowerCase(Locale.ROOT);
 
     validateExistByTeamAndName(teamId, trimmedName);
+    validateDates(request.plannedStartDate(), request.plannedDueDate());
 
     ProjectEntity project = new ProjectEntity();
     project.setName(request.name().trim());
@@ -87,6 +88,10 @@ public class ProjectService {
     project.setStatus(ProjectStatus.ACTIVE);
     project.setTeam(requesterMembership.getTeam());
     project.setCreatedBy(requester);
+    project.setPlannedStartDate(request.plannedStartDate());
+    project.setPlannedDueDate(request.plannedDueDate());
+    project.setActualStartDate(Instant.now());
+    project.setStatusChangedAt(Instant.now());
 
     // Flush immediately so unique-constraint violations are caught here
     // and mapped to a domain conflict.
@@ -101,14 +106,16 @@ public class ProjectService {
         requester,
         ActivityEventType.PROJECT_CREATED,
         buildProjectActivityDetails(
-            List.of("name", "description", "status"),
+            List.of("name", "description", "status", "planned start", "planned due"),
             null,
             null,
             null,
             List.of(
                 activityEventService.change("name", "name", null, project.getName()),
                 activityEventService.change("description", "description", null, project.getDescription()),
-                activityEventService.change("status", "status", null, project.getStatus())),
+                activityEventService.change("status", "status", null, project.getStatus()),
+                activityEventService.change("plannedStartDate", "planned start", null, project.getPlannedStartDate()),
+                activityEventService.change("plannedDueDate", "planned due", null, project.getPlannedDueDate())),
             null),
         null);
 
@@ -134,15 +141,19 @@ public class ProjectService {
 
     String previousName = project.getName();
     String previousDescription = project.getDescription();
+    Instant previousPlannedStart = project.getPlannedStartDate();
+    Instant previousPlannedDue = project.getPlannedDueDate();
 
     if (request.name() != null) {
 
-      if (request.name().isEmpty()) {
+      if (request.name().isBlank()) {
         throw new BadRequestInputException("Project name cannot be blank");
       }
       String trimmedName = request.name().trim().toLowerCase(Locale.ROOT);
 
-      validateExistByTeamAndName(teamId, trimmedName);
+      if (!project.getName().equalsIgnoreCase(request.name().trim())) {
+        validateExistByTeamAndName(teamId, trimmedName);
+      }
 
       project.setName(request.name().trim());
     }
@@ -150,11 +161,29 @@ public class ProjectService {
     if (request.description() != null) {
       project.setDescription(request.description().trim());
     }
+
+    Instant newPlannedStart = request.plannedStartDate() != null
+        ? request.plannedStartDate()
+        : project.getPlannedStartDate();
+
+    Instant newPlannedDue = request.plannedDueDate() != null
+        ? request.plannedDueDate()
+        : project.getPlannedDueDate();
+
+    validateDates(newPlannedStart, newPlannedDue);
+
+    project.setPlannedStartDate(newPlannedStart);
+    project.setPlannedDueDate(newPlannedDue);
+
     ProjectDetailsUpdateMessage updateMessage = buildProjectUpdateMessage(
         previousName,
         previousDescription,
+        previousPlannedStart,
+        previousPlannedDue,
         project.getName(),
-        project.getDescription());
+        project.getDescription(),
+        project.getPlannedStartDate(),
+        project.getPlannedDueDate());
 
     if (!updateMessage.fields().isEmpty()) {
       activityEventService.recordProjectEvent(
@@ -236,6 +265,21 @@ public class ProjectService {
 
     ProjectStatus currentStatus = project.getStatus();
     project.setStatus(newStatus.status());
+    project.setStatusChangedAt(Instant.now());
+
+    if (newStatus.status() == ProjectStatus.ACTIVE && project.getActualStartDate() == null) {
+      project.setActualStartDate(Instant.now());
+    }
+
+    if (newStatus.status() == ProjectStatus.COMPLETED) {
+      project.setActualCompletionDate(Instant.now());
+      project.setCompletedBy(requester);
+    }
+
+    if (currentStatus == ProjectStatus.COMPLETED && newStatus.status() != ProjectStatus.COMPLETED) {
+      project.setActualCompletionDate(null);
+      project.setCompletedBy(null);
+    }
 
     activityEventService.recordProjectEvent(
         project,
@@ -379,6 +423,14 @@ public class ProjectService {
         project.getCreatedBy().getLastName(),
         project.getCreatedBy().getEmail());
 
+    ProjectResponse.ProjectUserSummary completedBy = project.getCompletedBy() == null
+        ? null
+        : new ProjectResponse.ProjectUserSummary(
+            project.getCompletedBy().getId(),
+            project.getCompletedBy().getFirstName(),
+            project.getCompletedBy().getLastName(),
+            project.getCompletedBy().getEmail());
+
     Boolean isDeleted = project.getDeletedAt() != null ? true : false;
 
     return new ProjectResponse(
@@ -388,9 +440,15 @@ public class ProjectService {
         project.getStatus(),
         project.getTeam().getId(),
         createdBy,
+        completedBy,
+        project.getPlannedStartDate(),
+        project.getPlannedDueDate(),
+        project.getActualStartDate(),
+        project.getActualCompletionDate(),
         project.getCreatedAt(),
         project.getUpdatedAt(),
         project.getLastActivityAt(),
+        project.getStatusChangedAt(),
         isDeleted);
   }
 
@@ -488,6 +546,10 @@ public class ProjectService {
       ProjectEntity project,
       ProjectStatus newStatus) {
 
+    if (newStatus == null) {
+      throw new BadRequestInputException("Project status is required");
+    }
+
     if (project.getStatus() == newStatus) {
       throw new ConflictException(
           "Project is already in this status");
@@ -511,8 +573,12 @@ public class ProjectService {
   private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
       "name",
       "status",
+      "plannedStartDate",
+      "plannedDueDate",
+      "actualCompletionDate",
       "createdBy",
       "lastActivityAt",
+      "statusChangedAt",
       "createdAt",
       "updatedAt");
 
@@ -553,8 +619,12 @@ public class ProjectService {
   private ProjectDetailsUpdateMessage buildProjectUpdateMessage(
       String previousName,
       String previousDescription,
+      Instant previousPlannedStart,
+      Instant previousPlannedDue,
       String newName,
-      String newDescription) {
+      String newDescription,
+      Instant newPlannedStart,
+      Instant newPlannedDue) {
 
     List<String> fields = new ArrayList<>();
     List<ActivityEventDetails.ActivityChange> changes = new ArrayList<>();
@@ -567,6 +637,17 @@ public class ProjectService {
     if (!java.util.Objects.equals(previousDescription, newDescription)) {
       fields.add("description");
       changes.add(activityEventService.change("description", "description", previousDescription, newDescription));
+    }
+
+    if (!java.util.Objects.equals(previousPlannedStart, newPlannedStart)) {
+      fields.add("planned start");
+      changes.add(activityEventService.change("plannedStartDate", "planned start", previousPlannedStart,
+          newPlannedStart));
+    }
+
+    if (!java.util.Objects.equals(previousPlannedDue, newPlannedDue)) {
+      fields.add("planned due");
+      changes.add(activityEventService.change("plannedDueDate", "planned due", previousPlannedDue, newPlannedDue));
     }
 
     if (fields.isEmpty()) {
@@ -595,6 +676,12 @@ public class ProjectService {
       String message,
       List<String> fields,
       List<ActivityEventDetails.ActivityChange> changes) {
+  }
+
+  private void validateDates(Instant start, Instant due) {
+    if (start != null && due != null && due.isBefore(start)) {
+      throw new ConflictException("Project due date must be after start date");
+    }
   }
 
 }

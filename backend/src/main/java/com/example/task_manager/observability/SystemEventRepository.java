@@ -13,4 +13,8 @@ public interface SystemEventRepository extends JpaRepository<SystemEventEntity, 
   long countByTeamIdAndOccurredAtAfter(UUID teamId, Instant occurredAt);
 
   Page<SystemEventEntity> findByTeamId(UUID teamId, Pageable pageable);
+
+  long countByProjectIdAndOccurredAtAfter(UUID projectId, Instant occurredAt);
+
+  Page<SystemEventEntity> findByProjectId(UUID projectId, Pageable pageable);
 }
