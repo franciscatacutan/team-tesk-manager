@@ -57,6 +57,14 @@ public class TeamEntity {
   @JoinColumn(name = "owner_id", nullable = false)
   private UserEntity owner;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "created_by")
+  private UserEntity createdBy;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "deleted_by")
+  private UserEntity deletedBy;
+
   // One-to-many relationship with user (members)
   @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<TeamMemberEntity> members = new ArrayList<>();
@@ -68,6 +76,10 @@ public class TeamEntity {
   private Instant updatedAt;
 
   private Instant lastActivityAt;
+
+  private Instant ownerChangedAt;
+
+  private Instant membershipChangedAt;
 
   private Instant deletedAt;
 

@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import com.example.task_manager.team.entity.TeamMemberEntity;
+import com.example.task_manager.team.entity.TeamRole;
 
 /**
  * Repository interface for Team Member entities.
@@ -26,5 +27,9 @@ public interface TeamMemberRepository
   Page<TeamMemberEntity> findByUserId(UUID userId, Pageable pageable);
 
   Optional<TeamMemberEntity> findByTeamIdAndUserId(UUID teamId, UUID userId);
+
+  long countByTeamId(UUID teamId);
+
+  long countByTeamIdAndRole(UUID teamId, TeamRole role);
 
 }

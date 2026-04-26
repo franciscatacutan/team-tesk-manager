@@ -94,6 +94,9 @@ public class TeamService {
     team.setName(request.name().trim());
     team.setDescription(request.description());
     team.setOwner(owner);
+    team.setCreatedBy(owner);
+    team.setOwnerChangedAt(Instant.now());
+    team.setMembershipChangedAt(Instant.now());
 
     // Flush immediately so unique-constraint violations are caught here
     // and mapped to a domain conflict.
@@ -149,15 +152,17 @@ public class TeamService {
     String previousName = team.getName();
     String previousDescription = team.getDescription();
 
-    if (request.name() != null) {
+      if (request.name() != null) {
 
-      if (request.name().isEmpty()) {
+      if (request.name().isBlank()) {
         throw new BadRequestInputException("Team name cannot be blank");
       }
 
       String trimmedName = request.name().trim().toLowerCase(Locale.ROOT);
 
-      validateExistByOwnerAndName(requester.getId(), trimmedName);
+      if (!team.getName().equalsIgnoreCase(request.name().trim())) {
+        validateExistByOwnerAndName(requester.getId(), trimmedName);
+      }
 
       team.setName(request.name().trim());
     }
@@ -213,6 +218,7 @@ public class TeamService {
         .findAllByTeamIdAndDeletedAtIsNull(teamId);
 
     team.setDeletedAt(now);
+    team.setDeletedBy(requester);
 
     for (com.example.task_manager.task.entity.TaskEntity task : activeTasks) {
       task.setDeletedAt(now);
@@ -284,6 +290,7 @@ public class TeamService {
                     activityEventService.change("role", "role", null, member.getRole())),
                 member.getUser()),
             null);
+        team.setMembershipChangedAt(Instant.now());
       } catch (Exception ex) {
         failed.add(new FailedMember(user.userId(), ex.getMessage()));
       }
@@ -332,6 +339,7 @@ public class TeamService {
         teamMemberRepository.delete(memberToRemove);
 
         teamMemberRepository.flush();
+        team.setMembershipChangedAt(Instant.now());
 
         activityEventService.recordTeamEvent(
             team,
@@ -389,6 +397,9 @@ public class TeamService {
 
     owner.setRole(TeamRole.ADMIN);
     newOwner.setRole(TeamRole.OWNER);
+    newOwner.getTeam().setOwner(newOwner.getUser());
+    newOwner.getTeam().setOwnerChangedAt(Instant.now());
+    newOwner.getTeam().setMembershipChangedAt(Instant.now());
 
     activityEventService.recordTeamEvent(
         newOwner.getTeam(),
@@ -444,6 +455,7 @@ public class TeamService {
     }
 
     targetMember.setRole(newRole);
+    targetMember.getTeam().setMembershipChangedAt(Instant.now());
 
     activityEventService.recordTeamEvent(
         targetMember.getTeam(),
@@ -676,6 +688,22 @@ public class TeamService {
         team.getOwner().getLastName(),
         team.getOwner().getEmail());
 
+    TeamResponse.User createdBy = team.getCreatedBy() == null
+        ? null
+        : new TeamResponse.User(
+            team.getCreatedBy().getId(),
+            team.getCreatedBy().getFirstName(),
+            team.getCreatedBy().getLastName(),
+            team.getCreatedBy().getEmail());
+
+    TeamResponse.User deletedBy = team.getDeletedBy() == null
+        ? null
+        : new TeamResponse.User(
+            team.getDeletedBy().getId(),
+            team.getDeletedBy().getFirstName(),
+            team.getDeletedBy().getLastName(),
+            team.getDeletedBy().getEmail());
+
     Boolean isDeleted = team.getDeletedAt() != null ? true : false;
 
     return new TeamResponse(
@@ -683,9 +711,14 @@ public class TeamService {
         team.getName(),
         team.getDescription(),
         user,
+        createdBy,
+        deletedBy,
         team.getCreatedAt(),
         team.getUpdatedAt(),
         team.getLastActivityAt(),
+        team.getOwnerChangedAt(),
+        team.getMembershipChangedAt(),
+        team.getDeletedAt(),
         isDeleted);
   }
 

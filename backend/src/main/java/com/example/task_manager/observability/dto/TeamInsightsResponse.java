@@ -6,10 +6,19 @@ import java.util.UUID;
 public record TeamInsightsResponse(
     UUID teamId,
     Instant generatedAt,
+    MembershipMetrics membership,
     TaskMetrics tasks,
     ProjectMetrics projects,
     FlowMetrics flow,
-    ActivityMetrics activity) {
+    ActivityMetrics activity,
+    HealthMetrics health) {
+
+  public record MembershipMetrics(
+      long total,
+      long owners,
+      long admins,
+      long members) {
+  }
 
   public record TaskMetrics(
       long total,
@@ -28,7 +37,9 @@ public record TeamInsightsResponse(
       long total,
       long active,
       long onHold,
-      long completed) {
+      long completed,
+      long completedLast7Days,
+      double completionRatePercent) {
   }
 
   public record FlowMetrics(
@@ -41,5 +52,12 @@ public record TeamInsightsResponse(
       long activityEventsLast7Days,
       long auditEventsLast7Days,
       long systemEventsLast7Days) {
+  }
+
+  public record HealthMetrics(
+      long openTasks,
+      long overdueTasks,
+      double openTasksPerMember,
+      double activeProjectsPerMember) {
   }
 }

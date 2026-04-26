@@ -7,5 +7,5 @@ import jakarta.validation.constraints.Size;
  */
 public record UpdateTeamRequest(
     @Size(max = 100) String name,
-    @Size(max = 500) String description) {
+    @Size(max = 2000) String description) {
 }

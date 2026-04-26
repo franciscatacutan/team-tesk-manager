@@ -49,6 +49,11 @@ public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID>, J
 
   long countByTeamIdAndStatusAndDeletedAtIsNull(UUID teamId, ProjectStatus status);
 
+  long countByTeamIdAndStatusAndActualCompletionDateAfterAndDeletedAtIsNull(
+      UUID teamId,
+      ProjectStatus status,
+      Instant actualCompletionDate);
+
   @Modifying
   @Query("""
       UPDATE ProjectEntity p

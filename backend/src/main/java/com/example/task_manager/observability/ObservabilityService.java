@@ -39,6 +39,7 @@ import com.example.task_manager.task.entity.TaskEntity;
 import com.example.task_manager.task.entity.TaskPriority;
 import com.example.task_manager.task.entity.TaskStatus;
 import com.example.task_manager.team.TeamMemberRepository;
+import com.example.task_manager.team.entity.TeamRole;
 import com.example.task_manager.user.UserRepository;
 import com.example.task_manager.user.entity.UserEntity;
 
@@ -95,6 +96,8 @@ public class ObservabilityService {
     if (event.getProjectId() != null) {
       snapshotProjectMetrics(event.getProjectId());
     }
+
+    snapshotTeamMetrics(event.getTeamId());
   }
 
   @Transactional
@@ -134,6 +137,18 @@ public class ObservabilityService {
 
     long totalTasks = taskRepository.countByProjectTeamIdAndDeletedAtIsNull(teamId);
     long done = taskRepository.countByProjectTeamIdAndStatusAndDeletedAtIsNull(teamId, TaskStatus.DONE);
+    long cancelled = taskRepository.countByProjectTeamIdAndStatusAndDeletedAtIsNull(teamId, TaskStatus.CANCELLED);
+    long overdueTasks = taskRepository.countOverdueOpenTasks(teamId, now, List.of(TaskStatus.DONE, TaskStatus.CANCELLED));
+    long totalMembers = teamMemberRepository.countByTeamId(teamId);
+    long totalProjects = projectRepository.countByTeamIdAndDeletedAtIsNull(teamId);
+    long activeProjects = projectRepository.countByTeamIdAndStatusAndDeletedAtIsNull(teamId, ProjectStatus.ACTIVE);
+    long completedProjects = projectRepository.countByTeamIdAndStatusAndDeletedAtIsNull(teamId, ProjectStatus.COMPLETED);
+
+    TeamInsightsResponse.MembershipMetrics membershipMetrics = new TeamInsightsResponse.MembershipMetrics(
+        totalMembers,
+        teamMemberRepository.countByTeamIdAndRole(teamId, TeamRole.OWNER),
+        teamMemberRepository.countByTeamIdAndRole(teamId, TeamRole.ADMIN),
+        teamMemberRepository.countByTeamIdAndRole(teamId, TeamRole.MEMBER));
 
     TeamInsightsResponse.TaskMetrics taskMetrics = new TeamInsightsResponse.TaskMetrics(
         totalTasks,
@@ -142,16 +157,21 @@ public class ObservabilityService {
         taskRepository.countByProjectTeamIdAndStatusAndDeletedAtIsNull(teamId, TaskStatus.IN_REVIEW),
         taskRepository.countByProjectTeamIdAndStatusAndDeletedAtIsNull(teamId, TaskStatus.ON_HOLD),
         done,
-        taskRepository.countByProjectTeamIdAndStatusAndDeletedAtIsNull(teamId, TaskStatus.CANCELLED),
-        taskRepository.countOverdueOpenTasks(teamId, now, List.of(TaskStatus.DONE, TaskStatus.CANCELLED)),
+        cancelled,
+        overdueTasks,
         taskRepository.countByProjectTeamIdAndPriorityAndDeletedAtIsNull(teamId, TaskPriority.HIGH),
         taskRepository.countByProjectTeamIdAndPriorityAndDeletedAtIsNull(teamId, TaskPriority.CRITICAL));
 
+    long completedProjectsLast7Days = projectRepository
+        .countByTeamIdAndStatusAndActualCompletionDateAfterAndDeletedAtIsNull(teamId, ProjectStatus.COMPLETED, since);
+
     TeamInsightsResponse.ProjectMetrics projectMetrics = new TeamInsightsResponse.ProjectMetrics(
-        projectRepository.countByTeamIdAndDeletedAtIsNull(teamId),
-        projectRepository.countByTeamIdAndStatusAndDeletedAtIsNull(teamId, ProjectStatus.ACTIVE),
+        totalProjects,
+        activeProjects,
         projectRepository.countByTeamIdAndStatusAndDeletedAtIsNull(teamId, ProjectStatus.ON_HOLD),
-        projectRepository.countByTeamIdAndStatusAndDeletedAtIsNull(teamId, ProjectStatus.COMPLETED));
+        completedProjects,
+        completedProjectsLast7Days,
+        totalProjects == 0 ? 0 : roundPercent((double) completedProjects / totalProjects * 100));
 
     long completedLast7Days = taskRepository
         .countByProjectTeamIdAndStatusAndActualCompletionDateAfterAndDeletedAtIsNull(teamId, TaskStatus.DONE, since);
@@ -166,7 +186,22 @@ public class ObservabilityService {
         auditLogRepository.countByTeamIdAndOccurredAtAfter(teamId, since),
         systemEventRepository.countByTeamIdAndOccurredAtAfter(teamId, since));
 
-    return new TeamInsightsResponse(teamId, now, taskMetrics, projectMetrics, flowMetrics, activityMetrics);
+    long openTasks = Math.max(0, totalTasks - done - cancelled);
+    TeamInsightsResponse.HealthMetrics healthMetrics = new TeamInsightsResponse.HealthMetrics(
+        openTasks,
+        overdueTasks,
+        totalMembers == 0 ? 0 : roundPercent((double) openTasks / totalMembers),
+        totalMembers == 0 ? 0 : roundPercent((double) activeProjects / totalMembers));
+
+    return new TeamInsightsResponse(
+        teamId,
+        now,
+        membershipMetrics,
+        taskMetrics,
+        projectMetrics,
+        flowMetrics,
+        activityMetrics,
+        healthMetrics);
   }
 
   @Transactional(readOnly = true)
@@ -414,6 +449,34 @@ public class ObservabilityService {
     saveProjectKpi(projectId, "project.completion_rate", completionRate, "percent", now);
   }
 
+  private void snapshotTeamMetrics(UUID teamId) {
+    if (teamId == null) {
+      return;
+    }
+
+    Instant now = Instant.now();
+    long totalMembers = teamMemberRepository.countByTeamId(teamId);
+    long totalTasks = taskRepository.countByProjectTeamIdAndDeletedAtIsNull(teamId);
+    long doneTasks = taskRepository.countByProjectTeamIdAndStatusAndDeletedAtIsNull(teamId, TaskStatus.DONE);
+    long cancelledTasks = taskRepository.countByProjectTeamIdAndStatusAndDeletedAtIsNull(teamId, TaskStatus.CANCELLED);
+    long openTasks = Math.max(0, totalTasks - doneTasks - cancelledTasks);
+    long overdueTasks = taskRepository.countOverdueOpenTasks(
+        teamId,
+        now,
+        List.of(TaskStatus.DONE, TaskStatus.CANCELLED));
+    long totalProjects = projectRepository.countByTeamIdAndDeletedAtIsNull(teamId);
+    long completedProjects = projectRepository.countByTeamIdAndStatusAndDeletedAtIsNull(teamId, ProjectStatus.COMPLETED);
+    double taskCompletionRate = totalTasks == 0 ? 0 : roundPercent((double) doneTasks / totalTasks * 100);
+    double projectCompletionRate = totalProjects == 0 ? 0 : roundPercent((double) completedProjects / totalProjects * 100);
+
+    saveTeamMetric(teamId, "team.members.total", totalMembers, "count");
+    saveTeamMetric(teamId, "team.tasks.open", openTasks, "count");
+    saveTeamMetric(teamId, "team.tasks.overdue", overdueTasks, "count");
+    saveTeamMetric(teamId, "team.projects.total", totalProjects, "count");
+    saveTeamKpi(teamId, "team.task_completion_rate", taskCompletionRate, "percent", now);
+    saveTeamKpi(teamId, "team.project_completion_rate", projectCompletionRate, "percent", now);
+  }
+
   private void saveProjectMetric(UUID projectId, String metricKey, double value, String unit) {
     MetricSnapshotEntity metric = new MetricSnapshotEntity();
     metric.setMetricKey(metricKey);
@@ -430,6 +493,30 @@ public class ObservabilityService {
     kpi.setKpiKey(kpiKey);
     kpi.setScope(MetricScope.PROJECT);
     kpi.setScopeId(projectId);
+    kpi.setPeriodStart(now.minus(INSIGHT_WINDOW));
+    kpi.setPeriodEnd(now);
+    kpi.setValue(BigDecimal.valueOf(value));
+    kpi.setUnit(unit);
+
+    kpiSnapshotRepository.save(kpi);
+  }
+
+  private void saveTeamMetric(UUID teamId, String metricKey, double value, String unit) {
+    MetricSnapshotEntity metric = new MetricSnapshotEntity();
+    metric.setMetricKey(metricKey);
+    metric.setScope(MetricScope.TEAM);
+    metric.setScopeId(teamId);
+    metric.setValue(BigDecimal.valueOf(value));
+    metric.setUnit(unit);
+
+    metricSnapshotRepository.save(metric);
+  }
+
+  private void saveTeamKpi(UUID teamId, String kpiKey, double value, String unit, Instant now) {
+    KpiSnapshotEntity kpi = new KpiSnapshotEntity();
+    kpi.setKpiKey(kpiKey);
+    kpi.setScope(MetricScope.TEAM);
+    kpi.setScopeId(teamId);
     kpi.setPeriodStart(now.minus(INSIGHT_WINDOW));
     kpi.setPeriodEnd(now);
     kpi.setValue(BigDecimal.valueOf(value));
