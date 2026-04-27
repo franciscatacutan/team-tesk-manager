@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Sparkles } from "lucide-react";
+import { Kanban, LayoutList, Plus, Sparkles } from "lucide-react";
 
 import { useTeams } from "../features/teams/hooks/useTeams";
 import { useDebounce } from "../common/hooks/useDebounce";
@@ -12,15 +12,16 @@ import {
   DELETED_FILTER,
   type DeletedFilter,
 } from "../common/types/deletedFilter.types";
-import TeamCard from "../features/teams/components/TeamCard";
 import { getTeamPermissions } from "../features/teams/utils/teamPermissions";
 import { getUserFromToken } from "../features/users/api/userApi";
-import { Pagination } from "../common/components/pagination/Pagination";
 import SearchBar from "@/common/components/SearchBar";
 import { SortControl } from "@/common/components/SortControl";
 import type { SortOrder, SortField } from "@/common/types/sort.types";
 import { BASE_SORT_OPTIONS } from "@/common/constants/sort.constants";
 import { FilterPopover } from "@/common/components/FilterPopover";
+import TeamBoard from "@/features/teams/components/TeamBoard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import TeamList from "@/features/teams/components/TeamList";
 
 export default function TeamSelectionPage() {
   const navigate = useNavigate();
@@ -70,9 +71,11 @@ export default function TeamSelectionPage() {
     setPage(0);
 
     if (key === "deletedFilter") {
-      setDeletedFilter((typeof value === "string" && value
-        ? value
-        : "ACTIVE") as DeletedFilter);
+      setDeletedFilter(
+        (typeof value === "string" && value
+          ? value
+          : "ACTIVE") as DeletedFilter,
+      );
     }
   }
 
@@ -164,61 +167,75 @@ export default function TeamSelectionPage() {
           </div>
         </section>
 
-        {isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div
-                key={index}
-                className="h-44 animate-pulse rounded-2xl border border-border/60 bg-muted/25"
-              />
-            ))}
-          </div>
-        ) : teams.length > 0 ? (
-          <div className="flex flex-col h-full min-h-0">
-            <div className="flex-1 overflow-y-auto p-1">
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {teams.map((team) => (
-                  <TeamCard
-                    key={team.id}
-                    team={team}
-                    onClick={() => openTeam(team.id)}
-                  />
-                ))}
-              </div>
-            </div>
+        <Tabs defaultValue="board" className="flex flex-col flex-1 min-h-0">
+          <TabsList className="inline-flex gap-1 rounded-xl border border-border/60 bg-background/70 p-1 shadow-sm">
+            <TabsTrigger
+              value="list"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
+            >
+              <LayoutList className="h-4 w-4" />
+              List
+            </TabsTrigger>
 
-            {totalPages > 1 && (
-              <Pagination
-                page={page}
-                size={size}
-                totalPages={totalPages}
-                totalElements={totalElements}
-                onPageChange={setPage}
-                onSizeChange={(size) => {
-                  setPage(0);
-                  setSize(size);
+            <TabsTrigger
+              value="board"
+              className=" flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
+            >
+              <Kanban className="h-4 w-4" />
+              Board
+            </TabsTrigger>
+          </TabsList>
+          <div className="flex flex-col flex-1 min-h-0">
+            <TabsContent
+              value="board"
+              className="flex flex-col flex-1 min-h-0 gap-3"
+            >
+              <TeamBoard
+                teams={teams}
+                isLoading={isLoading}
+                openTeam={openTeam}
+                setOpen={setOpen}
+                pagination={{
+                  page,
+                  size,
+                  totalPages,
+                  totalElements,
+                  onPageChange: setPage,
+                  onSizeChange: (size) => {
+                    setPage(0);
+                    setSize(size);
+                  },
                 }}
-                options={[12, 24, 36]}
+                permissions={permissions}
               />
-            )}
+            </TabsContent>
+            <TabsContent
+              value="list"
+              className="flex flex-col flex-1 min-h-0 gap-3"
+            >
+              <TeamList
+                teams={teams}
+                isLoading={isLoading}
+                openTeam={openTeam}
+                setOpen={setOpen}
+                pagination={{
+                  page,
+                  size,
+                  totalPages,
+                  totalElements,
+                  onPageChange: setPage,
+                  onSizeChange: (size) => {
+                    setPage(0);
+                    setSize(size);
+                  },
+                }}
+                permissions={permissions}
+                onFieldChange={handleSortField}
+                onToggleOrder={handleSortOrder}
+              />
+            </TabsContent>
           </div>
-        ) : (
-          <div className="rounded-2xl border border-dashed border-border/70 bg-background/75 px-6 py-16 text-center">
-            <h2 className="text-lg font-semibold text-foreground">
-              No teams found
-            </h2>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              Try changing the search or filters, or create a new team to get
-              started.
-            </p>
-            {permissions.canViewDeleteTeam && (
-              <Button className="mt-5 rounded-xl" onClick={() => setOpen(true)}>
-                <Plus className="h-4 w-4" />
-                Create team
-              </Button>
-            )}
-          </div>
-        )}
+        </Tabs>
       </div>
 
       <CreateTeamModal open={open} onOpenChange={setOpen} />
