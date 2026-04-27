@@ -8,6 +8,7 @@ import type {
   TeamMe,
   TeamMember,
 } from "../types/team.type";
+import type { TeamInsights } from "../types/teamInsights.types";
 
 export const getTeams = async (
   params: BaseQueryParams & {
@@ -73,5 +74,12 @@ export const transferTeam = async (
   userId: string,
 ): Promise<TeamMember> => {
   const response = await apiClient.patch(`/teams/${teamId}/transfer/${userId}`);
+  return response.data;
+};
+
+export const getTeamInsights = async (
+  teamId: string,
+): Promise<TeamInsights> => {
+  const response = await apiClient.get(`/teams/${teamId}/insights/summary`);
   return response.data;
 };
