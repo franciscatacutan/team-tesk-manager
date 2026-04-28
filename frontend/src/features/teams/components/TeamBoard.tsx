@@ -1,7 +1,3 @@
-import {
-  Pagination,
-  type PaginationProps,
-} from "@/common/components/pagination/Pagination";
 import { Plus } from "lucide-react";
 import TeamCard from "./TeamCard";
 import { Button } from "@/components/ui/button";
@@ -13,7 +9,6 @@ interface Props {
   isLoading: boolean;
   openTeam: (teamId: string) => void;
   setOpen: (open: boolean) => void;
-  pagination: PaginationProps;
   permissions: TeamPermissions;
 }
 
@@ -22,7 +17,6 @@ export default function TeamBoard({
   isLoading,
   openTeam,
   setOpen,
-  pagination,
   permissions,
 }: Props) {
   return (
@@ -49,21 +43,6 @@ export default function TeamBoard({
               ))}
             </div>
           </div>
-
-          {pagination.totalPages > 1 && (
-            <Pagination
-              page={pagination.page}
-              size={pagination.size}
-              totalPages={pagination.totalPages}
-              totalElements={pagination.totalElements}
-              onPageChange={pagination.onPageChange}
-              onSizeChange={(size) => {
-                pagination.onPageChange(0);
-                pagination.onSizeChange(size);
-              }}
-              options={[12, 24, 36]}
-            />
-          )}
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-border/70 bg-background/75 px-6 py-16 text-center">

@@ -902,7 +902,7 @@ public class TeamService {
   private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
       "name",
       "lastName",
-      "ownerId",
+      "owner",
       "lastActivityAt",
       "joinedAt",
       "createdAt",

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -26,10 +27,17 @@ export function SortControl<T extends string>({
   onFieldChange,
   onToggleOrder,
 }: Props<T>) {
+  const [open, setOpen] = useState(false);
+
   const active = options.find((o) => o.value === field);
 
+  function handleSelect(value: T) {
+    onFieldChange(value);
+    setOpen(false);
+  }
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <div className="inline-flex h-10 rounded-xl border border-border/70 bg-background shadow-sm hover:shadow-md transition overflow-hidden">
         <PopoverTrigger asChild>
           <Button
@@ -54,7 +62,7 @@ export function SortControl<T extends string>({
         </Button>
       </div>
 
-      <PopoverContent align="start" className="w-30 p-2">
+      <PopoverContent align="start" className="w-36 p-2">
         <div className="px-2 py-1 text-xs text-muted-foreground">Sort by</div>
 
         {options.map((opt) => {
@@ -64,20 +72,14 @@ export function SortControl<T extends string>({
             <Button
               key={opt.value}
               variant="ghost"
-              onClick={() => onFieldChange(opt.value)}
-              className={`w-full justify-between px-3 py-2 rounded-lg text-sm font-normal ${
+              onClick={() => handleSelect(opt.value)}
+              className={`w-full justify-between px-3 py-2 rounded-lg text-sm ${
                 isActive
                   ? "bg-primary/10 text-primary font-medium"
                   : "hover:bg-muted/50"
               }`}
             >
               {opt.label}
-
-              {isActive && (
-                <span className="text-xs opacity-70">
-                  {order === "asc" ? "↑" : "↓"}
-                </span>
-              )}
             </Button>
           );
         })}

@@ -6,39 +6,65 @@ import { useTeams } from "../features/teams/hooks/useTeams";
 import { useDebounce } from "../common/hooks/useDebounce";
 
 import { Button } from "../components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { CreateTeamModal } from "../features/teams/components/CreateTeamModal";
 import {
   DELETED_FILTER,
   type DeletedFilter,
 } from "../common/types/deletedFilter.types";
+
 import { getTeamPermissions } from "../features/teams/utils/teamPermissions";
 import { getUserFromToken } from "../features/users/api/userApi";
+
 import SearchBar from "@/common/components/SearchBar";
 import { SortControl } from "@/common/components/SortControl";
-import type { SortOrder, SortField } from "@/common/types/sort.types";
-import { BASE_SORT_OPTIONS } from "@/common/constants/sort.constants";
 import { FilterPopover } from "@/common/components/FilterPopover";
+
+import type { SortField, SortOrder } from "@/common/types/sort.types";
+import { BASE_SORT_OPTIONS } from "@/common/constants/sort.constants";
+import { TEAM_LIST_SORT_OPTIONS } from "@/features/teams/constants/team.constants";
+
 import TeamBoard from "@/features/teams/components/TeamBoard";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TeamList from "@/features/teams/components/TeamList";
+
+import { Pagination } from "@/common/components/pagination/Pagination";
 
 export default function TeamSelectionPage() {
   const navigate = useNavigate();
 
+  // ---------------- STATE ----------------
+
   const [open, setOpen] = useState(false);
 
-  const [page, setPage] = useState(0);
-  const [size, setSize] = useState(12);
-  const [search, setSearch] = useState("");
-  const [sortField, setSortField] = useState<SortField>("createdAt");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [view, setView] = useState<"board" | "list">("board");
 
-  const sort = `${sortField},${sortOrder}`;
+  const getPaginationOptions = (type: "board" | "list") =>
+    type === "board" ? [12, 24, 36] : [10, 20, 40];
+
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState<number>(getPaginationOptions("board")[0]);
+
+  const [search, setSearch] = useState("");
+
+  const [sortField, setSortField] = useState<SortField>("lastActivityAt");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
   const [deletedFilter, setDeletedFilter] = useState<DeletedFilter>("ACTIVE");
 
+  // ---------------- DERIVED ----------------
+
   const debouncedSearch = useDebounce(search, 400);
+  const sort = `${sortField},${sortOrder}`;
+
+  const filterValues = {
+    deletedFilter,
+  };
+
+  const sortOptions =
+    view === "board" ? BASE_SORT_OPTIONS : TEAM_LIST_SORT_OPTIONS;
+
+  // ---------------- DATA ----------------
 
   const { data, isLoading } = useTeams({
     page,
@@ -52,22 +78,36 @@ export default function TeamSelectionPage() {
   const totalPages = data?.totalPages ?? 0;
   const totalElements = data?.totalElements ?? 0;
 
+  // ---------------- HANDLERS ----------------
+
   const handleSearchChange = (value: string) => {
     setSearch(value);
     setPage(0);
   };
 
-  const handleSortField = (value: string) => {
-    setSortField(value as SortField);
+  const handleViewChange = (value: string) => {
+    const nextView = value as "board" | "list";
+
+    setView(nextView);
+    setPage(0);
+    setSize(getPaginationOptions(nextView)[0]);
+  };
+
+  const handleSort = (field: SortField) => {
+    setSortField((prevField) => {
+      if (prevField === field) {
+        setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+        return prevField;
+      }
+
+      setSortOrder("desc");
+      return field;
+    });
+
     setPage(0);
   };
 
-  const handleSortOrder = () => {
-    setSortOrder((value) => (value === "asc" ? "desc" : "asc"));
-    setPage(0);
-  };
-
-  function handleFilterChange(key: string, value: string | string[]) {
+  const handleFilterChange = (key: string, value: string | string[]) => {
     setPage(0);
 
     if (key === "deletedFilter") {
@@ -77,21 +117,19 @@ export default function TeamSelectionPage() {
           : "ACTIVE") as DeletedFilter,
       );
     }
-  }
+  };
 
   const openTeam = (teamId: string) => {
     navigate(`/teams/${teamId}`);
   };
+
+  // ---------------- PERMISSIONS ----------------
 
   const user = getUserFromToken();
 
   const permissions = getTeamPermissions({
     globalRole: user?.role,
   });
-
-  const filterValues = {
-    deletedFilter,
-  };
 
   return (
     <div className="min-h-0 h-full bg-muted/10 px-4 py-6 sm:px-6 lg:px-8">
@@ -114,19 +152,20 @@ export default function TeamSelectionPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="rounded-2xl border border-border/60 bg-background/80 px-4 py-3 shadow-xs">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  Teams
-                </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 rounded-xl border px-4 py-2 text-sm">
                 <div className="text-xl font-semibold tracking-tight text-foreground">
                   {totalElements}
                 </div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Teams
+                </div>
               </div>
+
               {permissions.canCreateTeam && (
                 <Button className="rounded-xl" onClick={() => setOpen(true)}>
                   <Plus className="h-4 w-4" />
-                  Create team
+                  Create
                 </Button>
               )}
             </div>
@@ -137,7 +176,7 @@ export default function TeamSelectionPage() {
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
             <SearchBar search={search} searchChange={handleSearchChange} />
 
-            <div className="grid gap-2 sm:grid-cols-2 lg:min-w-88">
+            <div className="flex gap-2">
               {permissions.canViewDeleteTeam && (
                 <FilterPopover
                   label="Visibility"
@@ -150,33 +189,27 @@ export default function TeamSelectionPage() {
                   }}
                 />
               )}
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                  Sort
-                </label>
+              {view === "board" && (
                 <SortControl
                   field={sortField}
                   order={sortOrder}
-                  options={BASE_SORT_OPTIONS}
-                  onFieldChange={handleSortField}
-                  onToggleOrder={handleSortOrder}
+                  options={sortOptions}
+                  onFieldChange={handleSort}
+                  onToggleOrder={() =>
+                    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
+                  }
                 />
-              </div>
+              )}
             </div>
           </div>
         </section>
 
-        <Tabs defaultValue="board" className="flex flex-col flex-1 min-h-0">
+        <Tabs
+          value={view}
+          onValueChange={handleViewChange}
+          className="flex flex-col flex-1 min-h-0"
+        >
           <TabsList className="inline-flex gap-1 rounded-xl border border-border/60 bg-background/70 p-1 shadow-sm">
-            <TabsTrigger
-              value="list"
-              className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
-            >
-              <LayoutList className="h-4 w-4" />
-              List
-            </TabsTrigger>
-
             <TabsTrigger
               value="board"
               className=" flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
@@ -184,58 +217,58 @@ export default function TeamSelectionPage() {
               <Kanban className="h-4 w-4" />
               Board
             </TabsTrigger>
-          </TabsList>
-          <div className="flex flex-col flex-1 min-h-0">
-            <TabsContent
-              value="board"
-              className="flex flex-col flex-1 min-h-0 gap-3"
-            >
-              <TeamBoard
-                teams={teams}
-                isLoading={isLoading}
-                openTeam={openTeam}
-                setOpen={setOpen}
-                pagination={{
-                  page,
-                  size,
-                  totalPages,
-                  totalElements,
-                  onPageChange: setPage,
-                  onSizeChange: (size) => {
-                    setPage(0);
-                    setSize(size);
-                  },
-                }}
-                permissions={permissions}
-              />
-            </TabsContent>
-            <TabsContent
+            <TabsTrigger
               value="list"
-              className="flex flex-col flex-1 min-h-0 gap-3"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
             >
-              <TeamList
-                teams={teams}
-                isLoading={isLoading}
-                openTeam={openTeam}
-                setOpen={setOpen}
-                pagination={{
-                  page,
-                  size,
-                  totalPages,
-                  totalElements,
-                  onPageChange: setPage,
-                  onSizeChange: (size) => {
-                    setPage(0);
-                    setSize(size);
-                  },
-                }}
-                permissions={permissions}
-                onFieldChange={handleSortField}
-                onToggleOrder={handleSortOrder}
-              />
-            </TabsContent>
-          </div>
+              <LayoutList className="h-4 w-4" />
+              List
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent
+            value="board"
+            className="flex flex-col flex-1 min-h-0 gap-3"
+          >
+            <TeamBoard
+              teams={teams}
+              isLoading={isLoading}
+              openTeam={openTeam}
+              setOpen={setOpen}
+              permissions={permissions}
+            />
+          </TabsContent>
+
+          <TabsContent
+            value="list"
+            className="flex flex-col flex-1 min-h-0 gap-3"
+          >
+            <TeamList
+              teams={teams}
+              isLoading={isLoading}
+              openTeam={openTeam}
+              setOpen={setOpen}
+              sortField={sortField}
+              sortOrder={sortOrder}
+              onSort={handleSort}
+              permissions={permissions}
+            />
+          </TabsContent>
         </Tabs>
+
+        {totalPages > 1 && (
+          <Pagination
+            page={page}
+            size={size}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            onPageChange={setPage}
+            onSizeChange={(size) => {
+              setPage(0);
+              setSize(size);
+            }}
+            options={getPaginationOptions(view)}
+          />
+        )}
       </div>
 
       <CreateTeamModal open={open} onOpenChange={setOpen} />
