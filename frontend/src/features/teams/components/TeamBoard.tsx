@@ -22,17 +22,19 @@ export default function TeamBoard({
   return (
     <>
       {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div
-              key={index}
-              className="h-44 animate-pulse rounded-2xl border border-border/60 bg-muted/25"
-            />
-          ))}
+        <div className="overflow-auto p-4 rounded-2xl border border-border/60 bg-background shadow-sm">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 12 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-44 animate-pulse rounded-2xl border border-border/60 bg-muted/25"
+              />
+            ))}
+          </div>
         </div>
       ) : teams.length > 0 ? (
         <div className="flex flex-col h-full min-h-0">
-          <div className="flex-1 overflow-y-auto p-1">
+          <div className="flex-1 overflow-y-auto p-4 rounded-2xl border border-border/60 bg-background shadow-sm">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {teams.map((team) => (
                 <TeamCard

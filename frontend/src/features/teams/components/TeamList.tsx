@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { ArrowUpDown, Plus } from "lucide-react";
 import type { Team } from "../types/team.type";
 import type { TeamPermissions } from "../utils/teamPermissions";
 import type { SortField } from "@/common/types/sort.types";
@@ -9,6 +9,7 @@ import {
   TableBody,
   TableCell,
   Table,
+  TableHead,
 } from "@/components/ui/table";
 
 import { Button } from "@/components/ui/button";
@@ -40,10 +41,65 @@ export default function TeamList({
   return (
     <>
       {isLoading ? (
-        <div className="h-44 animate-pulse rounded-2xl border border-border/60 bg-muted/20" />
+        <div className="flex flex-col h-full min-h-0">
+          <div className="flex flex-1 overflow-auto rounded-2xl border border-border/60 bg-background shadow-sm">
+            <Table>
+              <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="px-4 py-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+                      Name
+                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground opacity-30 group-hover:opacity-80 transition" />
+                    </div>
+                  </TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+                      Owner
+                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground opacity-30 group-hover:opacity-80 transition" />
+                    </div>
+                  </TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+                      Created
+                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground opacity-30 group-hover:opacity-80 transition" />
+                    </div>
+                  </TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+                      Last Activity
+                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground opacity-30 group-hover:opacity-80 transition" />
+                    </div>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+
+              <TableBody>
+                {Array.from({ length: 10 }).map((_, index) => (
+                  <TableRow key={index} className="hover:bg-transparent">
+                    <TableCell className="px-4 py-4">
+                      <div className="h-4 w-40 animate-pulse rounded-md bg-muted" />
+                    </TableCell>
+
+                    <TableCell className="px-4 py-4">
+                      <div className="h-4 w-32 animate-pulse rounded-md bg-muted" />
+                    </TableCell>
+
+                    <TableCell className="px-4 py-4">
+                      <div className="h-4 w-24 animate-pulse rounded-md bg-muted" />
+                    </TableCell>
+
+                    <TableCell className="px-4 py-4">
+                      <div className="h-4 w-28 animate-pulse rounded-md bg-muted" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
       ) : teams.length > 0 ? (
         <div className="flex flex-col h-full min-h-0">
-          <div className="flex-1 min-h-0 overflow-auto rounded-2xl border border-border/60 bg-background shadow-sm">
+          <div className="flex flex-1 overflow-auto rounded-2xl border border-border/60 bg-background shadow-sm">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
                 <TableRow className="hover:bg-transparent">
