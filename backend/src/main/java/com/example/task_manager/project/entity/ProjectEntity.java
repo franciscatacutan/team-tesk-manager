@@ -48,12 +48,20 @@ public class ProjectEntity {
 
   // Many-to-one relationship with user (owner)
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "created_by", nullable = false)
+  @JoinColumn(name = "owner_id", nullable = false)
+  private UserEntity owner;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "created_by")
   private UserEntity createdBy;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "completed_by")
   private UserEntity completedBy;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "deleted_by")
+  private UserEntity deletedBy;
 
   @Column(name = "next_task_number", nullable = false)
   private Long nextTaskNumber = 1L;

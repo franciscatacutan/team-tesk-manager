@@ -15,7 +15,7 @@ import { ActivityItem } from "../../../common/components/ActivityItem";
 import {
   ProjectStatusLabel,
   ProjectStatusStyles,
-} from "../../projects/utils/projectStatus";
+} from "../../projects/utils/project.constants";
 import { CreateProjectModal } from "../../projects/components/CreateProjectModal";
 import { getUserFromToken } from "../../users/api/userApi";
 import { useProjects } from "../../projects/hooks/useProjects";
@@ -48,7 +48,7 @@ export default function TeamOverview() {
   const { data: activeProjectsData } = useProjects(teamId || "", {
     page: 0,
     size: 10,
-    status: "ACTIVE",
+    status: ["ACTIVE"],
     sort: "updatedAt,desc",
     deletedFilter: "ACTIVE",
   });

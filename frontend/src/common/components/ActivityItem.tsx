@@ -13,7 +13,7 @@ import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { cn } from "../../lib/utils";
 
-import type { ProjectActivity } from "../../features/projects/types/projectTypes";
+import type { ProjectActivity } from "../../features/projects/types/project.types";
 import type { TeamActivity } from "../../features/teams/types/team.type";
 import type { TaskActivity } from "../../features/tasks/types/task.types";
 

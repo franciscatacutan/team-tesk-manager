@@ -88,6 +88,7 @@ public class ProjectService {
     project.setStatus(ProjectStatus.ACTIVE);
     project.setTeam(requesterMembership.getTeam());
     project.setCreatedBy(requester);
+    project.setOwner(requester);
     project.setPlannedStartDate(request.plannedStartDate());
     project.setPlannedDueDate(request.plannedDueDate());
     project.setActualStartDate(Instant.now());
@@ -224,6 +225,7 @@ public class ProjectService {
         .findAllByProjectIdAndDeletedAtIsNull(projectId);
 
     project.setDeletedAt(now);
+    project.setDeletedBy(requester);
 
     for (com.example.task_manager.task.entity.TaskEntity task : activeTasks) {
       task.setDeletedAt(now);

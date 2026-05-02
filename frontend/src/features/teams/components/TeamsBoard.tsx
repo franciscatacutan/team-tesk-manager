@@ -12,7 +12,7 @@ interface Props {
   permissions: TeamPermissions;
 }
 
-export default function TeamBoard({
+export default function TeamsBoard({
   teams,
   isLoading,
   openTeam,
@@ -22,7 +22,7 @@ export default function TeamBoard({
   return (
     <>
       {isLoading ? (
-        <div className="overflow-auto p-4 rounded-2xl border border-border/60 bg-background shadow-sm">
+        <div className="overflow-hidden p-4 rounded-2xl border border-border/60 bg-background shadow-sm">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 12 }).map((_, index) => (
               <div
@@ -33,21 +33,19 @@ export default function TeamBoard({
           </div>
         </div>
       ) : teams.length > 0 ? (
-        <div className="flex flex-col h-full min-h-0">
-          <div className="flex-1 overflow-y-auto p-4 rounded-2xl border border-border/60 bg-background shadow-sm">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {teams.map((team) => (
-                <TeamCard
-                  key={team.id}
-                  team={team}
-                  onClick={() => openTeam(team.id)}
-                />
-              ))}
-            </div>
+        <div className="flex-1 overflow-y-auto p-4 rounded-2xl border border-border/60 bg-background shadow-sm">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {teams.map((team) => (
+              <TeamCard
+                key={team.id}
+                team={team}
+                onClick={() => openTeam(team.id)}
+              />
+            ))}
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl border border-dashed border-border/70 bg-background/75 px-6 py-16 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/75 px-6 py-16 text-center">
           <h2 className="text-lg font-semibold text-foreground">
             No teams found
           </h2>

@@ -157,7 +157,7 @@ function BoardColumn({
 }) {
   const { setNodeRef } = useDroppable({ id });
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
     useInfiniteTasks(teamId, projectId, id, params);
 
   const tasks = data?.pages.flatMap((page) => page.content) ?? [];
@@ -195,16 +195,27 @@ function BoardColumn({
         onScroll={handleScroll}
         className="flex-1 min-h-0 space-y-2 overflow-y-auto px-3 py-3"
       >
-        <SortableContext
-          items={tasks.map((t) => t.id)}
-          strategy={verticalListSortingStrategy}
-        >
-          {tasks.map((task) => (
-            <SortableTask key={task.id} task={task} onOpenTask={onOpenTask} />
-          ))}
-        </SortableContext>
+        {isLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-28 animate-pulse rounded-xl border border-border/60 bg-muted/25"
+              />
+            ))}
+          </div>
+        ) : (
+          <SortableContext
+            items={tasks.map((t) => t.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {tasks.map((task) => (
+              <SortableTask key={task.id} task={task} onOpenTask={onOpenTask} />
+            ))}
+          </SortableContext>
+        )}
 
-        {tasks.length === 0 && (
+        {!isLoading && tasks.length === 0 && (
           <div className="rounded-xl border border-dashed border-border/70 bg-muted/15 px-4 py-6 text-center text-sm text-muted-foreground">
             No tasks in {TaskStatusLabel[id].toLowerCase()}.
           </div>

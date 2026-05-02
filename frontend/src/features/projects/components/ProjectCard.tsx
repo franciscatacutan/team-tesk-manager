@@ -3,11 +3,11 @@ import { ArrowUpRight, CalendarDays, FolderKanban } from "lucide-react";
 import { formatDateTimeShort } from "../../../common/utils/dateFormatter";
 import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
 import { Card, CardContent } from "../../../components/ui/card";
-import type { Project } from "../types/projectTypes";
+import type { Project } from "../types/project.types";
 import {
   ProjectStatusLabel,
   ProjectStatusStyles,
-} from "../utils/projectStatus";
+} from "../utils/project.constants";
 
 interface Props {
   project: Project;
@@ -15,7 +15,8 @@ interface Props {
 }
 
 export default function ProjectCard({ project, onClick }: Props) {
-  const ownerName = `${project.createdBy.firstName} ${project.createdBy.lastName}`;
+  const owner = project.owner ?? project.createdBy;
+  const ownerName = `${owner.firstName} ${owner.lastName}`;
 
   return (
     <Card
@@ -62,7 +63,7 @@ export default function ProjectCard({ project, onClick }: Props) {
           <div className="flex items-center gap-2 ">
             <span className="inline-flex items-center gap-1 rounded-full bg-muted/25 ">
               <CalendarDays className="h-3 w-3" />
-              Created: {formatDateTimeShort(project.updatedAt)}
+              Created: {formatDateTimeShort(project.createdAt)}
             </span>
           </div>
         </div>
@@ -71,8 +72,8 @@ export default function ProjectCard({ project, onClick }: Props) {
           <div className="flex min-w-0 items-center gap-2">
             <Avatar className="h-6 w-6 ring-1 ring-border/60">
               <AvatarFallback className="text-[10px]">
-                {project.createdBy.firstName?.[0]}
-                {project.createdBy.lastName?.[0]}
+                {owner.firstName?.[0]}
+                {owner.lastName?.[0]}
               </AvatarFallback>
             </Avatar>
 

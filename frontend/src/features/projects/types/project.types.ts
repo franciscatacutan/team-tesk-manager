@@ -1,14 +1,20 @@
-import type { ProjectStatus } from "../utils/projectStatus";
+import type { ProjectStatus } from "../utils/project.constants";
 
 export type Project = {
   id: string;
   name: string;
   description?: string;
+  status: ProjectStatus;
+  owner: User;
+  createdBy: User;
+  lastActivityAt: string;
+  plannedStartDate?: string;
+  plannedDueDate?: string;
+  actualStartDate?: string;
+  actualCompletionDate?: string;
   createdAt: string;
   updatedAt: string;
-  lastActivityAt: string;
-  status: ProjectStatus;
-  createdBy: User;
+  deletedAt: string;
 };
 
 type User = {
@@ -34,4 +40,6 @@ export type ProjectActivity = {
 export interface UpdateProjectInput {
   name?: string;
   description?: string;
+  plannedStartDate?: string;
+  plannedDueDate?: string;
 }

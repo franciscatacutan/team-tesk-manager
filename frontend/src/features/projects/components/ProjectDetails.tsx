@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useState } from "react";
 
 import { useProject } from "../hooks/useProject";
@@ -30,6 +30,7 @@ import type { DeletedFilter } from "../../../common/types/deletedFilter.types";
 import { getUserFromToken } from "../../users/api/userApi";
 
 export default function ProjectDetails() {
+  const navigate = useNavigate();
   const { teamId, projectId } = useParams<{
     teamId: string;
     projectId: string;
@@ -46,7 +47,11 @@ export default function ProjectDetails() {
   const [sort, setSort] = useState("createdAt,desc");
   const debouncedSearch = useDebounce(search, 400);
 
-  const { data: project, isLoading } = useProject(
+  const {
+    data: project,
+    isLoading,
+    isError,
+  } = useProject(
     teamId || "",
     projectId || "",
   );
@@ -59,18 +64,24 @@ export default function ProjectDetails() {
     teamRole: teamMe?.role,
   });
 
-  const { data: tasksData } = useTasks(teamId || "", projectId || "", {
-    page,
-    size,
-    search: debouncedSearch,
-    status,
-    sort,
-    deletedFilter,
-  });
+  const { data: tasksData, isLoading: isTasksLoading } = useTasks(
+    teamId || "",
+    projectId || "",
+    {
+      page,
+      size,
+      search: debouncedSearch,
+      status,
+      sort,
+      deletedFilter,
+    },
+  );
 
   const tasks = tasksData?.content ?? [];
   const totalPages = tasksData?.totalPages ?? 0;
   const totalElements = tasksData?.totalElements ?? 0;
+  const hasActiveTaskFilters =
+    Boolean(search.trim()) || Boolean(status) || deletedFilter !== "ACTIVE";
 
   const updateStatus = useUpdateTaskStatus(teamId || "", projectId || "");
 
@@ -97,11 +108,25 @@ export default function ProjectDetails() {
   }
 
   if (!teamId || !projectId) {
-    return <div className="p-6">Invalid project</div>;
+    return (
+      <ProjectDetailsState
+        title="Invalid project"
+        description="This project route is missing the team or project identifier."
+      />
+    );
   }
 
-  if (isLoading || !project) {
-    return <div className="p-6">Loading Project...</div>;
+  if (isLoading) {
+    return <ProjectDetailsSkeleton />;
+  }
+
+  if (isError || !project) {
+    return (
+      <ProjectDetailsState
+        title="Project not found"
+        description="The project may have been deleted, moved, or you may not have access to it."
+      />
+    );
   }
 
   return (
@@ -115,6 +140,7 @@ export default function ProjectDetails() {
         name={project.name}
         description={project?.description}
         onCreateTask={() => setCreateOpen(true)}
+        onProjectDeleted={() => navigate(`/teams/${teamId}/projects`)}
         permissions={permissions}
       />
       <CreateTaskModal
@@ -204,6 +230,10 @@ export default function ProjectDetails() {
               }}
               sort={sort}
               onSortChange={setSort}
+              isLoading={isTasksLoading}
+              canCreateTask={permissions.canCreateTask}
+              hasActiveFilters={hasActiveTaskFilters}
+              onCreateTask={() => setCreateOpen(true)}
             />
           </TabsContent>
           <TabsContent
@@ -228,6 +258,54 @@ export default function ProjectDetails() {
           projectId={projectId}
         />
       )}
+    </div>
+  );
+}
+
+function ProjectDetailsSkeleton() {
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-6">
+      <div className="h-4 w-44 animate-pulse rounded-md bg-muted" />
+
+      <div className="flex items-start justify-between gap-6">
+        <div className="flex-1 space-y-3">
+          <div className="h-8 w-72 animate-pulse rounded-md bg-muted" />
+          <div className="h-4 w-full max-w-xl animate-pulse rounded-md bg-muted" />
+          <div className="h-4 w-2/3 max-w-md animate-pulse rounded-md bg-muted" />
+        </div>
+
+        <div className="h-10 w-28 animate-pulse rounded-xl bg-muted" />
+      </div>
+
+      <div className="h-10 w-72 animate-pulse rounded-xl bg-muted" />
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            key={index}
+            className="h-64 animate-pulse rounded-2xl border border-border/60 bg-muted/25"
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProjectDetailsState({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex h-full min-h-0 items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/75 px-6 py-16 text-center">
+      <div>
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+          {description}
+        </p>
+      </div>
     </div>
   );
 }

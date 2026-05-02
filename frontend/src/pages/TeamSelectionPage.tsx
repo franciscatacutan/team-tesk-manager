@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Kanban, LayoutList, Plus, Sparkles } from "lucide-react";
+import { LayoutGrid, LayoutList, Plus, Sparkles } from "lucide-react";
 
 import { useTeams } from "../features/teams/hooks/useTeams";
 import { useDebounce } from "../common/hooks/useDebounce";
@@ -25,8 +25,8 @@ import type { SortField, SortOrder } from "@/common/types/sort.types";
 import { BASE_SORT_OPTIONS } from "@/common/constants/sort.constants";
 import { TEAM_LIST_SORT_OPTIONS } from "@/features/teams/constants/team.constants";
 
-import TeamBoard from "@/features/teams/components/TeamBoard";
-import TeamList from "@/features/teams/components/TeamList";
+import TeamsBoard from "@/features/teams/components/TeamsBoard";
+import TeamsList from "@/features/teams/components/TeamsList";
 
 import { Pagination } from "@/common/components/pagination/Pagination";
 
@@ -214,7 +214,7 @@ export default function TeamSelectionPage() {
               value="board"
               className=" flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
             >
-              <Kanban className="h-4 w-4" />
+              <LayoutGrid className="h-4 w-4" />
               Board
             </TabsTrigger>
             <TabsTrigger
@@ -229,7 +229,7 @@ export default function TeamSelectionPage() {
             value="board"
             className="flex flex-col flex-1 min-h-0 gap-3"
           >
-            <TeamBoard
+            <TeamsBoard
               teams={teams}
               isLoading={isLoading}
               openTeam={openTeam}
@@ -242,7 +242,7 @@ export default function TeamSelectionPage() {
             value="list"
             className="flex flex-col flex-1 min-h-0 gap-3"
           >
-            <TeamList
+            <TeamsList
               teams={teams}
               isLoading={isLoading}
               openTeam={openTeam}
