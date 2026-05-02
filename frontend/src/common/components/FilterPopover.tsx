@@ -101,38 +101,38 @@ export function FilterPopover({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          className={cn(
-            "h-10 justify-between gap-2 rounded-xl border-border/70 bg-background px-3 shadow-none hover:bg-muted/50",
-            className,
-          )}
-        >
-          <span className="inline-flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            {label}
-          </span>
+      <div className="inline-flex h-10 rounded-xl border border-border/70 bg-background shadow-sm hover:shadow-md transition overflow-hidden">
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className={cn(
+              "h-full justify-between gap-2 rounded-none border-border/60 hover:bg-muted/50",
+              className,
+            )}
+          >
+            <span className="inline-flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              {label}
+            </span>
 
-          {activeCount > 0 && (
-            <Badge
-              variant="secondary"
-              className="h-5 min-w-5 rounded-full px-1.5 text-[11px]"
-            >
-              {activeCount}
-            </Badge>
-          )}
-        </Button>
-      </PopoverTrigger>
+            {activeCount > 0 && (
+              <Badge
+                variant="secondary"
+                className="h-5 min-w-5 rounded-full px-1.5 text-[11px]"
+              >
+                {activeCount}
+              </Badge>
+            )}
+          </Button>
+        </PopoverTrigger>
+      </div>
 
       <PopoverContent align={align} className="w-80 overflow-hidden p-0">
         <div className="border-b border-border/60 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-sm font-semibold text-foreground">
-                Filters
-              </h2>
+              <h2 className="text-sm font-semibold text-foreground">Filters</h2>
               <p className="text-xs text-muted-foreground">
                 Refine this list without leaving the page.
               </p>
@@ -159,11 +159,7 @@ export function FilterPopover({
                   key={`${option.groupKey}-${option.value}`}
                   type="button"
                   onClick={() =>
-                    clearOption(
-                      option.groupKey,
-                      option.groupType,
-                      option.value,
-                    )
+                    clearOption(option.groupKey, option.groupType, option.value)
                   }
                   className="inline-flex h-7 items-center gap-1 rounded-full border border-border/70 bg-muted/45 px-2 text-xs font-medium text-foreground transition hover:bg-muted"
                 >
@@ -190,7 +186,10 @@ export function FilterPopover({
                 <span className="flex items-center gap-2">
                   {group.label}
                   {getActiveGroupCount(group, values) > 0 && (
-                    <Badge variant="outline" className="h-5 rounded-full px-1.5">
+                    <Badge
+                      variant="outline"
+                      className="h-5 rounded-full px-1.5"
+                    >
                       {getActiveGroupCount(group, values)}
                     </Badge>
                   )}
@@ -199,62 +198,64 @@ export function FilterPopover({
 
               <AccordionContent className="px-1 pb-3">
                 <div className="space-y-1">
-                {group.options.map((opt) => {
-                  const groupType = group.type ?? "single";
-                  const selectedValues = getValueArray(values[group.key]);
-                  const checked = selectedValues.includes(opt.value);
+                  {group.options.map((opt) => {
+                    const groupType = group.type ?? "single";
+                    const selectedValues = getValueArray(values[group.key]);
+                    const checked = selectedValues.includes(opt.value);
 
-                  const toggleOption = () => {
-                    if (groupType === "single") {
-                      onChange(group.key, opt.value);
-                      return;
-                    }
+                    const toggleOption = () => {
+                      if (groupType === "single") {
+                        onChange(group.key, opt.value);
+                        return;
+                      }
 
-                    onChange(
-                      group.key,
-                      checked
-                        ? selectedValues.filter((value) => value !== opt.value)
-                        : [...selectedValues, opt.value],
-                    );
-                  };
-
-                  return (
-                    <div
-                      key={opt.value}
-                      role="button"
-                      tabIndex={0}
-                      onClick={toggleOption}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          toggleOption();
-                        }
-                      }}
-                      className={cn(
-                        "flex h-9 w-full cursor-pointer items-center justify-between rounded-lg px-2.5 text-left text-sm transition outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                      onChange(
+                        group.key,
                         checked
-                          ? "bg-primary/10 text-primary"
-                          : "text-foreground hover:bg-muted/60",
-                      )}
-                    >
-                      <span className="flex min-w-0 items-center gap-2">
-                        {groupType === "multi" && (
-                          <Checkbox
-                            checked={checked}
-                            tabIndex={-1}
-                            className="pointer-events-none"
-                            aria-hidden="true"
-                          />
-                        )}
-                        <span className="truncate">{opt.label}</span>
-                      </span>
+                          ? selectedValues.filter(
+                              (value) => value !== opt.value,
+                            )
+                          : [...selectedValues, opt.value],
+                      );
+                    };
 
-                      {groupType === "single" && checked && (
-                        <Check className="h-4 w-4" />
-                      )}
-                    </div>
-                  );
-                })}
+                    return (
+                      <div
+                        key={opt.value}
+                        role="button"
+                        tabIndex={0}
+                        onClick={toggleOption}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            toggleOption();
+                          }
+                        }}
+                        className={cn(
+                          "flex h-9 w-full cursor-pointer items-center justify-between rounded-lg px-2.5 text-left text-sm transition outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                          checked
+                            ? "bg-primary/10 text-primary"
+                            : "text-foreground hover:bg-muted/60",
+                        )}
+                      >
+                        <span className="flex min-w-0 items-center gap-2">
+                          {groupType === "multi" && (
+                            <Checkbox
+                              checked={checked}
+                              tabIndex={-1}
+                              className="pointer-events-none"
+                              aria-hidden="true"
+                            />
+                          )}
+                          <span className="truncate">{opt.label}</span>
+                        </span>
+
+                        {groupType === "single" && checked && (
+                          <Check className="h-4 w-4" />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {getActiveGroupCount(group, values) > 0 && (

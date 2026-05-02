@@ -42,7 +42,7 @@ export function SortControl<T extends string>({
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
-            className="h-full w-25 px-4 rounded-none border-r border-border/60 hover:bg-muted/50"
+            className="flex-1 h-full px-4 rounded-none border-r border-border/60 hover:bg-muted/50"
           >
             <span className="text-sm font-medium">
               {active?.label ?? "Sort"}

@@ -4,8 +4,10 @@ import { useDebounce } from "../../../common/hooks/useDebounce";
 import { useProjects } from "../hooks/useProjects";
 import { CreateProjectModal } from "./CreateProjectModal";
 import { ProjectsHeader } from "./ProjectsHeader";
-import ProjectsToolbar from "./ProjectsToolBar";
-import type { DeletedFilter } from "../../../common/types/deletedFilter.types";
+import {
+  DELETED_FILTER,
+  type DeletedFilter,
+} from "../../../common/types/deletedFilter.types";
 import { useTeamMe } from "../../teams/hooks/useTeamMe";
 import { getProjectPermissions } from "../utils/projectPermissions";
 import { getUserFromToken } from "../../users/api/userApi";
@@ -21,6 +23,8 @@ import {
   type ProjectStatus,
 } from "../utils/project.constants";
 import { BASE_SORT_OPTIONS } from "@/common/constants/sort.constants";
+import Toolbar from "@/common/components/ToolBar";
+import { PROJECT_STATUS_FILTER } from "../constants/projectFilter.constants";
 
 export default function ProjectsPage() {
   const { teamId } = useParams<{
@@ -56,7 +60,7 @@ export default function ProjectsPage() {
   const sort = `${sortField},${sortOrder}`;
 
   const filterValues = {
-    status: statusFilter,
+    statusFilter,
     deletedFilter,
   };
 
@@ -142,6 +146,20 @@ export default function ProjectsPage() {
     teamRole: teamMe?.role,
   });
 
+  // ------------------ FILTERS ------------------
+  const filterConfig = permissions.canViewDeleteProject
+    ? [...PROJECT_STATUS_FILTER, ...DELETED_FILTER]
+    : PROJECT_STATUS_FILTER;
+
+  const filters = permissions.canViewDeleteProject
+    ? {
+        config: filterConfig,
+        values: filterValues,
+        onChange: handleFilterChange,
+        onDeletedChange: setDeletedFilter,
+      }
+    : undefined;
+
   return (
     <div className="space-y-6 flex flex-1 flex-col min-h-0 h-full">
       <ProjectsHeader
@@ -155,7 +173,23 @@ export default function ProjectsPage() {
         onOpenChange={setOpen}
       />
 
-      <ProjectsToolbar
+      <Toolbar
+        search={{
+          value: search,
+          onChange: handleSearchChange,
+        }}
+        filters={filters}
+        view={view}
+        sort={{
+          field: sortField,
+          order: sortOrder,
+          options: sortOptions,
+          onFieldChange: handleSort,
+          onToggleOrder: handleToggleSortOrder,
+        }}
+      />
+
+      {/* <ProjectsToolbar
         permissions={permissions}
         search={{
           value: search,
@@ -174,7 +208,7 @@ export default function ProjectsPage() {
           onFieldChange: handleSort,
           onToggleOrder: handleToggleSortOrder,
         }}
-      />
+      /> */}
       <Tabs
         value={view}
         onValueChange={handleViewChange}

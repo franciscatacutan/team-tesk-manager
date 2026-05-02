@@ -10,7 +10,7 @@ interface Props {
 
 export function ProjectsHeader({ onCreateProject, permissions }: Props) {
   return (
-    <section className="rounded-2xl border border-border/60 bg-background/95 p-4 shadow-sm">
+    <section className="rounded-2xl border border-border/60 bg-linear-to-br from-background via-background to-muted/20 p-5 shadow-sm sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -28,7 +28,7 @@ export function ProjectsHeader({ onCreateProject, permissions }: Props) {
         {permissions.canCreateProject && (
           <Button className="rounded-xl" onClick={onCreateProject}>
             <Plus className="h-4 w-4" />
-            Create project
+            Create
           </Button>
         )}
       </div>

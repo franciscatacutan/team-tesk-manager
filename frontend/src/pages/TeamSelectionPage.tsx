@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LayoutGrid, LayoutList, Plus, Sparkles } from "lucide-react";
+import { LayoutGrid, LayoutList } from "lucide-react";
 
 import { useTeams } from "../features/teams/hooks/useTeams";
 import { useDebounce } from "../common/hooks/useDebounce";
 
-import { Button } from "../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { CreateTeamModal } from "../features/teams/components/CreateTeamModal";
@@ -17,10 +16,6 @@ import {
 import { getTeamPermissions } from "../features/teams/utils/teamPermissions";
 import { getUserFromToken } from "../features/users/api/userApi";
 
-import SearchBar from "@/common/components/SearchBar";
-import { SortControl } from "@/common/components/SortControl";
-import { FilterPopover } from "@/common/components/FilterPopover";
-
 import type { SortField, SortOrder } from "@/common/types/sort.types";
 import { BASE_SORT_OPTIONS } from "@/common/constants/sort.constants";
 import { TEAM_LIST_SORT_OPTIONS } from "@/features/teams/constants/team.constants";
@@ -29,6 +24,8 @@ import TeamsBoard from "@/features/teams/components/TeamsBoard";
 import TeamsList from "@/features/teams/components/TeamsList";
 
 import { Pagination } from "@/common/components/pagination/Pagination";
+import Toolbar from "@/common/components/ToolBar";
+import TeamSelectionHeader from "@/features/teams/components/TeamSelectionHeader";
 
 export default function TeamSelectionPage() {
   const navigate = useNavigate();
@@ -107,6 +104,10 @@ export default function TeamSelectionPage() {
     setPage(0);
   };
 
+  const handleToggleSortOrder = () => {
+    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+  };
+
   const handleFilterChange = (key: string, value: string | string[]) => {
     setPage(0);
 
@@ -131,78 +132,42 @@ export default function TeamSelectionPage() {
     globalRole: user?.role,
   });
 
+  // ------------------ FILTERS ------------------
+  const filters = permissions.canViewDeleteTeam
+    ? {
+        config: DELETED_FILTER,
+        values: filterValues,
+        onChange: handleFilterChange,
+        onDeletedChange: setDeletedFilter,
+      }
+    : undefined;
+
   return (
     <div className="min-h-0 h-full bg-muted/10 px-4 py-6 sm:px-6 lg:px-8">
       <div className="flex flex-1 flex-col h-full mx-auto max-w-7xl gap-6">
-        <section className="rounded-3xl border border-border/60 bg-linear-to-br from-background via-background to-muted/20 p-5 shadow-sm sm:p-6">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                <Sparkles className="h-3.5 w-3.5" />
-                Workspace selection
-              </div>
-              <div className="space-y-1">
-                <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                  Choose a team
-                </h1>
-                <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-                  Open an existing workspace or create a new team to start
-                  organizing projects, members, and activity.
-                </p>
-              </div>
-            </div>
+        <TeamSelectionHeader
+          totalTeam={totalElements}
+          canCreateTeam={permissions.canCreateTeam}
+          setOpen={() => setOpen(true)}
+        />
 
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-3 rounded-xl border px-4 py-2 text-sm">
-                <div className="text-xl font-semibold tracking-tight text-foreground">
-                  {totalElements}
-                </div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  Teams
-                </div>
-              </div>
+        <CreateTeamModal open={open} onOpenChange={setOpen} />
 
-              {permissions.canCreateTeam && (
-                <Button className="rounded-xl" onClick={() => setOpen(true)}>
-                  <Plus className="h-4 w-4" />
-                  Create
-                </Button>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-border/60 bg-background/92 p-4 shadow-sm">
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-            <SearchBar search={search} searchChange={handleSearchChange} />
-
-            <div className="flex gap-2">
-              {permissions.canViewDeleteTeam && (
-                <FilterPopover
-                  label="Visibility"
-                  config={DELETED_FILTER}
-                  values={filterValues}
-                  onChange={handleFilterChange}
-                  onClear={() => {
-                    setDeletedFilter("ACTIVE");
-                    setPage(0);
-                  }}
-                />
-              )}
-              {view === "board" && (
-                <SortControl
-                  field={sortField}
-                  order={sortOrder}
-                  options={sortOptions}
-                  onFieldChange={handleSort}
-                  onToggleOrder={() =>
-                    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
-                  }
-                />
-              )}
-            </div>
-          </div>
-        </section>
+        <Toolbar
+          search={{
+            value: search,
+            onChange: handleSearchChange,
+          }}
+          filters={filters}
+          view={view}
+          sort={{
+            field: sortField,
+            order: sortOrder,
+            options: sortOptions,
+            onFieldChange: handleSort,
+            onToggleOrder: handleToggleSortOrder,
+          }}
+        />
 
         <Tabs
           value={view}
@@ -270,8 +235,6 @@ export default function TeamSelectionPage() {
           />
         )}
       </div>
-
-      <CreateTeamModal open={open} onOpenChange={setOpen} />
     </div>
   );
 }
