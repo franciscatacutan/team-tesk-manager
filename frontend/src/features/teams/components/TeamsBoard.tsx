@@ -2,22 +2,25 @@ import { Plus } from "lucide-react";
 import TeamCard from "./TeamCard";
 import { Button } from "@/components/ui/button";
 import type { Team } from "../types/team.type";
-import type { TeamPermissions } from "../utils/teamPermissions";
 
 interface Props {
   teams: Team[];
   isLoading: boolean;
   openTeam: (teamId: string) => void;
-  setOpen: (open: boolean) => void;
-  permissions: TeamPermissions;
+  onCreateTeam: () => void;
+  onClearFilters: () => void;
+  canCreateTeam: boolean;
+  hasActiveFilters: boolean;
 }
 
 export default function TeamsBoard({
   teams,
   isLoading,
   openTeam,
-  setOpen,
-  permissions,
+  onCreateTeam,
+  onClearFilters,
+  canCreateTeam,
+  hasActiveFilters,
 }: Props) {
   return (
     <>
@@ -47,18 +50,28 @@ export default function TeamsBoard({
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/75 px-6 py-16 text-center">
           <h2 className="text-lg font-semibold text-foreground">
-            No teams found
+            {hasActiveFilters ? "No matching teams" : "No teams yet"}
           </h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-            Try changing the search or filters, or create a new team to get
-            started.
+            {hasActiveFilters
+              ? "Try clearing the search or filters to see more teams."
+              : "Create a team to get started."}
           </p>
-          {permissions.canCreateTeam && (
-            <Button className="mt-5 rounded-xl" onClick={() => setOpen(true)}>
+
+          {hasActiveFilters ? (
+            <Button
+              variant="outline"
+              className="mt-6 rounded-xl"
+              onClick={onClearFilters}
+            >
+              Clear filters
+            </Button>
+          ) : canCreateTeam ? (
+            <Button className="mt-6 rounded-xl" onClick={onCreateTeam}>
               <Plus className="h-4 w-4" />
               Create team
             </Button>
-          )}
+          ) : null}
         </div>
       )}
     </>

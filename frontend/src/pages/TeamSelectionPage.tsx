@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LayoutGrid, LayoutList } from "lucide-react";
+import { AlertCircle, LayoutGrid, LayoutList, RefreshCw } from "lucide-react";
 
 import { useTeams } from "../features/teams/hooks/useTeams";
 import { useDebounce } from "../common/hooks/useDebounce";
@@ -26,6 +26,7 @@ import TeamsList from "@/features/teams/components/TeamsList";
 import { Pagination } from "@/common/components/pagination/Pagination";
 import Toolbar from "@/common/components/ToolBar";
 import TeamSelectionHeader from "@/features/teams/components/TeamSelectionHeader";
+import { Button } from "@/components/ui/button";
 
 export default function TeamSelectionPage() {
   const navigate = useNavigate();
@@ -60,10 +61,12 @@ export default function TeamSelectionPage() {
 
   const sortOptions =
     view === "board" ? BASE_SORT_OPTIONS : TEAM_LIST_SORT_OPTIONS;
+  const hasActiveFilters =
+    search.trim().length > 0 || deletedFilter !== "ACTIVE";
 
   // ---------------- DATA ----------------
 
-  const { data, isLoading } = useTeams({
+  const { data, isError, isLoading, refetch } = useTeams({
     page,
     size,
     search: debouncedSearch,
@@ -120,6 +123,12 @@ export default function TeamSelectionPage() {
     }
   };
 
+  const handleClearFilters = () => {
+    setSearch("");
+    setDeletedFilter("ACTIVE");
+    setPage(0);
+  };
+
   const openTeam = (teamId: string) => {
     navigate(`/teams/${teamId}`);
   };
@@ -139,6 +148,7 @@ export default function TeamSelectionPage() {
         values: filterValues,
         onChange: handleFilterChange,
         onDeletedChange: setDeletedFilter,
+        onClear: handleClearFilters,
       }
     : undefined;
 
@@ -168,57 +178,82 @@ export default function TeamSelectionPage() {
             onToggleOrder: handleToggleSortOrder,
           }}
         />
-
-        <Tabs
-          value={view}
-          onValueChange={handleViewChange}
-          className="flex flex-col flex-1 min-h-0"
-        >
-          <TabsList className="inline-flex gap-1 rounded-xl border border-border/60 bg-background/70 p-1 shadow-sm">
-            <TabsTrigger
+        {isError ? (
+          <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-destructive/30 bg-destructive/5 px-6 py-16 text-center">
+            <div>
+              <AlertCircle className="mx-auto h-8 w-8 text-destructive" />
+              <h2 className="mt-4 text-lg font-semibold text-foreground">
+                Teams could not be loaded
+              </h2>
+              <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+                Check your connection and try again.
+              </p>
+              <Button
+                className="mt-6 rounded-xl"
+                variant="outline"
+                onClick={() => refetch()}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Retry
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Tabs
+            value={view}
+            onValueChange={handleViewChange}
+            className="flex flex-col flex-1 min-h-0"
+          >
+            <TabsList className="inline-flex gap-1 rounded-xl border border-border/60 bg-background/70 p-1 shadow-sm">
+              <TabsTrigger
+                value="board"
+                className=" flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
+              >
+                <LayoutGrid className="h-4 w-4" />
+                Board
+              </TabsTrigger>
+              <TabsTrigger
+                value="list"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
+              >
+                <LayoutList className="h-4 w-4" />
+                List
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent
               value="board"
-              className=" flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
+              className="flex flex-col flex-1 min-h-0 gap-3"
             >
-              <LayoutGrid className="h-4 w-4" />
-              Board
-            </TabsTrigger>
-            <TabsTrigger
-              value="list"
-              className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
-            >
-              <LayoutList className="h-4 w-4" />
-              List
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent
-            value="board"
-            className="flex flex-col flex-1 min-h-0 gap-3"
-          >
-            <TeamsBoard
-              teams={teams}
-              isLoading={isLoading}
-              openTeam={openTeam}
-              setOpen={setOpen}
-              permissions={permissions}
-            />
-          </TabsContent>
+              <TeamsBoard
+                teams={teams}
+                isLoading={isLoading}
+                openTeam={openTeam}
+                onCreateTeam={() => setOpen(true)}
+                onClearFilters={handleClearFilters}
+                canCreateTeam={permissions.canCreateTeam}
+                hasActiveFilters={hasActiveFilters}
+              />
+            </TabsContent>
 
-          <TabsContent
-            value="list"
-            className="flex flex-col flex-1 min-h-0 gap-3"
-          >
-            <TeamsList
-              teams={teams}
-              isLoading={isLoading}
-              openTeam={openTeam}
-              setOpen={setOpen}
-              sortField={sortField}
-              sortOrder={sortOrder}
-              onSort={handleSort}
-              permissions={permissions}
-            />
-          </TabsContent>
-        </Tabs>
+            <TabsContent
+              value="list"
+              className="flex flex-col flex-1 min-h-0 gap-3"
+            >
+              <TeamsList
+                teams={teams}
+                isLoading={isLoading}
+                openTeam={openTeam}
+                onCreateTeam={() => setOpen(true)}
+                onClearFilters={handleClearFilters}
+                hasActiveFilters={hasActiveFilters}
+                sortField={sortField}
+                sortOrder={sortOrder}
+                onSort={handleSort}
+                canCreateTeam={permissions.canCreateTeam}
+              />
+            </TabsContent>
+          </Tabs>
+        )}
 
         {totalPages > 1 && (
           <Pagination

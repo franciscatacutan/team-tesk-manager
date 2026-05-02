@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { formatDate } from "@/common/utils/dateFormatter";
 import { SortHeader } from "@/common/components/SortHeader";
 import type { Project } from "../types/project.types";
-import type { ProjectPermissions } from "../utils/projectPermissions";
 import {
   ProjectStatusLabel,
   ProjectStatusStyles,
@@ -24,8 +23,10 @@ interface Props {
   projects: Project[];
   isLoading: boolean;
   openProject: (projectId: string) => void;
-  setOpen: (open: boolean) => void;
-  permissions: ProjectPermissions;
+  onCreateProject: () => void;
+  onClearFilters: () => void;
+  hasActiveFilters: boolean;
+  canCreateProject: boolean;
 
   sortField: SortField;
   sortOrder: "asc" | "desc";
@@ -36,8 +37,10 @@ export default function ProjectsList({
   projects,
   isLoading,
   openProject,
-  setOpen,
-  permissions,
+  onCreateProject,
+  onClearFilters,
+  canCreateProject,
+  hasActiveFilters,
   sortField,
   sortOrder,
   onSort,
@@ -185,7 +188,8 @@ export default function ProjectsList({
 
                     <TableCell className="px-4 py-3">
                       <div className="truncate text-muted-foreground">
-                        {project.owner?.firstName ?? project.createdBy?.firstName}
+                        {project.owner?.firstName ??
+                          project.createdBy?.firstName}
                         {project.owner?.lastName ?? project.createdBy?.lastName}
                       </div>
                     </TableCell>
@@ -204,23 +208,31 @@ export default function ProjectsList({
           </div>
         </div>
       ) : (
-        <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/75 px-6 py-16 text-center">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">
-              No projects found
-            </h2>
+        <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/75 px-6 py-16 text-center">
+          <h2 className="text-lg font-semibold text-foreground">
+            {hasActiveFilters ? "No matching projects" : "No projects yet"}
+          </h2>
 
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              Try adjusting your search or filters, or create a new project.
-            </p>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+            {hasActiveFilters
+              ? "Try clearing the search or filters to see more projects."
+              : "Create a project to start organizing this team's work."}
+          </p>
 
-            {permissions.canCreateProject && (
-              <Button className="mt-6 rounded-xl" onClick={() => setOpen(true)}>
-                <Plus className="h-4 w-4" />
-                Create project
-              </Button>
-            )}
-          </div>
+          {hasActiveFilters ? (
+            <Button
+              variant="outline"
+              className="mt-6 rounded-xl"
+              onClick={onClearFilters}
+            >
+              Clear filters
+            </Button>
+          ) : canCreateProject ? (
+            <Button className="mt-6 rounded-xl" onClick={onCreateProject}>
+              <Plus className="h-4 w-4" />
+              Create project
+            </Button>
+          ) : null}
         </div>
       )}
     </>

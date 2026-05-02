@@ -3,7 +3,6 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import type { Project } from "../types/project.types";
-import type { ProjectPermissions } from "../utils/projectPermissions";
 import ProjectCard from "./ProjectCard";
 
 interface Props {
@@ -11,7 +10,9 @@ interface Props {
   isLoading: boolean;
   openProject: (projectId: string) => void;
   onCreateProject: () => void;
-  permissions: ProjectPermissions;
+  onClearFilters: () => void;
+  canCreateProject: boolean;
+  hasActiveFilters: boolean;
 }
 
 export default function ProjectsBoard({
@@ -19,7 +20,9 @@ export default function ProjectsBoard({
   isLoading,
   openProject,
   onCreateProject,
-  permissions,
+  onClearFilters,
+  canCreateProject,
+  hasActiveFilters,
 }: Props) {
   return (
     <>
@@ -49,19 +52,28 @@ export default function ProjectsBoard({
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/75 px-6 py-16 text-center">
           <h2 className="text-lg font-semibold text-foreground">
-            No projects found
+            {hasActiveFilters ? "No matching projects" : "No projects yet"}
           </h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-            Try changing the search or filters, or create a new project to get
-            started.
+            {hasActiveFilters
+              ? "Try clearing the search or filters to see more projects."
+              : "Create a project to start organizing this team's work."}
           </p>
 
-          {permissions.canCreateProject && (
+          {hasActiveFilters ? (
+            <Button
+              variant="outline"
+              className="mt-6 rounded-xl"
+              onClick={onClearFilters}
+            >
+              Clear filters
+            </Button>
+          ) : canCreateProject ? (
             <Button className="mt-6 rounded-xl" onClick={onCreateProject}>
               <Plus className="h-4 w-4" />
               Create project
             </Button>
-          )}
+          ) : null}
         </div>
       )}
     </>

@@ -38,6 +38,7 @@ export const useProjects = (
         sort: params.sort,
         deletedFilter: params.deletedFilter,
       }),
+    enabled: Boolean(teamId),
     placeholderData: keepPreviousData,
   });
 };

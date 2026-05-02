@@ -14,7 +14,7 @@ import { getUserFromToken } from "../../users/api/userApi";
 import { Pagination } from "../../../common/components/pagination/Pagination";
 import ProjectsBoard from "./ProjectsBoard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutGrid, LayoutList } from "lucide-react";
+import { AlertCircle, LayoutGrid, LayoutList, RefreshCw } from "lucide-react";
 import ProjectsList from "./ProjectsList";
 import type { SortField, SortOrder } from "@/common/types/sort.types";
 import {
@@ -25,6 +25,7 @@ import {
 import { BASE_SORT_OPTIONS } from "@/common/constants/sort.constants";
 import Toolbar from "@/common/components/ToolBar";
 import { PROJECT_STATUS_FILTER } from "../constants/projectFilter.constants";
+import { Button } from "@/components/ui/button";
 
 export default function ProjectsPage() {
   const { teamId } = useParams<{
@@ -66,10 +67,14 @@ export default function ProjectsPage() {
 
   const sortOptions =
     view === "board" ? BASE_SORT_OPTIONS : PROJECT_LIST_SORT_OPTIONS;
+  const hasActiveFilters =
+    search.trim().length > 0 ||
+    statusFilter.length > 0 ||
+    deletedFilter !== "ACTIVE";
 
   // ---------------- DATA ----------------
 
-  const { data, isLoading } = useProjects(teamId || "", {
+  const { data, isError, isLoading, refetch } = useProjects(teamId || "", {
     page,
     size,
     search: debouncedSearch,
@@ -113,6 +118,7 @@ export default function ProjectsPage() {
 
   const handleToggleSortOrder = () => {
     setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    setPage(0);
   };
 
   const handleFilterChange = (key: string, value: string | string[]) => {
@@ -130,6 +136,13 @@ export default function ProjectsPage() {
           : "ACTIVE") as DeletedFilter,
       );
     }
+  };
+
+  const handleClearFilters = () => {
+    setSearch("");
+    setStatusFilter([]);
+    setDeletedFilter("ACTIVE");
+    setPage(0);
   };
 
   function openProject(projectId: string) {
@@ -151,19 +164,18 @@ export default function ProjectsPage() {
     ? [...PROJECT_STATUS_FILTER, ...DELETED_FILTER]
     : PROJECT_STATUS_FILTER;
 
-  const filters = permissions.canViewDeleteProject
-    ? {
-        config: filterConfig,
-        values: filterValues,
-        onChange: handleFilterChange,
-        onDeletedChange: setDeletedFilter,
-      }
-    : undefined;
+  const filters = {
+    config: filterConfig,
+    values: filterValues,
+    onChange: handleFilterChange,
+    onDeletedChange: setDeletedFilter,
+    onClear: handleClearFilters,
+  };
 
   return (
     <div className="space-y-6 flex flex-1 flex-col min-h-0 h-full">
       <ProjectsHeader
-        permissions={permissions}
+        canCreateProject={permissions.canCreateProject}
         onCreateProject={() => setOpen(true)}
       />
 
@@ -189,76 +201,82 @@ export default function ProjectsPage() {
         }}
       />
 
-      {/* <ProjectsToolbar
-        permissions={permissions}
-        search={{
-          value: search,
-          onChange: handleSearchChange,
-        }}
-        filters={{
-          values: filterValues,
-          onChange: handleFilterChange,
-          onDeletedChange: setDeletedFilter,
-        }}
-        view={view}
-        sort={{
-          field: sortField,
-          order: sortOrder,
-          options: sortOptions,
-          onFieldChange: handleSort,
-          onToggleOrder: handleToggleSortOrder,
-        }}
-      /> */}
-      <Tabs
-        value={view}
-        onValueChange={handleViewChange}
-        className="flex flex-col flex-1 min-h-0"
-      >
-        <TabsList className="inline-flex gap-1 rounded-xl border border-border/60 bg-background/70 p-1 shadow-sm">
-          <TabsTrigger
+      {isError ? (
+        <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-destructive/30 bg-destructive/5 px-6 py-16 text-center">
+          <div>
+            <AlertCircle className="mx-auto h-8 w-8 text-destructive" />
+            <h2 className="mt-4 text-lg font-semibold text-foreground">
+              Projects could not be loaded
+            </h2>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+              Check your connection and try again.
+            </p>
+            <Button
+              className="mt-6 rounded-xl"
+              variant="outline"
+              onClick={() => refetch()}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Tabs
+          value={view}
+          onValueChange={handleViewChange}
+          className="flex flex-col flex-1 min-h-0"
+        >
+          <TabsList className="inline-flex gap-1 rounded-xl border border-border/60 bg-background/70 p-1 shadow-sm">
+            <TabsTrigger
+              value="board"
+              className=" flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
+            >
+              <LayoutGrid className="h-4 w-4" />
+              Board
+            </TabsTrigger>
+            <TabsTrigger
+              value="list"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
+            >
+              <LayoutList className="h-4 w-4" />
+              List
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent
             value="board"
-            className=" flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
+            className="flex flex-col flex-1 min-h-0 gap-3"
           >
-            <LayoutGrid className="h-4 w-4" />
-            Board
-          </TabsTrigger>
-          <TabsTrigger
-            value="list"
-            className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
-          >
-            <LayoutList className="h-4 w-4" />
-            List
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent
-          value="board"
-          className="flex flex-col flex-1 min-h-0 gap-3"
-        >
-          <ProjectsBoard
-            projects={projects}
-            isLoading={isLoading}
-            openProject={openProject}
-            onCreateProject={() => setOpen(true)}
-            permissions={permissions}
-          />
-        </TabsContent>
+            <ProjectsBoard
+              projects={projects}
+              isLoading={isLoading}
+              openProject={openProject}
+              onCreateProject={() => setOpen(true)}
+              onClearFilters={handleClearFilters}
+              canCreateProject={permissions.canCreateProject}
+              hasActiveFilters={hasActiveFilters}
+            />
+          </TabsContent>
 
-        <TabsContent
-          value="list"
-          className="flex flex-col flex-1 min-h-0 gap-3"
-        >
-          <ProjectsList
-            projects={projects}
-            isLoading={isLoading}
-            openProject={openProject}
-            setOpen={setOpen}
-            sortField={sortField}
-            sortOrder={sortOrder}
-            onSort={handleSort}
-            permissions={permissions}
-          />
-        </TabsContent>
-      </Tabs>
+          <TabsContent
+            value="list"
+            className="flex flex-col flex-1 min-h-0 gap-3"
+          >
+            <ProjectsList
+              projects={projects}
+              isLoading={isLoading}
+              openProject={openProject}
+              onCreateProject={() => setOpen(true)}
+              onClearFilters={handleClearFilters}
+              sortField={sortField}
+              sortOrder={sortOrder}
+              onSort={handleSort}
+              canCreateProject={permissions.canCreateProject}
+              hasActiveFilters={hasActiveFilters}
+            />
+          </TabsContent>
+        </Tabs>
+      )}
 
       {totalPages > 1 && (
         <Pagination

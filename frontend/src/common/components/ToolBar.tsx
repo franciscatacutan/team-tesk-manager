@@ -18,6 +18,7 @@ interface Props {
     values: FilterValues;
     onChange: (key: string, value: string | string[]) => void;
     onDeletedChange: (value: DeletedFilter) => void;
+    onClear?: () => void;
   };
 
   view: "board" | "list";
@@ -35,7 +36,7 @@ export default function Toolbar({ search, filters, view, sort }: Props) {
   return (
     <section className="rounded-2xl border border-border/60 bg-background/92 p-4 shadow-sm">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-o flex-1">
+        <div className="min-w-0 flex-1">
           <SearchBar search={search.value} searchChange={search.onChange} />
         </div>
 
@@ -47,7 +48,14 @@ export default function Toolbar({ search, filters, view, sort }: Props) {
               values={filters.values}
               onChange={filters.onChange}
               onClear={() => {
-                filters.onChange("", []);
+                if (filters.onClear) {
+                  filters.onClear();
+                  return;
+                }
+
+                filters.config.forEach((group) => {
+                  filters.onChange(group.key, group.type === "multi" ? [] : "");
+                });
                 filters.onDeletedChange("ACTIVE");
               }}
             />
