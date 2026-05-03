@@ -79,7 +79,7 @@ public class ObservabilityService {
 
     auditLogRepository.save(audit);
 
-    if (isOperationallySignificant(event.getEventType())) {
+    if (shouldPromoteToSystemEvent(event.getEventType())) {
       recordSystemEvent(
           SystemEventSeverity.INFO,
           "DOMAIN",
@@ -393,10 +393,11 @@ public class ObservabilityService {
     };
   }
 
-  private boolean isOperationallySignificant(ActivityEventType eventType) {
+  private boolean shouldPromoteToSystemEvent(ActivityEventType eventType) {
+    // Keep system events high-signal. Routine collaboration changes already
+    // live in activity and audit logs; this stream is for operational review.
     return switch (eventType) {
-      case TEAM_DELETED, PROJECT_DELETED, TASK_DELETED, TEAM_OWNERSHIP_TRANSFERRED, PROJECT_STATUS_CHANGED,
-          TASK_STATUS_CHANGED ->
+      case TEAM_DELETED, PROJECT_DELETED, TASK_DELETED, TEAM_OWNERSHIP_TRANSFERRED ->
         true;
       default -> false;
     };

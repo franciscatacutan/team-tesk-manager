@@ -3,6 +3,7 @@ import type { NullableTeamRole } from "../../teams/types/team.type";
 import type { UserRole } from "../../users/types/userRole";
 
 export interface ProjectPermissions {
+  canManageProject: boolean;
   canCreateProject: boolean;
   canEditProjectDetails: boolean;
   canDeleteProject: boolean;
@@ -28,6 +29,8 @@ export function getProjectPermissions({
   const canManage = isOwner || isAdmin;
 
   return {
+    canManageProject: isSystemAdmin || canManage,
+
     canCreateProject: canManage,
 
     canEditProjectDetails: canManage,

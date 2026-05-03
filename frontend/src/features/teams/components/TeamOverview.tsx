@@ -21,12 +21,10 @@ import { getUserFromToken } from "../../users/api/userApi";
 import { useProjects } from "../../projects/hooks/useProjects";
 import { useTeam } from "../hooks/useTeam";
 import { useTeamActivities } from "../hooks/useTeamActivities";
-import { useTeamInsights } from "../hooks/useTeamInsights";
 import { useTeamMe } from "../hooks/useTeamMe";
 import { useTeamMembers } from "../hooks/useTeamMembers";
 import AddMembersModal from "./AddMembersModal";
 import TeamHeader from "./TeamHeader";
-import TeamInsightsDashboard from "./TeamInsightsDashboard";
 import TeamOverviewCard from "./TeamOverviewCard";
 import { getTeamPermissions } from "../utils/teamPermissions";
 
@@ -62,11 +60,6 @@ export default function TeamOverview() {
     size: 5,
     sort: "createdAt,desc",
   });
-  const {
-    data: teamInsights,
-    isLoading: isTeamInsightsLoading,
-    isError: isTeamInsightsError,
-  } = useTeamInsights(teamId || "");
   const user = getUserFromToken();
 
   const permissions = getTeamPermissions({
@@ -161,12 +154,6 @@ export default function TeamOverview() {
           onClick={() => navigate(`/teams/${team.id}/activity`)}
         />
       </section>
-
-      <TeamInsightsDashboard
-        insights={teamInsights}
-        isLoading={isTeamInsightsLoading}
-        isError={isTeamInsightsError}
-      />
 
       <section className="grid gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)]">
         <Card className="border-border/60 bg-background/92">

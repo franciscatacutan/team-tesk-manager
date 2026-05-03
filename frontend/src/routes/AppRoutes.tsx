@@ -17,6 +17,7 @@ import TeamOverview from "../features/teams/components/TeamOverview";
 import TeamMembersPage from "../features/teams/components/MembersView";
 import AppLayout from "../layout/AppLayout";
 import TeamActivity from "../features/teams/components/TeamActivity";
+import TeamInsightsPage from "../features/teams/components/TeamInsightsPage";
 
 export default function AppRoutes() {
   return (
@@ -60,6 +61,7 @@ export default function AppRoutes() {
             <Route path="projects" element={<ProjectsView />} />
             <Route path="members" element={<TeamMembersPage />} />
             <Route path="activity" element={<TeamActivity />} />
+            <Route path="insights" element={<TeamInsightsPage />} />
             <Route
               path="/teams/:teamId/projects/:projectId"
               element={<ProjectDetails />}

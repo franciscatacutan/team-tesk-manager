@@ -1,7 +1,12 @@
 import { apiClient } from "../../../api/apiClients";
 import type { BaseQueryParams } from "../../../common/types/baseQuery.types";
 import type { DeletedFilter } from "../../../common/types/deletedFilter.types";
+import type {
+  ObservabilityAuditLog,
+  ObservabilitySystemEvent,
+} from "../../../common/types/observability.types";
 import type { PageResponse } from "../../../common/types/pageResponse.types";
+import type { ProjectInsights } from "../types/projectInsights.types";
 import type {
   Project,
   ProjectActivity,
@@ -61,6 +66,40 @@ export const getProjectActivities = async (
     { params },
   );
   return res.data;
+};
+
+export const getProjectInsights = async (
+  teamId: string,
+  projectId: string,
+): Promise<ProjectInsights> => {
+  const response = await apiClient.get(
+    `/teams/${teamId}/projects/${projectId}/insights/summary`,
+  );
+  return response.data;
+};
+
+export const getProjectAuditLogs = async (
+  teamId: string,
+  projectId: string,
+  params: Pick<BaseQueryParams, "page" | "size" | "sort">,
+): Promise<PageResponse<ObservabilityAuditLog>> => {
+  const response = await apiClient.get(
+    `/teams/${teamId}/projects/${projectId}/insights/audit-logs`,
+    { params },
+  );
+  return response.data;
+};
+
+export const getProjectSystemEvents = async (
+  teamId: string,
+  projectId: string,
+  params: Pick<BaseQueryParams, "page" | "size" | "sort">,
+): Promise<PageResponse<ObservabilitySystemEvent>> => {
+  const response = await apiClient.get(
+    `/teams/${teamId}/projects/${projectId}/insights/system-events`,
+    { params },
+  );
+  return response.data;
 };
 
 export const updateProject = async (

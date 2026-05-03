@@ -21,13 +21,16 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../../components/ui/tabs";
-import { Kanban, LayoutList, ListCheck } from "lucide-react";
+import { BarChart3, Kanban, LayoutList, ListCheck } from "lucide-react";
 import { CreateTaskModal } from "../../tasks/components/CreateTaskModal";
 import ProjectActivity from "../../projects/components/ProjectActivity";
+import ProjectInsightsDashboard from "../../projects/components/ProjectInsightsDashboard";
+import ProjectObservabilityLogs from "../../projects/components/ProjectObservabilityLogs";
 import { getProjectPermissions } from "../../projects/utils/projectPermissions";
 import { useTeamMe } from "../../teams/hooks/useTeamMe";
 import type { DeletedFilter } from "../../../common/types/deletedFilter.types";
 import { getUserFromToken } from "../../users/api/userApi";
+import { useProjectInsights } from "../hooks/useProjectInsights";
 
 export default function ProjectDetails() {
   const navigate = useNavigate();
@@ -51,10 +54,12 @@ export default function ProjectDetails() {
     data: project,
     isLoading,
     isError,
-  } = useProject(
-    teamId || "",
-    projectId || "",
-  );
+  } = useProject(teamId || "", projectId || "");
+  const {
+    data: projectInsights,
+    isLoading: isProjectInsightsLoading,
+    isError: isProjectInsightsError,
+  } = useProjectInsights(teamId || "", projectId || "");
 
   const user = getUserFromToken();
   const { data: teamMe } = useTeamMe(teamId || "");
@@ -174,6 +179,16 @@ export default function ProjectDetails() {
             <ListCheck className="h-4 w-4" />
             Activity
           </TabsTrigger>
+
+          {permissions.canManageProject && (
+            <TabsTrigger
+              value="insights"
+              className=" flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
+            >
+              <BarChart3 className="h-4 w-4" />
+              Insights
+            </TabsTrigger>
+          )}
         </TabsList>
         <div className="flex flex-col flex-1 min-h-0">
           <TabsContent
@@ -245,6 +260,14 @@ export default function ProjectDetails() {
               projectId={projectId}
               onOpenTask={(taskId) => setSelectedTask({ id: taskId } as Task)}
             />
+          </TabsContent>
+          <TabsContent value="insights" className="flex flex-col gap-4">
+            <ProjectInsightsDashboard
+              insights={projectInsights}
+              isLoading={isProjectInsightsLoading}
+              isError={isProjectInsightsError}
+            />
+            <ProjectObservabilityLogs teamId={teamId} projectId={projectId} />
           </TabsContent>
         </div>
       </Tabs>

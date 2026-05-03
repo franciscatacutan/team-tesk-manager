@@ -4,6 +4,7 @@ import {
   FolderKanban,
   Users,
   Activity,
+  BarChart3,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -12,9 +13,20 @@ import TeamSwitcher from "./TeamSwitcher";
 import { Button } from "../../../components/ui/button";
 import NavItem from "./TeamNavItem";
 import { cn } from "../../../lib/utils";
+import { getUserFromToken } from "@/features/users/api/userApi";
+import { getTeamPermissions } from "../utils/teamPermissions";
+import { useTeamMe } from "../hooks/useTeamMe";
 
 export default function TeamSidebar({ teamId }: { teamId: string }) {
   const [collapsed, setCollapsed] = useState(false);
+
+  const user = getUserFromToken();
+  const { data: teamMe } = useTeamMe(teamId || "");
+
+  const permissions = getTeamPermissions({
+    globalRole: user?.role,
+    teamRole: teamMe?.role,
+  });
   return (
     <aside
       className={cn(
@@ -68,6 +80,14 @@ export default function TeamSidebar({ teamId }: { teamId: string }) {
           icon={Activity}
           collapsed={collapsed}
         />
+        {permissions.canManageTeam && (
+          <NavItem
+            to={`/teams/${teamId}/insights`}
+            label="Insights"
+            icon={BarChart3}
+            collapsed={collapsed}
+          />
+        )}
       </nav>
     </aside>
   );
