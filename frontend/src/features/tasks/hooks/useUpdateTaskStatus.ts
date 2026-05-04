@@ -3,7 +3,7 @@ import { updateTaskStatus } from "../api/taskApi";
 
 import type { PageResponse } from "../../../common/types/pageResponse.types";
 import type { Task } from "../types/task.types";
-import type { TaskStatus } from "../utils/taskStatus";
+import type { TaskStatus } from "../utils/task.constants";
 
 interface Params {
   taskId: string;

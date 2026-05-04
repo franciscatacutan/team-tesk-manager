@@ -7,7 +7,7 @@ import TaskBoard from "../../tasks/components/TaskBoard";
 import TaskModal from "../../tasks/components/TaskModal";
 
 import type { Task } from "../../tasks/types/task.types";
-import type { TaskStatus } from "../../tasks/utils/taskStatus";
+import type { TaskStatus } from "../../tasks/utils/task.constants";
 
 import TaskFilters from "../../tasks/components/TaskFilters";
 import ProjectHeader from "../../projects/components/ProjectHeader";
@@ -31,43 +31,68 @@ import { useTeamMe } from "../../teams/hooks/useTeamMe";
 import type { DeletedFilter } from "../../../common/types/deletedFilter.types";
 import { getUserFromToken } from "../../users/api/userApi";
 import { useProjectInsights } from "../hooks/useProjectInsights";
+import { BASE_SORT_OPTIONS } from "@/common/constants/sort.constants";
 
 export default function ProjectDetails() {
-  const navigate = useNavigate();
   const { teamId, projectId } = useParams<{
     teamId: string;
     projectId: string;
   }>();
 
-  const [deletedFilter, setDeletedFilter] = useState<DeletedFilter>("ACTIVE");
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
+  const navigate = useNavigate();
+
+  // ---------------- STATE ----------------
+  const [open, setOpen] = useState(false);
+
+  const [view, setView] = useState<"board" | "list">("board");
+
+  const getPaginationOptions = (type: "board" | "list") =>
+    type === "board" ? [12, 24, 36] : [10, 20, 40];
 
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
+  const [size, setSize] = useState<number>(getPaginationOptions("board")[0]);
+
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
-  const [sort, setSort] = useState("createdAt,desc");
+
+  const [sortField, setSortField] = useState<SortField>("lastActivityAt");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+
+  const [statusFilter, setStatusFilter] = useState<TaskStatus[]>([]);
+
+  const [deletedFilter, setDeletedFilter] = useState<DeletedFilter>("ACTIVE");
+
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+  // ---------------- DERIVED ----------------
+
   const debouncedSearch = useDebounce(search, 400);
+  const sort = `${sortField},${sortOrder}`;
+
+  const filterValues = {
+    statusFilter,
+    deletedFilter,
+  };
+
+  const sortOptions =
+    view === "board" ? BASE_SORT_OPTIONS : PROJECT_LIST_SORT_OPTIONS;
+  const hasActiveFilters =
+    search.trim().length > 0 ||
+    statusFilter.length > 0 ||
+    deletedFilter !== "ACTIVE";
+
+  // ---------------- DATA ----------------
 
   const {
     data: project,
     isLoading,
     isError,
   } = useProject(teamId || "", projectId || "");
+
   const {
     data: projectInsights,
     isLoading: isProjectInsightsLoading,
     isError: isProjectInsightsError,
   } = useProjectInsights(teamId || "", projectId || "");
-
-  const user = getUserFromToken();
-  const { data: teamMe } = useTeamMe(teamId || "");
-
-  const permissions = getProjectPermissions({
-    globalRole: user?.role,
-    teamRole: teamMe?.role,
-  });
 
   const { data: tasksData, isLoading: isTasksLoading } = useTasks(
     teamId || "",
@@ -76,8 +101,8 @@ export default function ProjectDetails() {
       page,
       size,
       search: debouncedSearch,
-      status,
       sort,
+      status: statusFilter,
       deletedFilter,
     },
   );
@@ -85,23 +110,64 @@ export default function ProjectDetails() {
   const tasks = tasksData?.content ?? [];
   const totalPages = tasksData?.totalPages ?? 0;
   const totalElements = tasksData?.totalElements ?? 0;
-  const hasActiveTaskFilters =
-    Boolean(search.trim()) || Boolean(status) || deletedFilter !== "ACTIVE";
 
   const updateStatus = useUpdateTaskStatus(teamId || "", projectId || "");
+
+  // ---------------- HANDLERS ----------------
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
     setPage(0);
   };
 
-  const handleStatusFilterChange = (value: string) => {
-    setStatus(value === "ALL" ? "" : value);
+  const handleViewChange = (value: string) => {
+    const nextView = value as "board" | "list";
+
+    setView(nextView);
+    setPage(0);
+    setSize(getPaginationOptions(nextView)[0]);
+  };
+
+  const handleSort = (field: SortField) => {
+    setSortField((prevField) => {
+      if (prevField === field) {
+        setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+        return prevField;
+      }
+
+      setSortOrder("desc");
+      return field;
+    });
+
     setPage(0);
   };
 
-  const handleDeletedFilterChange = (value: DeletedFilter) => {
-    setDeletedFilter(value);
+  const handleToggleSortOrder = () => {
+    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    setPage(0);
+  };
+
+  const handleFilterChange = (key: string, value: string | string[]) => {
+    setPage(0);
+
+    if (key === "statusFilter") {
+      const statuses = Array.isArray(value) ? value : value ? [value] : [];
+      setStatusFilter(statuses.filter(isProjectStatus));
+    }
+
+    if (key === "deletedFilter") {
+      setDeletedFilter(
+        (typeof value === "string" && value
+          ? value
+          : "ACTIVE") as DeletedFilter,
+      );
+    }
+  };
+
+  const handleClearFilters = () => {
+    setSearch("");
+    setStatusFilter([]);
+    setDeletedFilter("ACTIVE");
     setPage(0);
   };
 
@@ -111,6 +177,21 @@ export default function ProjectDetails() {
       status,
     });
   }
+
+  // ---------------- PERMISSIONS ----------------
+
+  const user = getUserFromToken();
+  const { data: teamMe } = useTeamMe(teamId || "");
+
+  const permissions = getProjectPermissions({
+    globalRole: user?.role,
+    teamRole: teamMe?.role,
+  });
+
+  // ------------------ FILTERS ------------------
+
+  const hasActiveTaskFilters =
+    Boolean(search.trim()) || Boolean(status) || deletedFilter !== "ACTIVE";
 
   if (!teamId || !projectId) {
     return (
@@ -144,15 +225,15 @@ export default function ProjectDetails() {
         projectId={projectId}
         name={project.name}
         description={project?.description}
-        onCreateTask={() => setCreateOpen(true)}
+        onCreateTask={() => setOpen(true)}
         onProjectDeleted={() => navigate(`/teams/${teamId}/projects`)}
         permissions={permissions}
       />
       <CreateTaskModal
         teamId={teamId}
         projectId={projectId}
-        open={createOpen}
-        onOpenChange={setCreateOpen}
+        open={open}
+        onOpenChange={setOpen}
       />
       <Tabs defaultValue="board" className="flex flex-col flex-1 min-h-0">
         <TabsList className="inline-flex gap-1 rounded-xl border border-border/60 bg-background/70 p-1 shadow-sm">
@@ -195,14 +276,14 @@ export default function ProjectDetails() {
             value="board"
             className="flex flex-col flex-1 min-h-0 gap-3"
           >
-            <TaskFilters
+            {/* <TaskFilters
               search={search}
               status={status}
               deletedFilter={deletedFilter}
               onSearchChange={handleSearchChange}
               onStatusFilterChange={handleStatusFilterChange}
               onDeletedFilterChange={handleDeletedFilterChange}
-            />
+            /> */}
             <TaskBoard
               teamId={teamId}
               projectId={projectId}
@@ -220,35 +301,41 @@ export default function ProjectDetails() {
             value="list"
             className="flex flex-col flex-1 min-h-0 gap-3"
           >
-            <TaskFilters
+            {/* <TaskFilters
               search={search}
               status={status}
               deletedFilter={deletedFilter}
               onSearchChange={handleSearchChange}
               onStatusFilterChange={handleStatusFilterChange}
               onDeletedFilterChange={handleDeletedFilterChange}
-            />
+            /> */}
             <TaskList
               tasks={tasks}
+              isLoading={isTasksLoading}
               teamId={teamId}
               projectId={projectId}
-              pagination={{
-                page,
-                size,
-                totalPages,
-                totalElements,
-                onPageChange: setPage,
-                onSizeChange: (size) => {
-                  setPage(0);
-                  setSize(size);
-                },
-              }}
-              sort={sort}
-              onSortChange={setSort}
-              isLoading={isTasksLoading}
+              onCreateTask={() => setOpen(true)}
+              onClearFilters={handleClearFilters}
+              sortField={sortField}
+              sortOrder={sortOrder}
+              onSort={handleSort}
               canCreateTask={permissions.canCreateTask}
               hasActiveFilters={hasActiveTaskFilters}
-              onCreateTask={() => setCreateOpen(true)}
+              // pagination={{
+              //   page,
+              //   size,
+              //   totalPages,
+              //   totalElements,
+              //   onPageChange: setPage,
+              //   onSizeChange: (size) => {
+              //     setPage(0);
+              //     setSize(size);
+              //   },
+              // }}
+              // sort={sort}
+              // onSortChange={setSort}
+              // canCreateTask={permissions.canCreateTask}
+              // hasActiveFilters={hasActiveTaskFilters}
             />
           </TabsContent>
           <TabsContent

@@ -5,7 +5,7 @@ import { DELETED_FILTER } from "../../../common/types/deletedFilter.types";
 import { Search } from "lucide-react";
 import { FilterPopover } from "../../../common/components/FilterPopover";
 import type { FilterGroup } from "../../../common/types/filter.types";
-import { TaskStatusLabel } from "../utils/taskStatus";
+import { TaskStatusLabel } from "../utils/task.constants";
 
 const TASK_STATUS_FILTER: FilterGroup[] = [
   {

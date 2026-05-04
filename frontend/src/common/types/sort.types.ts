@@ -2,6 +2,8 @@ export type SortField =
   | "createdAt"
   | "createdBy"
   | "name"
+  | "assignee"
+  | "support"
   | "lastActivityAt"
   | "owner"
   | "status"
@@ -9,5 +11,7 @@ export type SortField =
   | "plannedDueDate"
   | "actualStartDate"
   | "actualCompletionDate"
+  | "title"
+  | "priority"
   | "deletedAt";
 export type SortOrder = "asc" | "desc";

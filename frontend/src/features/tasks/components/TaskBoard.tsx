@@ -30,7 +30,7 @@ import {
   type TaskStatus,
   TaskStatusLabel,
   TaskStatusStyles,
-} from "../utils/taskStatus";
+} from "../utils/task.constants";
 import { cn } from "../../../lib/utils";
 import {
   useInfiniteTasks,

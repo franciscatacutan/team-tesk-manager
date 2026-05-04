@@ -1,3 +1,6 @@
+import { BASE_SORT_OPTIONS } from "@/common/constants/sort.constants";
+import type { SortField } from "@/common/types/sort.types";
+
 export type TaskStatus =
   | "TODO"
   | "IN_PROGRESS"
@@ -67,3 +70,15 @@ export const TaskStatusStyles: Record<TaskStatus, string> = {
   CANCELLED:
     "inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] bg-rose-100 text-rose-700 border-rose-200",
 };
+
+export const PROJECT_LIST_SORT_OPTIONS: { label: string; value: SortField }[] =
+  [
+    ...BASE_SORT_OPTIONS,
+    { label: "Title", value: "title" },
+    { label: "Priority", value: "priority" },
+    { label: "Status", value: "status" },
+    { label: "Assignee", value: "assignee" },
+    { label: "Support", value: "support" },
+    { label: "Planned Start Date", value: "plannedStartDate" },
+    { label: "Planned Due Date", value: "plannedDueDate" },
+  ];

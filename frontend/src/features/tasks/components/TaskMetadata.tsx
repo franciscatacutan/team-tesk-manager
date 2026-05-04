@@ -12,7 +12,7 @@ import {
   TaskStatusLabel,
   TaskStatusStyles,
   type TaskStatus,
-} from "../utils/taskStatus";
+} from "../utils/task.constants";
 import { useUpdateTaskStatus } from "../hooks/useUpdateTaskStatus";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";

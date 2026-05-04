@@ -4,7 +4,7 @@ import {
   ProjectStatusLabel,
   ProjectStatusStyles,
 } from "../../features/projects/utils/project.constants";
-import { TaskStatusStyles } from "../../features/tasks/utils/taskStatus";
+import { TaskStatusStyles } from "../../features/tasks/utils/task.constants";
 
 type ActivityLike = {
   message: string;
