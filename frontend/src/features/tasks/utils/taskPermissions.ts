@@ -5,6 +5,7 @@ import type { UserRole } from "../../users/types/userRole";
 export interface TaskPermissions {
   canEditTaskDetails: boolean;
   canDeleteTask: boolean;
+  canViewDeleteTask: boolean;
   canChangeStatus: boolean;
   canChangePriority: boolean;
   canAssign: boolean;
@@ -27,16 +28,15 @@ export function getTaskPermissions({
   assigneeId,
   supportId,
 }: Params): TaskPermissions {
-  const {
-    // isSuperAdmin, isGlobalAdmin,
-    isOwner,
-    isAdmin,
-  } = resolveRoles(globalRole, teamRole);
+  const { isSuperAdmin, isGlobalAdmin, isOwner, isAdmin } = resolveRoles(
+    globalRole,
+    teamRole,
+  );
 
   const isAssignee = userId === assigneeId;
   const isSupport = userId === supportId;
 
-  // const isSystemAdmin = isSuperAdmin || isGlobalAdmin;
+  const isSystemAdmin = isSuperAdmin || isGlobalAdmin;
 
   const canManage = isOwner || isAdmin;
 
@@ -44,6 +44,8 @@ export function getTaskPermissions({
     canEditTaskDetails: canManage,
 
     canDeleteTask: canManage,
+
+    canViewDeleteTask: isSystemAdmin || canManage,
 
     canChangeStatus: canManage || isAssignee || isSupport,
 

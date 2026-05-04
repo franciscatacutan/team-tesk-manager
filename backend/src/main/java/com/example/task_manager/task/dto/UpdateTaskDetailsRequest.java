@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Size;
  * DTO for updating an existing task.
  */
 public record UpdateTaskDetailsRequest(
-    @Size(max = 100) String title,
+    @Size(max = 100) String name,
 
     @Size(max = 2000) String description,
 

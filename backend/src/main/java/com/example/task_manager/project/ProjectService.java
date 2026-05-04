@@ -574,6 +574,7 @@ public class ProjectService {
    */
   private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
       "name",
+      "owner",
       "status",
       "plannedStartDate",
       "plannedDueDate",

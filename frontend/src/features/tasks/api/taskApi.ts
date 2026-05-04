@@ -3,6 +3,7 @@ import type { PageResponse } from "../../../common/types/pageResponse.types";
 import type { CreateTaskInput } from "../types/createTaskSchema";
 import type { Task, TaskActivity, UpdateTaskInput } from "../types/task.types";
 import type { DeletedFilter } from "../../../common/types/deletedFilter.types";
+import type { TaskStatus } from "../utils/task.constants";
 
 export const getTasks = async (
   teamId: string,
@@ -12,6 +13,7 @@ export const getTasks = async (
     size?: number;
     search?: string;
     status?: string;
+    statuses?: TaskStatus[];
     sort?: string;
     deletedFilter: DeletedFilter;
   },

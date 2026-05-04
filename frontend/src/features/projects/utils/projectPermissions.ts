@@ -9,6 +9,7 @@ export interface ProjectPermissions {
   canDeleteProject: boolean;
   canViewDeleteProject: boolean;
   canCreateTask: boolean;
+  canViewDeleteTask: boolean;
 }
 
 interface Params {
@@ -40,5 +41,7 @@ export function getProjectPermissions({
     canViewDeleteProject: isSystemAdmin || canManage,
 
     canCreateTask: canManage,
+
+    canViewDeleteTask: isSystemAdmin || canManage,
   };
 }

@@ -115,7 +115,7 @@ public class ActivityEventService {
         details,
         reference(task.getProject().getTeam().getId(), task.getProject().getTeam().getName()),
         reference(task.getProject().getId(), task.getProject().getName()),
-        reference(task.getId(), task.getTitle()));
+        reference(task.getId(), task.getName()));
 
     ActivityEventEntity event = saveEvent(
         task.getProject().getTeam().getId(),
@@ -194,7 +194,7 @@ public class ActivityEventService {
         ? null
         : new TaskActivityResponse.Task(
             entity.getTaskId(),
-            entity.getTask() != null ? entity.getTask().getTitle() : null);
+            entity.getTask() != null ? entity.getTask().getName() : null);
 
     return new TaskActivityResponse(
         entity.getId(),
@@ -361,7 +361,7 @@ public class ActivityEventService {
     }
 
     if (entity.getTask() != null) {
-      return entity.getTask().getTitle();
+      return entity.getTask().getName();
     }
 
     return null;

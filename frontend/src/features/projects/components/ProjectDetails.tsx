@@ -7,9 +7,12 @@ import TaskBoard from "../../tasks/components/TaskBoard";
 import TaskModal from "../../tasks/components/TaskModal";
 
 import type { Task } from "../../tasks/types/task.types";
-import type { TaskStatus } from "../../tasks/utils/task.constants";
+import {
+  isTaskStatus,
+  TASK_LIST_SORT_OPTIONS,
+  type TaskStatus,
+} from "../../tasks/utils/task.constants";
 
-import TaskFilters from "../../tasks/components/TaskFilters";
 import ProjectHeader from "../../projects/components/ProjectHeader";
 import { useDebounce } from "../../../common/hooks/useDebounce";
 import TaskList from "../../tasks/components/TaskList";
@@ -28,10 +31,17 @@ import ProjectInsightsDashboard from "../../projects/components/ProjectInsightsD
 import ProjectObservabilityLogs from "../../projects/components/ProjectObservabilityLogs";
 import { getProjectPermissions } from "../../projects/utils/projectPermissions";
 import { useTeamMe } from "../../teams/hooks/useTeamMe";
-import type { DeletedFilter } from "../../../common/types/deletedFilter.types";
+import {
+  DELETED_FILTER,
+  type DeletedFilter,
+} from "../../../common/types/deletedFilter.types";
 import { getUserFromToken } from "../../users/api/userApi";
 import { useProjectInsights } from "../hooks/useProjectInsights";
 import { BASE_SORT_OPTIONS } from "@/common/constants/sort.constants";
+import Toolbar from "@/common/components/ToolBar";
+import { TASK_STATUS_FILTER } from "@/features/tasks/constants/taksFilter.constants";
+import type { SortField, SortOrder } from "@/common/types/sort.types";
+import { Pagination } from "@/common/components/pagination/Pagination";
 
 export default function ProjectDetails() {
   const { teamId, projectId } = useParams<{
@@ -74,7 +84,7 @@ export default function ProjectDetails() {
   };
 
   const sortOptions =
-    view === "board" ? BASE_SORT_OPTIONS : PROJECT_LIST_SORT_OPTIONS;
+    view === "board" ? BASE_SORT_OPTIONS : TASK_LIST_SORT_OPTIONS;
   const hasActiveFilters =
     search.trim().length > 0 ||
     statusFilter.length > 0 ||
@@ -102,7 +112,7 @@ export default function ProjectDetails() {
       size,
       search: debouncedSearch,
       sort,
-      status: statusFilter,
+      statusFilter,
       deletedFilter,
     },
   );
@@ -152,7 +162,7 @@ export default function ProjectDetails() {
 
     if (key === "statusFilter") {
       const statuses = Array.isArray(value) ? value : value ? [value] : [];
-      setStatusFilter(statuses.filter(isProjectStatus));
+      setStatusFilter(statuses.filter(isTaskStatus));
     }
 
     if (key === "deletedFilter") {
@@ -189,9 +199,17 @@ export default function ProjectDetails() {
   });
 
   // ------------------ FILTERS ------------------
+  const filterConfig = permissions.canViewDeleteTask
+    ? [...TASK_STATUS_FILTER, ...DELETED_FILTER]
+    : TASK_STATUS_FILTER;
 
-  const hasActiveTaskFilters =
-    Boolean(search.trim()) || Boolean(status) || deletedFilter !== "ACTIVE";
+  const filters = {
+    config: filterConfig,
+    values: filterValues,
+    onChange: handleFilterChange,
+    onDeletedChange: setDeletedFilter,
+    onClear: handleClearFilters,
+  };
 
   if (!teamId || !projectId) {
     return (
@@ -235,22 +253,44 @@ export default function ProjectDetails() {
         open={open}
         onOpenChange={setOpen}
       />
-      <Tabs defaultValue="board" className="flex flex-col flex-1 min-h-0">
-        <TabsList className="inline-flex gap-1 rounded-xl border border-border/60 bg-background/70 p-1 shadow-sm">
-          <TabsTrigger
-            value="list"
-            className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
-          >
-            <LayoutList className="h-4 w-4" />
-            List
-          </TabsTrigger>
+      {(view == "board" || view == "list") && (
+        <Toolbar
+          search={{
+            value: search,
+            onChange: handleSearchChange,
+          }}
+          filters={filters}
+          view={view}
+          sort={{
+            field: sortField,
+            order: sortOrder,
+            options: sortOptions,
+            onFieldChange: handleSort,
+            onToggleOrder: handleToggleSortOrder,
+          }}
+        />
+      )}
 
+      <Tabs
+        value={view}
+        onValueChange={handleViewChange}
+        className="flex flex-col flex-1 min-h-0"
+      >
+        <TabsList className="inline-flex gap-1 rounded-xl border border-border/60 bg-background/70 p-1 shadow-sm">
           <TabsTrigger
             value="board"
             className=" flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
           >
             <Kanban className="h-4 w-4" />
             Board
+          </TabsTrigger>
+
+          <TabsTrigger
+            value="list"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:bg-muted transition-all "
+          >
+            <LayoutList className="h-4 w-4" />
+            List
           </TabsTrigger>
 
           <TabsTrigger
@@ -276,20 +316,12 @@ export default function ProjectDetails() {
             value="board"
             className="flex flex-col flex-1 min-h-0 gap-3"
           >
-            {/* <TaskFilters
-              search={search}
-              status={status}
-              deletedFilter={deletedFilter}
-              onSearchChange={handleSearchChange}
-              onStatusFilterChange={handleStatusFilterChange}
-              onDeletedFilterChange={handleDeletedFilterChange}
-            /> */}
             <TaskBoard
               teamId={teamId}
               projectId={projectId}
               params={{
                 search: debouncedSearch,
-                status,
+                status: statusFilter[0],
                 sort,
                 deletedFilter,
               }}
@@ -301,14 +333,6 @@ export default function ProjectDetails() {
             value="list"
             className="flex flex-col flex-1 min-h-0 gap-3"
           >
-            {/* <TaskFilters
-              search={search}
-              status={status}
-              deletedFilter={deletedFilter}
-              onSearchChange={handleSearchChange}
-              onStatusFilterChange={handleStatusFilterChange}
-              onDeletedFilterChange={handleDeletedFilterChange}
-            /> */}
             <TaskList
               tasks={tasks}
               isLoading={isTasksLoading}
@@ -320,22 +344,7 @@ export default function ProjectDetails() {
               sortOrder={sortOrder}
               onSort={handleSort}
               canCreateTask={permissions.canCreateTask}
-              hasActiveFilters={hasActiveTaskFilters}
-              // pagination={{
-              //   page,
-              //   size,
-              //   totalPages,
-              //   totalElements,
-              //   onPageChange: setPage,
-              //   onSizeChange: (size) => {
-              //     setPage(0);
-              //     setSize(size);
-              //   },
-              // }}
-              // sort={sort}
-              // onSortChange={setSort}
-              // canCreateTask={permissions.canCreateTask}
-              // hasActiveFilters={hasActiveTaskFilters}
+              hasActiveFilters={hasActiveFilters}
             />
           </TabsContent>
           <TabsContent
@@ -358,6 +367,20 @@ export default function ProjectDetails() {
           </TabsContent>
         </div>
       </Tabs>
+      {(view == "board" || view == "list") && totalPages > 1 && (
+        <Pagination
+          page={page}
+          size={size}
+          totalPages={totalPages}
+          totalElements={totalElements}
+          onPageChange={setPage}
+          onSizeChange={(size) => {
+            setPage(0);
+            setSize(size);
+          }}
+          options={getPaginationOptions(view)}
+        />
+      )}
       {selectedTask && (
         <TaskModal
           open={!!selectedTask}

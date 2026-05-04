@@ -4,18 +4,16 @@ import type { Task } from "../types/task.types";
 import { getTasks } from "../api/taskApi";
 import type { PageResponse } from "../../../common/types/pageResponse.types";
 
-export interface TaskQueryParams {
-  search?: string;
-  status?: string;
-  sort?: string;
-  deletedFilter: DeletedFilter;
-}
-
 export const useInfiniteTasks = (
   teamId: string,
   projectId: string,
   status: string,
-  params: TaskQueryParams,
+  params: {
+    search?: string;
+    status?: string;
+    sort?: string;
+    deletedFilter: DeletedFilter;
+  },
 ) => {
   return useInfiniteQuery<PageResponse<Task>>({
     queryKey: [

@@ -32,15 +32,19 @@ import {
   TaskStatusStyles,
 } from "../utils/task.constants";
 import { cn } from "../../../lib/utils";
-import {
-  useInfiniteTasks,
-  type TaskQueryParams,
-} from "../hooks/useInfiniteTasks";
+import { useInfiniteTasks } from "../hooks/useInfiniteTasks";
+import type { DeletedFilter } from "@/common/types/deletedFilter.types";
 
+interface Params {
+  search?: string;
+  status?: string;
+  sort?: string;
+  deletedFilter: DeletedFilter;
+}
 interface Props {
   teamId: string;
   projectId: string;
-  params: TaskQueryParams;
+  params: Params;
   onStatusChange: (taskId: string, status: TaskStatus) => void;
   onOpenTask: (task: Task) => void;
 }
@@ -152,7 +156,7 @@ function BoardColumn({
   id: TaskStatus;
   teamId: string;
   projectId: string;
-  params: TaskQueryParams;
+  params: Params;
   onOpenTask: (task: Task) => void;
 }) {
   const { setNodeRef } = useDroppable({ id });

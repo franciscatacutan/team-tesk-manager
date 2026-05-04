@@ -33,6 +33,14 @@ interface Props {
   onSort: (field: SortField) => void;
 }
 
+const SORT_COLUMNS = [
+  ["name", "Name"],
+  ["status", "Status"],
+  ["owner", "Owner"],
+  ["createdAt", "Created"],
+  ["lastActivityAt", "Last Activity"],
+];
+
 export default function ProjectsList({
   projects,
   isLoading,
@@ -48,66 +56,30 @@ export default function ProjectsList({
   return (
     <>
       {isLoading ? (
-        <div className="flex flex-col h-full min-h-0">
-          <div className="flex flex-1 overflow-auto rounded-2xl border border-border/60 bg-background shadow-sm">
+        <div className="flex flex-col">
+          <div className="flex h-full min-h-0 overflow-hidden rounded-2xl border border-border/60 bg-background shadow-sm">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="px-4 py-3">
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide">
-                      Name
-                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground opacity-30 group-hover:opacity-80 transition" />
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide">
-                      Status
-                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground opacity-30 group-hover:opacity-80 transition" />
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide">
-                      Owner
-                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground opacity-30 group-hover:opacity-80 transition" />
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide">
-                      Created
-                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground opacity-30 group-hover:opacity-80 transition" />
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide">
-                      Last Activity
-                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground opacity-30 group-hover:opacity-80 transition" />
-                    </div>
-                  </TableHead>
+                  {SORT_COLUMNS.map(([field, label]) => (
+                    <TableHead key={field} className="px-4 py-3">
+                      <span className="inline-flex items-center gap-2">
+                        {label}
+                        <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground opacity-40" />
+                      </span>
+                    </TableHead>
+                  ))}
                 </TableRow>
               </TableHeader>
 
               <TableBody>
                 {Array.from({ length: 10 }).map((_, index) => (
                   <TableRow key={index} className="hover:bg-transparent">
-                    <TableCell className="px-4 py-4">
-                      <div className="h-4 w-40 animate-pulse rounded-md bg-muted" />
-                    </TableCell>
-
-                    <TableCell className="px-4 py-4">
-                      <div className="h-6 w-24 animate-pulse rounded-full bg-muted" />
-                    </TableCell>
-
-                    <TableCell className="px-4 py-4">
-                      <div className="h-4 w-32 animate-pulse rounded-md bg-muted" />
-                    </TableCell>
-
-                    <TableCell className="px-4 py-4">
-                      <div className="h-4 w-24 animate-pulse rounded-md bg-muted" />
-                    </TableCell>
-
-                    <TableCell className="px-4 py-4">
-                      <div className="h-4 w-28 animate-pulse rounded-md bg-muted" />
-                    </TableCell>
+                    {SORT_COLUMNS.map(([key]) => (
+                      <TableCell key={key} className="px-4 py-4">
+                        <div className="h-4 w-40 animate-pulse rounded-md bg-muted" />
+                      </TableCell>
+                    ))}
                   </TableRow>
                 ))}
               </TableBody>
@@ -120,45 +92,15 @@ export default function ProjectsList({
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
                 <TableRow className="hover:bg-transparent">
-                  <SortHeader
-                    label="Name"
-                    field="name"
-                    sortField={sortField}
-                    order={sortOrder}
-                    onSort={onSort}
-                  />
-
-                  <SortHeader
-                    label="Status"
-                    field="status"
-                    sortField={sortField}
-                    order={sortOrder}
-                    onSort={onSort}
-                  />
-
-                  <SortHeader
-                    label="Owner"
-                    field="owner"
-                    sortField={sortField}
-                    order={sortOrder}
-                    onSort={onSort}
-                  />
-
-                  <SortHeader
-                    label="Created"
-                    field="createdAt"
-                    sortField={sortField}
-                    order={sortOrder}
-                    onSort={onSort}
-                  />
-
-                  <SortHeader
-                    label="Last Activity"
-                    field="lastActivityAt"
-                    sortField={sortField}
-                    order={sortOrder}
-                    onSort={onSort}
-                  />
+                  {SORT_COLUMNS.map(([field, label]) => (
+                    <SortHeader
+                      label={label}
+                      field={field as SortField}
+                      sortField={sortField}
+                      order={sortOrder}
+                      onSort={onSort}
+                    />
+                  ))}
                 </TableRow>
               </TableHeader>
 
@@ -189,7 +131,7 @@ export default function ProjectsList({
                     <TableCell className="px-4 py-3">
                       <div className="truncate text-muted-foreground">
                         {project.owner?.firstName ??
-                          project.createdBy?.firstName}
+                          project.createdBy?.firstName}{" "}
                         {project.owner?.lastName ?? project.createdBy?.lastName}
                       </div>
                     </TableCell>

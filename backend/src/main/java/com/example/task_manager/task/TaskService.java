@@ -91,7 +91,7 @@ public class TaskService {
     TaskEntity task = new TaskEntity();
     task.setProject(project);
     task.setTaskNumber(taskNumber);
-    task.setTitle(request.title());
+    task.setName(request.name());
     task.setDescription(request.description());
     task.setStatus(TaskStatus.TODO);
     task.setPriority(request.priority());
@@ -111,7 +111,7 @@ public class TaskService {
         requester,
         ActivityEventType.TASK_CREATED,
         buildTaskActivityDetails(
-            List.of("title", "description", "status", "priority", "assignee"),
+            List.of("name", "description", "status", "priority", "assignee"),
             null,
             null,
             task.getAssignee().getFullName(),
@@ -140,14 +140,14 @@ public class TaskService {
 
     validateCanManageProjectTask(teamId, requester.getId());
 
-    String currentTitle = task.getTitle();
+    String currentTitle = task.getName();
     String currentDescription = task.getDescription();
     TaskPriority currentPriority = task.getPriority();
     Instant currentPlannedStart = task.getPlannedStartDate();
     Instant currentPlannedDue = task.getPlannedDueDate();
 
-    if (request.title() != null) {
-      task.setTitle(request.title());
+    if (request.name() != null) {
+      task.setName(request.name());
     }
 
     if (request.description() != null) {
@@ -177,7 +177,7 @@ public class TaskService {
         currentPriority == null ? null : currentPriority.name(),
         currentPlannedStart,
         currentPlannedDue,
-        task.getTitle(),
+        task.getName(),
         task.getDescription(),
         task.getPriority() == null ? null : task.getPriority().name(),
         task.getPlannedStartDate(),
@@ -700,7 +700,7 @@ public class TaskService {
 
     return new TaskResponse(
         task.getId(),
-        task.getTitle(),
+        task.getName(),
         task.getDescription(),
         task.getStatus(),
         task.getPriority(),
@@ -739,8 +739,8 @@ public class TaskService {
     List<ActivityEventDetails.ActivityChange> detailedChanges = new ArrayList<>();
 
     if (!java.util.Objects.equals(previousTitle, newTitle)) {
-      changes.add("title");
-      detailedChanges.add(activityEventService.change("title", "title", previousTitle, newTitle));
+      changes.add("name");
+      detailedChanges.add(activityEventService.change("name", "name", previousTitle, newTitle));
     }
 
     if (!java.util.Objects.equals(previousDescription, newDescription)) {
@@ -975,7 +975,7 @@ public class TaskService {
    * Allowed Sorting Fields
    */
   private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
-      "title",
+      "name",
       "priority",
       "status",
       "assignee",
@@ -1022,7 +1022,7 @@ public class TaskService {
 
   private List<ActivityEventDetails.ActivityChange> buildTaskCreateChanges(TaskEntity task) {
     List<ActivityEventDetails.ActivityChange> changes = new ArrayList<>();
-    changes.add(activityEventService.change("title", "title", null, task.getTitle()));
+    changes.add(activityEventService.change("name", "name", null, task.getName()));
     changes.add(activityEventService.change("description", "description", null, task.getDescription()));
     changes.add(activityEventService.change("status", "status", null, task.getStatus()));
     changes.add(activityEventService.change("priority", "priority", null, task.getPriority()));

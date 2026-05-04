@@ -34,7 +34,7 @@ public class TaskEntity {
   private UUID id;
 
   @Column(nullable = false, length = 100)
-  private String title;
+  private String name;
 
   @Column(length = 2000)
   private String description;
