@@ -26,42 +26,47 @@ export default function ProjectHeader({
   const updateProject = useUpdateProject(teamId, projectId);
 
   return (
-    <div className="flex items-start justify-between gap-6">
-      <div className="flex-1 space-y-2">
-        <EditableField
-          displayClassName="w-full text-2xl font-semibold tracking-tight"
-          inputClassName="w-full text-2xl font-semibold"
-          value={name}
-          maxLength={100}
-          onSave={(value) => updateProject.mutate({ name: value })}
-          disabled={!permissions.canEditProjectDetails}
-        />
-
-        <EditableField
-          displayClassName="w-full text-sm leading-relaxed text-muted-foreground"
-          inputClassName="w-full text-sm"
-          placeholder="No Description Yet"
-          multiline
-          value={description}
-          maxLength={2000}
-          onSave={(value) => updateProject.mutate({ description: value })}
-          disabled={!permissions.canEditProjectDetails}
-        />
-      </div>
-
-      <div className="flex items-center gap-2">
-        {permissions.canCreateTask && (
-          <Button onClick={onCreateTask}>Create Task</Button>
-        )}
-        {permissions.canDeleteProject && (
-          <DeleteProjectButton
-            teamId={teamId}
-            projectId={projectId}
-            projectName={name}
-            onProjectDeleted={onProjectDeleted}
+    <header className="rounded-2xl border border-border/60 bg-background/95 p-4 shadow-sm">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex-1 space-y-1.5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Project workspace
+          </p>
+          <EditableField
+            displayClassName="w-full text-2xl font-semibold tracking-tight"
+            inputClassName="w-full text-2xl font-semibold"
+            value={name}
+            maxLength={100}
+            onSave={(value) => updateProject.mutate({ name: value })}
+            disabled={!permissions.canEditProjectDetails}
           />
-        )}
+
+          <EditableField
+            displayClassName="w-full text-sm leading-relaxed text-muted-foreground"
+            inputClassName="w-full text-sm"
+            placeholder="No Description Yet"
+            multiline
+            value={description}
+            maxLength={2000}
+            onSave={(value) => updateProject.mutate({ description: value })}
+            disabled={!permissions.canEditProjectDetails}
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          {permissions.canCreateTask && (
+            <Button onClick={onCreateTask}>Create Task</Button>
+          )}
+          {permissions.canDeleteProject && (
+            <DeleteProjectButton
+              teamId={teamId}
+              projectId={projectId}
+              projectName={name}
+              onProjectDeleted={onProjectDeleted}
+            />
+          )}
+        </div>
       </div>
-    </div>
+    </header>
   );
 }

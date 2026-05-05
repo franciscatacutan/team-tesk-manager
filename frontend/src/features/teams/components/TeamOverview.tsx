@@ -86,7 +86,7 @@ export default function TeamOverview() {
   }
 
   return (
-    <section className="space-y-4">
+    <section className="flex flex-1 flex-col gap-4 min-h-0 h-fit">
       <TeamHeader
         teamId={team.id}
         name={team.name}
@@ -267,7 +267,7 @@ export default function TeamOverview() {
         </div>
       </section>
 
-      <Card className="border-border/60 bg-background/92">
+      <Card className="border-border/60 bg-background/92 mb-4">
         <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
           <div>
             <CardTitle className="text-base">Recent Activity</CardTitle>

@@ -25,15 +25,15 @@ export default function TeamInsightsPage() {
   }
 
   return (
-    <section className="space-y-4">
-      <div className="space-y-1">
+    <div className="space-y-6 flex flex-1 flex-col min-h-0 h-fit">
+      <header className="rounded-2xl border border-border/60 bg-linear-to-br from-background via-background to-muted/20 p-5 shadow-sm sm:p-6">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
           Team Insights
         </h1>
         <p className="text-sm text-muted-foreground">
           KPI health, workload flow, and operational records for this team.
         </p>
-      </div>
+      </header>
 
       <TeamInsightsDashboard
         insights={teamInsights}
@@ -42,6 +42,6 @@ export default function TeamInsightsPage() {
       />
 
       <TeamObservabilityLogs teamId={teamId} />
-    </section>
+    </div>
   );
 }

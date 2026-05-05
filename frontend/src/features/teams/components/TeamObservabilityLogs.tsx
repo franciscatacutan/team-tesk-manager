@@ -33,24 +33,26 @@ export default function TeamObservabilityLogs({ teamId }: Props) {
   };
 
   return (
-    <ObservabilityLogs
-      description="Audit trail and high-signal system events scoped to this team."
-      audit={{
-        logs: auditLogs.data?.content ?? [],
-        isLoading: auditLogs.isLoading,
-        page: auditLogs.data?.page ?? auditPage,
-        totalPages: auditLogs.data?.totalPages ?? 0,
-        onPageChange: setAuditPage,
-      }}
-      system={{
-        events: systemEvents.data?.content ?? [],
-        isLoading: systemEvents.isLoading,
-        page: systemEvents.data?.page ?? systemPage,
-        totalPages: systemEvents.data?.totalPages ?? 0,
-        onPageChange: setSystemPage,
-      }}
-      sort={sort}
-      onSortChange={handleSortChange}
-    />
+    <div className="mb-4">
+      <ObservabilityLogs
+        description="Audit trail and high-signal system events scoped to this team."
+        audit={{
+          logs: auditLogs.data?.content ?? [],
+          isLoading: auditLogs.isLoading,
+          page: auditLogs.data?.page ?? auditPage,
+          totalPages: auditLogs.data?.totalPages ?? 0,
+          onPageChange: setAuditPage,
+        }}
+        system={{
+          events: systemEvents.data?.content ?? [],
+          isLoading: systemEvents.isLoading,
+          page: systemEvents.data?.page ?? systemPage,
+          totalPages: systemEvents.data?.totalPages ?? 0,
+          onPageChange: setSystemPage,
+        }}
+        sort={sort}
+        onSortChange={handleSortChange}
+      />
+    </div>
   );
 }

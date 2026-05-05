@@ -106,7 +106,7 @@ export default function ProjectInsightsDashboard({
   });
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-4 rounded-2xl border border-border/60 bg-linear-to-br from-background via-background to-muted/20 p-5 shadow-sm sm:p-6">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-base font-semibold text-foreground">
@@ -290,7 +290,9 @@ export default function ProjectInsightsDashboard({
 function getDueSignal(insights: ProjectInsights) {
   if (insights.actualCompletionDate) {
     return {
-      label: insights.health.completedOnTime ? "Completed on time" : "Completed late",
+      label: insights.health.completedOnTime
+        ? "Completed on time"
+        : "Completed late",
       className: insights.health.completedOnTime
         ? "border-emerald-200 bg-emerald-50 text-emerald-700"
         : "border-amber-200 bg-amber-50 text-amber-700",
@@ -420,7 +422,9 @@ function MetricRow({
         />
         <span className="truncate">{label}</span>
       </span>
-      <span className="font-semibold text-foreground">{formatNumber(value)}</span>
+      <span className="font-semibold text-foreground">
+        {formatNumber(value)}
+      </span>
     </div>
   );
 }

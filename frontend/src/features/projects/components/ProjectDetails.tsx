@@ -357,13 +357,15 @@ export default function ProjectDetails() {
               onOpenTask={(taskId) => setSelectedTask({ id: taskId } as Task)}
             />
           </TabsContent>
-          <TabsContent value="insights" className="flex flex-col gap-4">
+          <TabsContent value="insights" className="flex flex-col min-h-0 gap-4">
             <ProjectInsightsDashboard
               insights={projectInsights}
               isLoading={isProjectInsightsLoading}
               isError={isProjectInsightsError}
             />
-            <ProjectObservabilityLogs teamId={teamId} projectId={projectId} />
+            <div className="pb-4">
+              <ProjectObservabilityLogs teamId={teamId} projectId={projectId} />
+            </div>
           </TabsContent>
         </div>
       </Tabs>
