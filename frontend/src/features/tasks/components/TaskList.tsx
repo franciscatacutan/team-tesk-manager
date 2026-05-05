@@ -37,7 +37,7 @@ interface Props {
 
 const SORT_COLUMNS = [
   ["taskNumber", "Task #"],
-  ["title", "Title"],
+  ["name", "Name"],
   ["priority", "Priority"],
   ["status", "Status"],
   ["assignee", "Assignee"],

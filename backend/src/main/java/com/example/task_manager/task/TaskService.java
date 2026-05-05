@@ -983,6 +983,7 @@ public class TaskService {
       "plannedStartDate",
       "plannedDueDate",
       "createdAt",
+      "taskNumber",
       "updatedAt",
       "lastActivityAt");
 
