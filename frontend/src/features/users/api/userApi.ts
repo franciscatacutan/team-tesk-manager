@@ -1,14 +1,35 @@
+// import type { BaseQueryParams } from "@/common/types/baseQuery.types";
 import { apiClient } from "../../../api/apiClients";
 import { authStorage } from "../../auth/utils/authStorage";
 import type { UserRole } from "../types/userRole";
 import type { User } from "../types/userType";
 import { jwtDecode } from "jwt-decode";
+import type { PageResponse } from "@/common/types/pageResponse.types";
 
 /*
  * Fetches the list of users from the backend API.
  */
-export const getUsers = async (): Promise<User[]> => {
-  const { data } = await apiClient.get<User[]>("/users");
+export const getUsers = async (params: {
+  page?: number;
+  size?: number;
+  search?: string;
+  sort?: string;
+  roles?: UserRole[];
+}): Promise<PageResponse<User>> => {
+  const response = await apiClient.get(`/users`, {
+    params: {
+      ...params,
+      roles: params.roles?.length ? params.roles : undefined,
+    },
+    paramsSerializer: {
+      indexes: null,
+    },
+  });
+  return response.data;
+};
+
+export const getUser = async (userId: string): Promise<User> => {
+  const { data } = await apiClient.get<User>(`/users/${userId}`);
   return data;
 };
 

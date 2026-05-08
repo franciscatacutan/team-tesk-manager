@@ -11,7 +11,7 @@ import {
 } from "../../../components/ui/card";
 import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
 import { formatDate } from "../../../common/utils/dateFormatter";
-import { ActivityItem } from "../../../common/components/ActivityItem";
+import { ActivityItem } from "../../../common/components/activity/ActivityItem";
 import {
   ProjectStatusLabel,
   ProjectStatusStyles,

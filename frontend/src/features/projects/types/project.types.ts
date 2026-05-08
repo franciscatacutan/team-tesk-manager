@@ -1,4 +1,4 @@
-import type { ProjectStatus } from "../utils/project.constants";
+export type ProjectStatus = "ACTIVE" | "ON_HOLD" | "COMPLETED";
 
 export type Project = {
   id: string;

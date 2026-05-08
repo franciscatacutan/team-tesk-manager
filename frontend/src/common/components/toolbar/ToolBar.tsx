@@ -1,9 +1,9 @@
-import { type DeletedFilter } from "../types/deletedFilter.types";
-import { FilterPopover } from "../components/FilterPopover";
-import SearchBar from "@/common/components/SearchBar";
-import { SortControl } from "@/common/components/SortControl";
+import { type DeletedFilter } from "../../types/deletedFilter.types";
+import { FilterPopover } from "./FilterPopover";
+import SearchBar from "@/common/components/toolbar/SearchBar";
+import { SortControl } from "@/common/components/toolbar/SortControl";
 import type { SortField, SortOrder } from "@/common/types/sort.types";
-import type { FilterGroup } from "../types/filter.types";
+import type { FilterGroup } from "../../types/filter.types";
 
 type FilterValues = Record<string, string | string[] | undefined>;
 
@@ -17,7 +17,7 @@ interface Props {
     config: FilterGroup[];
     values: FilterValues;
     onChange: (key: string, value: string | string[]) => void;
-    onDeletedChange: (value: DeletedFilter) => void;
+    onDeletedChange?: (value: DeletedFilter) => void;
     onClear?: () => void;
   };
 
@@ -43,7 +43,7 @@ export default function Toolbar({ search, filters, view, sort }: Props) {
         <div className="flex flex-wrap items-center gap-2">
           {filters && (
             <FilterPopover
-              label="Visibility"
+              label="Filters"
               config={filters.config}
               values={filters.values}
               onChange={filters.onChange}
@@ -56,7 +56,7 @@ export default function Toolbar({ search, filters, view, sort }: Props) {
                 filters.config.forEach((group) => {
                   filters.onChange(group.key, group.type === "multi" ? [] : "");
                 });
-                filters.onDeletedChange("ACTIVE");
+                filters.onDeletedChange?.("ACTIVE");
               }}
             />
           )}

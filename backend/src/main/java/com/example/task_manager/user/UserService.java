@@ -3,9 +3,16 @@ package com.example.task_manager.user;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.hibernate.annotations.NotFound;
+import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,12 +23,16 @@ import com.example.task_manager.exception.api.ConflictException;
 import com.example.task_manager.exception.api.ForbiddenException;
 import com.example.task_manager.exception.api.ResourceNotFoundException;
 import com.example.task_manager.exception.api.UserNotFoundException;
+import com.example.task_manager.team.TeamMemberSpecification;
+import com.example.task_manager.team.entity.TeamMemberEntity;
 import com.example.task_manager.auth.RefreshTokenService;
+import com.example.task_manager.common.PageResponse;
 import com.example.task_manager.user.dto.AdminResetPasswordRequest;
 import com.example.task_manager.user.dto.UpdatePasswordRequest;
 import com.example.task_manager.user.dto.UpdateUserProfileRequest;
 import com.example.task_manager.user.dto.UpdateUserRoleRequest;
 import com.example.task_manager.user.dto.UserResponse;
+import com.example.task_manager.user.dto.UserSearchRequest;
 import com.example.task_manager.user.entity.UserEntity;
 import com.example.task_manager.user.entity.UserRole;
 
@@ -42,17 +53,43 @@ public class UserService {
    * Fetch all User
    */
   @Transactional(readOnly = true)
-  public List<UserResponse> getAllUsers() {
+  public PageResponse<UserResponse> getAllUsers(
+      UserSearchRequest request,
+      Pageable pageable) {
 
-    return userRepository.findAll()
-        .stream()
-        .map(user -> new UserResponse(
-            user.getId(),
-            user.getFirstName(),
-            user.getLastName(),
-            user.getEmail(),
-            user.getRole()))
-        .collect(Collectors.toList());
+    Specification<UserEntity> spec = UserSpecification.build(
+        request.search(),
+        request.roles());
+
+    pageable = validateSorting(pageable);
+
+    Page<UserEntity> page = userRepository.findAll(spec, pageable);
+
+    return new PageResponse<>(
+        page.map(this::mapToResponse).getContent(),
+        page.getNumber(),
+        page.getSize(),
+        page.getTotalElements(),
+        page.getTotalPages(),
+        page.isFirst(),
+        page.isLast());
+  }
+
+  /*
+   * Fetch all User
+   */
+  @Transactional(readOnly = true)
+  public UserResponse getUser(UUID userId) {
+
+    UserEntity user = userRepository.findById(userId)
+        .orElseThrow(UserNotFoundException::new);
+
+    return new UserResponse(
+        user.getId(),
+        user.getFirstName(),
+        user.getLastName(),
+        user.getEmail(),
+        user.getRole());
   }
 
   /*
@@ -210,6 +247,32 @@ public class UserService {
 
   private String normalizeEmail(String email) {
     return email.trim().toLowerCase(Locale.ROOT);
+  }
+
+  /*
+   * Allowed Sorting Fields
+   */
+  private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+      "firstName",
+      "email",
+      "lastName",
+      "createdAt",
+      "updatedAt",
+      "role");
+
+  /*
+   * Check sort request
+   */
+  private Pageable validateSorting(Pageable pageable) {
+
+    for (Sort.Order order : pageable.getSort()) {
+      if (!ALLOWED_SORT_FIELDS.contains(order.getProperty())) {
+        throw new BadRequestInputException(
+            "Invalid sort field: " + order.getProperty());
+      }
+    }
+
+    return pageable;
   }
 
 }

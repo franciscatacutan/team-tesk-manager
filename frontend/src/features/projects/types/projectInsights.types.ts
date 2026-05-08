@@ -1,4 +1,4 @@
-import type { ProjectStatus } from "../utils/project.constants";
+import type { ProjectStatus } from "./project.types";
 
 export interface ProjectInsights {
   teamId: string;

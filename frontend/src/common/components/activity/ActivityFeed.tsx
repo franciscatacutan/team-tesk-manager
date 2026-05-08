@@ -1,18 +1,18 @@
 import { CalendarDays, Search } from "lucide-react";
 import { useMemo } from "react";
 
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../components/ui/select";
+} from "../../../components/ui/select";
 import { ActivityItem, type ActivityRecord } from "./ActivityItem";
-import { formatDate } from "../utils/dateFormatter";
-import { getActivityTypeLabel } from "../utils/activityFormatter";
+import { formatDate } from "../../utils/dateFormatter";
+import { getActivityTypeLabel } from "../../utils/activityFormatter";
 
 export type ActivityFeedGroupBy =
   | "date"

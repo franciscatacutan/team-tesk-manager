@@ -20,10 +20,10 @@ import type { SortField, SortOrder } from "@/common/types/sort.types";
 import {
   isProjectStatus,
   PROJECT_LIST_SORT_OPTIONS,
-  type ProjectStatus,
 } from "../utils/project.constants";
+import type { ProjectStatus } from "../types/project.types";
 import { BASE_SORT_OPTIONS } from "@/common/constants/sort.constants";
-import Toolbar from "@/common/components/ToolBar";
+import Toolbar from "@/common/components/toolbar/ToolBar";
 import { PROJECT_STATUS_FILTER } from "../constants/projectFilter.constants";
 import { Button } from "@/components/ui/button";
 
@@ -73,7 +73,6 @@ export default function ProjectsPage() {
     deletedFilter !== "ACTIVE";
 
   // ---------------- DATA ----------------
-
   const { data, isError, isLoading, refetch } = useProjects(teamId || "", {
     page,
     size,

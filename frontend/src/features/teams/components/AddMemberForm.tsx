@@ -16,10 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { User } from "../../users/types/userType";
 import { cn } from "../../../lib/utils";
-import {
-  TEAM_ROLE_LABEL,
-  TEAM_ROLE_STYLES,
-} from "../../../common/constants/team.constants";
+import { TEAM_ROLE_STYLES, TEAM_ROLE_LABEL } from "../constants/team.constants";
 import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
 import type { TeamRole } from "../types/team.type";
 

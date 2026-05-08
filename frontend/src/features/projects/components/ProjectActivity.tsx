@@ -4,7 +4,7 @@ import { useProjectActivity } from "../hooks/useProjectActivities";
 import {
   ActivityFeed,
   type ActivityFeedGroupBy,
-} from "../../../common/components/ActivityFeed";
+} from "../../../common/components/activity/ActivityFeed";
 
 interface Props {
   teamId: string;

@@ -38,7 +38,7 @@ import {
 import { getUserFromToken } from "../../users/api/userApi";
 import { useProjectInsights } from "../hooks/useProjectInsights";
 import { BASE_SORT_OPTIONS } from "@/common/constants/sort.constants";
-import Toolbar from "@/common/components/ToolBar";
+import Toolbar from "@/common/components/toolbar/ToolBar";
 import { TASK_STATUS_FILTER } from "@/features/tasks/constants/taksFilter.constants";
 import type { SortField, SortOrder } from "@/common/types/sort.types";
 import { Pagination } from "@/common/components/pagination/Pagination";

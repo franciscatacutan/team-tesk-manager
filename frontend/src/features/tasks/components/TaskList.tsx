@@ -12,12 +12,12 @@ import {
 } from "../../../components/ui/table";
 import { formatDate } from "../../../common/utils/dateFormatter";
 import { TaskStatusLabel, TaskStatusStyles } from "../utils/task.constants";
-import { SortHeader } from "@/common/components/SortHeader";
+import { SortHeader } from "@/common/components/toolbar/SortHeader";
 import type { SortField } from "@/common/types/sort.types";
 import {
   TASK_PRIORITY_LABEL,
   TASK_PRIORITY_STYLES,
-} from "@/common/constants/task.constants";
+} from "@/features/tasks/constants/task.constants";
 import { Button } from "@/components/ui/button";
 
 interface Props {

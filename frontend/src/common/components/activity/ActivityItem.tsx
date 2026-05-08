@@ -5,17 +5,17 @@ import {
   activityFormatter,
   getActivityTypeLabel,
   getActivityVerb,
-} from "../utils/activityFormatter";
-import { formatDateTimeShort } from "../utils/dateFormatter";
+} from "../../utils/activityFormatter";
+import { formatDateTimeShort } from "../../utils/dateFormatter";
 
-import { Avatar, AvatarFallback } from "../../components/ui/avatar";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { cn } from "../../lib/utils";
+import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
+import { Badge } from "../../../components/ui/badge";
+import { Button } from "../../../components/ui/button";
+import { cn } from "../../../lib/utils";
 
-import type { ProjectActivity } from "../../features/projects/types/project.types";
-import type { TeamActivity } from "../../features/teams/types/team.type";
-import type { TaskActivity } from "../../features/tasks/types/task.types";
+import type { ProjectActivity } from "../../../features/projects/types/project.types";
+import type { TeamActivity } from "../../../features/teams/types/team.type";
+import type { TaskActivity } from "../../../features/tasks/types/task.types";
 
 export type ActivityRecord = ProjectActivity | TeamActivity | TaskActivity;
 

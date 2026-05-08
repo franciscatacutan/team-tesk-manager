@@ -22,7 +22,7 @@ import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
 import {
   TASK_PRIORITY_LABEL,
   TASK_PRIORITY_STYLES,
-} from "../../../common/constants/task.constants";
+} from "../constants/task.constants";
 
 interface Props {
   permissions: TaskPermissions;

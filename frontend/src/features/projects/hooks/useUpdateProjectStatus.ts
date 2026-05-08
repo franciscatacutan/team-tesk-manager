@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { updateProjectStatus } from "../api/projectApi";
-import type { ProjectStatus } from "../utils/project.constants";
+import type { ProjectStatus } from "../types/project.types";
 
 export function useUpdateProjectStatus(teamId: string) {
   const queryClient = useQueryClient();

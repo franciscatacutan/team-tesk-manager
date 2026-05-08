@@ -24,7 +24,7 @@ import TeamsBoard from "@/features/teams/components/TeamsBoard";
 import TeamsList from "@/features/teams/components/TeamsList";
 
 import { Pagination } from "@/common/components/pagination/Pagination";
-import Toolbar from "@/common/components/ToolBar";
+import Toolbar from "@/common/components/toolbar/ToolBar";
 import TeamSelectionHeader from "@/features/teams/components/TeamSelectionHeader";
 import { Button } from "@/components/ui/button";
 

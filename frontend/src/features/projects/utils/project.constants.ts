@@ -1,7 +1,6 @@
 import { BASE_SORT_OPTIONS } from "@/common/constants/sort.constants";
 import type { SortField } from "@/common/types/sort.types";
-
-export type ProjectStatus = "ACTIVE" | "ON_HOLD" | "COMPLETED";
+import type { ProjectStatus } from "../types/project.types";
 
 export const PROJECT_STATUSES: ProjectStatus[] = [
   "ACTIVE",

@@ -1,8 +1,15 @@
-import { useEffect, useState } from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import { ShieldAlert } from "lucide-react";
 
 import type { User } from "../types/userType";
+
 import { useAdminResetUserPassword } from "../hooks/useAdminResetUserPassword";
+
 import { Button } from "../../../components/ui/button";
+
 import {
   Dialog,
   DialogContent,
@@ -11,8 +18,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../../components/ui/dialog";
+
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
+import { Separator } from "../../../components/ui/separator";
+
+const schema = z
+  .object({
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters.")
+      .max(100),
+
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match.",
+  });
+
+type FormValues = z.infer<typeof schema>;
 
 type Props = {
   open: boolean;
@@ -27,99 +52,125 @@ export default function ResetUserPasswordDialog({
 }: Props) {
   const resetPassword = useAdminResetUserPassword(user?.id ?? "");
 
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
 
-  useEffect(() => {
-    if (!open) {
-      setPassword("");
-      setConfirmPassword("");
-      setError("");
-    }
-  }, [open]);
+    defaultValues: {
+      password: "",
+      confirmPassword: "",
+    },
+
+    mode: "onChange",
+  });
 
   if (!user) return null;
 
-  const handleReset = async () => {
-    if (password.length < 6) {
-      setError("New password must be at least 6 characters.");
-      return;
-    }
+  const onSubmit = async (values: FormValues) => {
+    await resetPassword.mutateAsync(values.password);
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
+    form.reset();
 
-    setError("");
-
-    try {
-      await resetPassword.mutateAsync(password);
-      onOpenChange(false);
-    } catch (mutationError) {
-      const message =
-        mutationError instanceof Error
-          ? mutationError.message
-          : "Unable to reset this password right now.";
-      setError(message);
-    }
+    onOpenChange(false);
   };
+
+  const isSubmitting = resetPassword.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg gap-0 overflow-hidden p-0">
-        <DialogHeader className="border-b border-border/60 px-5 py-4">
-          <DialogTitle>Reset password</DialogTitle>
-          <DialogDescription>
-            Set a new password for {user.firstName} {user.lastName}.
-          </DialogDescription>
+      <DialogContent className="overflow-hidden rounded-3xl border-border/60 p-0 shadow-xl sm:max-w-lg">
+        <DialogHeader className="space-y-3 border-b border-border/60 bg-muted/20 px-6 py-5 text-left">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-red-200 bg-red-100 text-red-700">
+              <ShieldAlert className="h-5 w-5" />
+            </div>
+
+            <div className="space-y-1">
+              <DialogTitle className="text-base font-semibold">
+                Reset password
+              </DialogTitle>
+
+              <DialogDescription className="text-sm leading-relaxed">
+                Set a temporary password for{" "}
+                <span className="font-medium text-foreground">
+                  {user.firstName} {user.lastName}
+                </span>
+                .
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="grid gap-4 px-5 py-5">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-5 px-6 py-5"
+        >
           <div className="space-y-2">
-            <Label htmlFor="reset-user-password">New password</Label>
+            <Label htmlFor="password">New password</Label>
+
             <Input
-              id="reset-user-password"
+              id="password"
               type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="h-10 rounded-xl"
+              autoComplete="new-password"
+              className="h-11 rounded-xl"
+              {...form.register("password")}
             />
+
+            {form.formState.errors.password && (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.password.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="reset-user-password-confirm">Confirm password</Label>
+            <Label htmlFor="confirmPassword">Confirm password</Label>
+
             <Input
-              id="reset-user-password-confirm"
+              id="confirmPassword"
               type="password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              className="h-10 rounded-xl"
+              autoComplete="new-password"
+              className="h-11 rounded-xl"
+              {...form.register("confirmPassword")}
             />
+
+            {form.formState.errors.confirmPassword && (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.confirmPassword.message}
+              </p>
+            )}
           </div>
 
-          <p className="text-xs text-muted-foreground">
-            Use this for admin resets. The user can sign in with the new password
-            immediately after it is saved.
-          </p>
+          <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              The user will be able to sign in immediately using the new
+              password. Consider informing them securely after resetting their
+              credentials.
+            </p>
+          </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
-        </div>
+          <Separator />
 
-        <DialogFooter className="px-5 py-4">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={handleReset}
-            disabled={resetPassword.isPending}
-          >
-            {resetPassword.isPending ? "Resetting..." : "Reset password"}
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              type="submit"
+              variant="destructive"
+              className="rounded-xl"
+              disabled={isSubmitting || !form.formState.isValid}
+            >
+              {isSubmitting ? "Resetting..." : "Reset password"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

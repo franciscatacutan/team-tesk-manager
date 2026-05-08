@@ -48,6 +48,7 @@ export default function AppRoutes() {
           />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/users" element={<UsersPage />} />
+          <Route path="/users/:userId" element={<ProfilePage />} />
 
           <Route
             path="/teams/:teamId"

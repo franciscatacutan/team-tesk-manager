@@ -12,7 +12,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/common/utils/dateFormatter";
-import { SortHeader } from "@/common/components/SortHeader";
+import { SortHeader } from "@/common/components/toolbar/SortHeader";
 import type { Project } from "../types/project.types";
 import {
   ProjectStatusLabel,

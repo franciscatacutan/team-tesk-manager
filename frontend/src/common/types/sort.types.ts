@@ -12,6 +12,7 @@ export type SortField =
   | "actualStartDate"
   | "actualCompletionDate"
   | "title"
+  | "role"
   | "priority"
   | "deletedAt";
 export type SortOrder = "asc" | "desc";

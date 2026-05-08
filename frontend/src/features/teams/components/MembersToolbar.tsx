@@ -2,7 +2,7 @@ import { Search } from "lucide-react";
 
 import { Input } from "../../../components/ui/input";
 import type { TeamRole } from "../types/team.type";
-import { FilterPopover } from "@/common/components/FilterPopover";
+import { FilterPopover } from "@/common/components/toolbar/FilterPopover";
 import { TEAM_MEMBER_FILTER } from "../constants/teamMember.constants";
 
 interface Props {

@@ -1,13 +1,54 @@
 package com.example.task_manager.user;
 
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.data.jpa.domain.Specification;
 
 import com.example.task_manager.team.entity.TeamMemberEntity;
+import com.example.task_manager.user.entity.UserRole;
 import com.example.task_manager.user.entity.UserEntity;
 
 public class UserSpecification {
+
+  public static Specification<UserEntity> build(
+      String search,
+      Set<UserRole> roles) {
+
+    return Specification
+        .where(search(search))
+        .and(hasRoles(roles));
+  }
+
+  /**
+   * Search by user name or email
+   */
+  private static Specification<UserEntity> search(String keyword) {
+    return (root, query, cb) -> {
+
+      if (keyword == null || keyword.isBlank()) {
+        return cb.conjunction();
+      }
+
+      String pattern = "%" + keyword.toLowerCase() + "%";
+
+      return cb.or(
+          cb.like(cb.lower(root.get("firstName")), pattern),
+          cb.like(cb.lower(root.get("lastName")), pattern),
+          cb.like(cb.lower(root.get("email")), pattern));
+    };
+  }
+
+  private static Specification<UserEntity> hasRoles(Set<UserRole> roles) {
+    return (root, query, cb) -> {
+
+      if (roles == null || roles.isEmpty()) {
+        return cb.conjunction();
+      }
+
+      return root.get("role").in(roles);
+    };
+  }
 
   public static Specification<UserEntity> availableUsers(
       UUID teamId,
