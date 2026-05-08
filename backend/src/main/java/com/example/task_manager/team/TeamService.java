@@ -152,7 +152,7 @@ public class TeamService {
     String previousName = team.getName();
     String previousDescription = team.getDescription();
 
-      if (request.name() != null) {
+    if (request.name() != null) {
 
       if (request.name().isBlank()) {
         throw new BadRequestInputException("Team name cannot be blank");
@@ -529,13 +529,6 @@ public class TeamService {
         .stream()
         .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
 
-    UUID ownerId = null, memberId = null;
-
-    if (isGlobalAdmin) {
-      ownerId = request.ownerId();
-      memberId = request.memberId();
-    }
-
     DeletedFilter filter = request.deletedFilter();
 
     if (!isGlobalAdmin && filter != DeletedFilter.ACTIVE) {
@@ -545,8 +538,8 @@ public class TeamService {
     Specification<TeamEntity> spec = TeamSpecification.build(
         requester.getId(),
         request.search(),
-        ownerId,
-        memberId,
+        request.ownerId(),
+        request.memberId(),
         request.deletedFilter(),
         isGlobalAdmin);
 

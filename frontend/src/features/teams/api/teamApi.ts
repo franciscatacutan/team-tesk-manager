@@ -17,6 +17,7 @@ import type { TeamInsights } from "../types/teamInsights.types";
 export const getTeams = async (
   params: BaseQueryParams & {
     deletedFilter: DeletedFilter;
+    memberId?: string;
   },
 ): Promise<PageResponse<Team>> => {
   const response = await apiClient.get(`/teams`, { params });

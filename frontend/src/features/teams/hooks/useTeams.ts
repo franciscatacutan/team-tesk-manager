@@ -10,6 +10,7 @@ export const useTeams = (params: {
   search?: string;
   sort?: string;
   deletedFilter: DeletedFilter;
+  memberId?: string;
 }) => {
   return useQuery<PageResponse<Team>>({
     queryKey: [
@@ -19,6 +20,7 @@ export const useTeams = (params: {
       params.search,
       params.sort,
       params.deletedFilter,
+      params.memberId,
     ],
     queryFn: () =>
       getTeams({
@@ -27,6 +29,7 @@ export const useTeams = (params: {
         search: params.search,
         sort: params.sort,
         deletedFilter: params.deletedFilter,
+        memberId: params.memberId,
       }),
     placeholderData: keepPreviousData,
   });

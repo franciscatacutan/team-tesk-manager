@@ -19,10 +19,10 @@ interface Props {
   teams: Team[];
   isLoading: boolean;
   openTeam: (teamId: string) => void;
-  onCreateTeam: () => void;
+  onCreateTeam?: () => void;
   onClearFilters: () => void;
   hasActiveFilters: boolean;
-  canCreateTeam: boolean;
+  canCreateTeam?: boolean;
 
   sortField: SortField;
   sortOrder: "asc" | "desc";
@@ -51,7 +51,7 @@ export default function TeamsList({
   return (
     <>
       {isLoading ? (
-        <div className="flex flex-col">
+        <div className="flex flex-col min-h-0">
           <div className="flex h-full min-h-0 overflow-hidden rounded-2xl border border-border/60 bg-background shadow-sm">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
@@ -140,7 +140,9 @@ export default function TeamsList({
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
             {hasActiveFilters
               ? "Try clearing the search or filters to see more teams."
-              : "Create a team to get started."}
+              : canCreateTeam
+                ? "Create a team to get started."
+                : "Join a team to get started"}
           </p>
 
           {hasActiveFilters ? (

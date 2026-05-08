@@ -34,6 +34,9 @@ export default function UsersPage() {
 
   const [roleFilter, setRoleFilter] = useState<UserRole[]>([]);
 
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [passwordUser, setPasswordUser] = useState<User | null>(null);
+
   // ---------------- DERIVED ----------------
 
   const debouncedSearch = useDebounce(search, 400);
@@ -62,9 +65,6 @@ export default function UsersPage() {
 
   const totalPages = data?.totalPages ?? 0;
   const totalElements = data?.totalElements ?? 0;
-
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [passwordUser, setPasswordUser] = useState<User | null>(null);
 
   // ---------------- HANDLERS ----------------
 
