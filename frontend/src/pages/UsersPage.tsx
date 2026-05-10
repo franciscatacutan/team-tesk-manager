@@ -90,7 +90,7 @@ export default function UsersPage() {
     setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
   };
 
-  const handleFilterChange = (key: string, value: string | string[]) => {
+  const handleFilterChange = (_key: string, value: string | string[]) => {
     setPage(0);
 
     // if (key === "deletedFilter") {

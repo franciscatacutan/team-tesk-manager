@@ -10,9 +10,9 @@ import type { ProjectInsights } from "../types/projectInsights.types";
 import type {
   Project,
   ProjectActivity,
+  ProjectStatus,
   UpdateProjectInput,
 } from "../types/project.types";
-import type { ProjectStatus } from "../utils/project.constants";
 
 export const getProjects = async (
   teamId: string,

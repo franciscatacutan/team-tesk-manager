@@ -235,9 +235,6 @@ export default function ProjectDetails() {
 
   return (
     <div className="flex flex-col h-full min-h-0 gap-6 ">
-      <div className="text-sm text-muted-foreground">
-        Team / {project?.name}
-      </div>
       <ProjectHeader
         teamId={teamId}
         projectId={projectId}
