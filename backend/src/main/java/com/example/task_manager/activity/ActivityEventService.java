@@ -11,6 +11,7 @@ import com.example.task_manager.activity.dto.ActivityEventDetails;
 import com.example.task_manager.activity.dto.ActivityEventType;
 import com.example.task_manager.activity.entity.ActivityEventEntity;
 import com.example.task_manager.observability.ObservabilityService;
+import com.example.task_manager.notification.NotificationService;
 import com.example.task_manager.project.entity.ProjectEntity;
 import com.example.task_manager.project.ProjectRepository;
 import com.example.task_manager.project.dto.ProjectActivityResponse;
@@ -37,6 +38,7 @@ public class ActivityEventService {
   private final ProjectRepository projectRepository;
   private final TaskRepository taskRepository;
   private final ObservabilityService observabilityService;
+  private final NotificationService notificationService;
 
   public ActivityEventEntity recordTeamEvent(
       TeamEntity team,
@@ -165,6 +167,7 @@ public class ActivityEventService {
 
     ActivityEventEntity savedEvent = activityEventRepository.save(event);
     observabilityService.recordFromActivity(savedEvent);
+    notificationService.createFromActivity(savedEvent);
 
     return savedEvent;
   }

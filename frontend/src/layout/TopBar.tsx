@@ -17,6 +17,7 @@ import { CreateProjectModal } from "../features/projects/components/CreateProjec
 import { CreateTaskModal } from "../features/tasks/components/CreateTaskModal";
 import { CreateTeamModal } from "../features/teams/components/CreateTeamModal";
 import AppBreadcrumbs from "../common/components/AppBreadcrumbs";
+import NotificationCenter from "../features/notifications/components/NotificationCenter";
 
 export default function TopBar() {
   const { logout } = useAuth();
@@ -77,6 +78,8 @@ export default function TopBar() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+
+          <NotificationCenter />
 
           <UserMenu onLogout={logout} />
         </div>
