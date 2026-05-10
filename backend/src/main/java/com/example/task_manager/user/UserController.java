@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.task_manager.common.PageResponse;
+import com.example.task_manager.user.dto.UpdateEmailRequest;
 import com.example.task_manager.user.dto.UpdatePasswordRequest;
 import com.example.task_manager.user.dto.UpdateUserProfileRequest;
 import com.example.task_manager.user.dto.UserResponse;
@@ -48,6 +49,17 @@ public class UserController {
   public ResponseEntity<UserResponse> getUser(
       @PathVariable UUID userId) {
     return ResponseEntity.ok(userService.getUser(userId));
+  }
+
+  /*
+   * Update current user's login email
+   */
+  @PatchMapping("/me/email")
+  public ResponseEntity<Void> updateCurrentUserEmail(
+      Authentication authentication,
+      @Valid @RequestBody UpdateEmailRequest request) {
+    userService.updateOwnEmail(request, authentication.getName());
+    return ResponseEntity.noContent().build();
   }
 
   /*

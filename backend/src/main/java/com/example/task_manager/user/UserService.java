@@ -28,6 +28,7 @@ import com.example.task_manager.team.entity.TeamMemberEntity;
 import com.example.task_manager.auth.RefreshTokenService;
 import com.example.task_manager.common.PageResponse;
 import com.example.task_manager.user.dto.AdminResetPasswordRequest;
+import com.example.task_manager.user.dto.UpdateEmailRequest;
 import com.example.task_manager.user.dto.UpdatePasswordRequest;
 import com.example.task_manager.user.dto.UpdateUserProfileRequest;
 import com.example.task_manager.user.dto.UpdateUserRoleRequest;
@@ -149,6 +150,33 @@ public class UserService {
     }
 
     return mapToResponse(user);
+  }
+
+  /*
+   * Update the current user's login email.
+   * This requires the current password and revokes refresh sessions because JWT
+   * subjects are email-based.
+   */
+  @Transactional
+  public void updateOwnEmail(UpdateEmailRequest request, String requesterEmail) {
+
+    UserEntity user = getUserByEmail(requesterEmail);
+
+    if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+      throw new BadRequestInputException("Current password incorrect");
+    }
+
+    String normalizedEmail = normalizeEmail(request.newEmail());
+    if (normalizedEmail.equalsIgnoreCase(user.getEmail())) {
+      return;
+    }
+
+    if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+      throw new ConflictException("Email already exists");
+    }
+
+    user.setEmail(normalizedEmail);
+    refreshTokenService.revokeAllForUser(user.getId());
   }
 
   /*

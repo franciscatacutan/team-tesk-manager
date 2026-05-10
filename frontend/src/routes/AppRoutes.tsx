@@ -8,6 +8,7 @@ import PublicRoute from "./PublicRoute";
 
 import TeamSelectionPage from "../pages/TeamSelectionPage";
 import ProfilePage from "../pages/ProfilePage";
+import SettingsPage from "../pages/SettingsPage";
 import UsersPage from "../pages/UsersPage";
 import TaskDetails from "../features/tasks/components/TaskDetails";
 import ProjectDetails from "../features/projects/components/ProjectDetails";
@@ -18,8 +19,11 @@ import TeamMembersPage from "../features/teams/components/MembersView";
 import AppLayout from "../layout/AppLayout";
 import TeamActivity from "../features/teams/components/TeamActivity";
 import TeamInsightsPage from "../features/teams/components/TeamInsightsPage";
+import { useThemePreference } from "../features/settings/hooks/useThemePreference";
 
 export default function AppRoutes() {
+  useThemePreference();
+
   return (
     <BrowserRouter>
       <Routes>
@@ -47,6 +51,7 @@ export default function AppRoutes() {
             }
           />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/users/:userId" element={<ProfilePage />} />
 

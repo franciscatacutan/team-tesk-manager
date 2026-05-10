@@ -31,6 +31,7 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: User | null;
+  allowEmailEdit?: boolean;
 };
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -52,6 +53,7 @@ export default function EditUserDialog({
   open,
   onOpenChange,
   user,
+  allowEmailEdit = true,
 }: Props) {
   const updateProfile = useUpdateUserProfile(user?.id ?? "");
   const updateRole = useUpdateUserRole(user?.id ?? "");
@@ -93,7 +95,7 @@ export default function EditUserDialog({
       const payload = {
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
-        email: values.email.trim(),
+        ...(allowEmailEdit ? { email: values.email.trim() } : {}),
       };
 
       await updateProfile.mutateAsync(payload);
@@ -119,7 +121,9 @@ export default function EditUserDialog({
         <DialogHeader className="border-b border-border/60 px-5 py-4">
           <DialogTitle>Edit user</DialogTitle>
           <DialogDescription>
-            Update profile details and, if allowed, their global access level.
+            Update profile details
+            {allowEmailEdit ? ", login email," : ""} and, if allowed, their
+            global access level.
           </DialogDescription>
         </DialogHeader>
 
@@ -157,20 +161,22 @@ export default function EditUserDialog({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="edit-user-email">Email</Label>
-            <Input
-              id="edit-user-email"
-              type="email"
-              {...form.register("email")}
-              className="h-10 rounded-xl"
-            />
-            {form.formState.errors.email && (
-              <p className="text-xs text-destructive">
-                {form.formState.errors.email.message}
-              </p>
-            )}
-          </div>
+          {allowEmailEdit && (
+            <div className="space-y-2">
+              <Label htmlFor="edit-user-email">Email</Label>
+              <Input
+                id="edit-user-email"
+                type="email"
+                {...form.register("email")}
+                className="h-10 rounded-xl"
+              />
+              {form.formState.errors.email && (
+                <p className="text-xs text-destructive">
+                  {form.formState.errors.email.message}
+                </p>
+              )}
+            </div>
+          )}
 
           {canManageRole && (
             <div className="space-y-2">

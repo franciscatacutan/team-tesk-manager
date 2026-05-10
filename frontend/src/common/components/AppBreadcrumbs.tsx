@@ -198,6 +198,10 @@ function buildBreadcrumbItems({
     return [{ label: "Profile" }];
   }
 
+  if (segments[0] === "settings") {
+    return [{ label: "Settings" }];
+  }
+
   if (segments[0] === "users") {
     return [
       { label: "Users", to: userId ? "/users" : undefined },

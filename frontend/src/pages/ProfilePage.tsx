@@ -170,6 +170,7 @@ export default function ProfilePage() {
           open={editOpen}
           onOpenChange={setEditOpen}
           user={editingUser}
+          allowEmailEdit={!isSelf && permissions.canManageUsers}
         />
 
         <Toolbar
