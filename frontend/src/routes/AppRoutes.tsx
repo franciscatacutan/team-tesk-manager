@@ -13,7 +13,7 @@ import UsersPage from "../pages/UsersPage";
 import TaskDetails from "../features/tasks/components/TaskDetails";
 import ProjectDetails from "../features/projects/components/ProjectDetails";
 import ProjectsView from "../features/projects/components/ProjectsView";
-import WorkspaceLayout from "../layout/WorkspaceLayout";
+import WorkspaceLayout from "../layout/workspace/WorkspaceLayout";
 import TeamOverview from "../features/teams/components/TeamOverview";
 import TeamMembersPage from "../features/teams/components/MembersView";
 import AppLayout from "../layout/AppLayout";

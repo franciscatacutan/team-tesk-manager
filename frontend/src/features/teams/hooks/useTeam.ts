@@ -5,5 +5,7 @@ export const useTeam = (teamId: string) => {
   return useQuery({
     queryKey: ["team", teamId],
     queryFn: () => getTeam(teamId),
+
+    enabled: Boolean(teamId),
   });
 };
