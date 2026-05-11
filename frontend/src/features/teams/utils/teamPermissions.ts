@@ -3,7 +3,7 @@ import type { UserRole } from "../../users/types/userRole";
 import type { NullableTeamRole } from "../types/team.type";
 
 export interface TeamPermissions {
-  canManageTeam: boolean;
+  canAccessTeam: boolean;
   canCreateTeam: boolean;
   canEditTeamDetails: boolean;
   canDeleteTeam: boolean;
@@ -34,7 +34,7 @@ export function getTeamPermissions({
   const canManage = isOwner || isAdmin;
 
   return {
-    canManageTeam: isSystemAdmin || canManage,
+    canAccessTeam: isSystemAdmin || canManage,
 
     canCreateTeam: isSuperAdmin,
 

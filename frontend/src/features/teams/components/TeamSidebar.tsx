@@ -80,7 +80,7 @@ export default function TeamSidebar({ teamId }: { teamId: string }) {
           icon={Activity}
           collapsed={collapsed}
         />
-        {permissions.canManageTeam && (
+        {permissions.canAccessTeam && (
           <NavItem
             to={`/teams/${teamId}/insights`}
             label="Insights"
