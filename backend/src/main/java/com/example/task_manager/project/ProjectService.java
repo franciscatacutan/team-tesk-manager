@@ -332,7 +332,9 @@ public class ProjectService {
       throw new ForbiddenException("Not allowed to view deleted tasks");
     }
 
-    pageable = validateSorting(pageable);
+    pageable = request.all()
+        ? Pageable.unpaged()
+        : validateSorting(pageable);
 
     Specification<ProjectEntity> spec = ProjectSpecification.build(
         teamId,

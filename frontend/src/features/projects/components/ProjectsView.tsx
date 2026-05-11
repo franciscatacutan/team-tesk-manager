@@ -77,7 +77,7 @@ export default function ProjectsPage() {
     page,
     size,
     search: debouncedSearch,
-    statusFilter,
+    status: statusFilter,
     sort,
     deletedFilter,
   });

@@ -32,48 +32,61 @@ export default function TeamOverview() {
   const navigate = useNavigate();
   const { teamId } = useParams<{ teamId: string }>();
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  // ---------------- STATE ----------------
+
+  const [openCreateTeam, setOpenCreateTeam] = useState(false);
+  const [openAddMember, setOpenAddMember] = useState(false);
+
+  // ---------------- DATA ----------------
 
   const { data: team, isLoading } = useTeam(teamId || "");
+
   const { data: teamMe } = useTeamMe(teamId || "");
+
   const { data: projectsData } = useProjects(teamId || "", {
-    page: 0,
-    size: 10,
     sort: "updatedAt,desc",
     deletedFilter: "ACTIVE",
   });
+
+  const projects = projectsData?.content ?? [];
+  const projectCount = projectsData?.totalElements ?? 0;
+
+  // IMPLEMENT STATISTICS
   const { data: activeProjectsData } = useProjects(teamId || "", {
-    page: 0,
-    size: 10,
     status: ["ACTIVE"],
+    all: true,
     sort: "updatedAt,desc",
     deletedFilter: "ACTIVE",
   });
+
+  const activeProjectCount = activeProjectsData?.totalElements ?? 0;
+
   const { data: membersData } = useTeamMembers(teamId || "", {
     page: 0,
     size: 10,
     sort: "joinedAt,desc",
   });
+
+  const members = membersData?.content ?? [];
+  const memberCount = membersData?.totalElements ?? 0;
+
   const { data: activitiesData } = useTeamActivities(teamId || "", {
     page: 0,
     size: 5,
     sort: "createdAt,desc",
   });
+
+  const activities = activitiesData?.content ?? [];
+  const activityCount = activitiesData?.totalElements ?? 0;
+
+  // ---------------- PERMISSIONS ----------------
+
   const user = getUserFromToken();
 
   const permissions = getTeamPermissions({
     globalRole: user?.role,
     teamRole: teamMe?.role,
   });
-
-  const projects = projectsData?.content ?? [];
-  const members = membersData?.content ?? [];
-  const activities = activitiesData?.content ?? [];
-  const projectCount = projectsData?.totalElements ?? 0;
-  const memberCount = membersData?.totalElements ?? 0;
-  const activityCount = activitiesData?.totalElements ?? 0;
-  const activeProjectCount = activeProjectsData?.totalElements ?? 0;
 
   if (isLoading || !team) {
     return (
@@ -98,7 +111,7 @@ export default function TeamOverview() {
               <Button
                 variant="outline"
                 className="rounded-xl"
-                onClick={() => setAddMemberOpen(true)}
+                onClick={() => setOpenAddMember(true)}
               >
                 <Users className="h-4 w-4" />
                 Add member
@@ -107,7 +120,7 @@ export default function TeamOverview() {
             {permissions.canCreateProject && (
               <Button
                 className="rounded-xl"
-                onClick={() => setCreateOpen(true)}
+                onClick={() => setOpenCreateTeam(true)}
               >
                 <Plus className="h-4 w-4" />
                 Create project
@@ -313,16 +326,16 @@ export default function TeamOverview() {
 
       <CreateProjectModal
         teamId={team.id}
-        open={createOpen}
-        onOpenChange={setCreateOpen}
+        open={openCreateTeam}
+        onOpenChange={setOpenCreateTeam}
       />
 
       <AddMembersModal
         userTeamRole={teamMe?.role ?? "MEMBER"}
         teamId={team.id}
-        open={addMemberOpen}
+        open={openAddMember}
         isLoading={false}
-        onOpenChange={setAddMemberOpen}
+        onOpenChange={setOpenAddMember}
       />
     </section>
   );

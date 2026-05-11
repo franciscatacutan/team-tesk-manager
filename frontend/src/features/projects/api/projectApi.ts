@@ -21,8 +21,9 @@ export const getProjects = async (
     size?: number;
     search?: string;
     status?: ProjectStatus[];
+    all?: boolean;
     sort?: string;
-    deletedFilter: DeletedFilter;
+    deletedFilter?: DeletedFilter;
   },
 ) => {
   const response = await apiClient.get(`/teams/${teamId}/projects`, {

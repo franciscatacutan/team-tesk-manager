@@ -13,7 +13,12 @@ public record ProjectSearchRequest(
     String search,
     List<ProjectStatus> status,
     UUID createdBy,
-    DeletedFilter deletedFilter) {
+    DeletedFilter deletedFilter,
+    Boolean all) {
+
+  public Boolean all() {
+    return Boolean.TRUE.equals(all);
+  }
 
   public DeletedFilter deletedFilter() {
     return deletedFilter == null ? DeletedFilter.ACTIVE : deletedFilter;
