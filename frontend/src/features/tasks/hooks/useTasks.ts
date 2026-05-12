@@ -14,7 +14,6 @@ export const useTasks = (
     search?: string;
     status?: TaskStatus[];
     sort?: string;
-    statusFilter?: TaskStatus[];
     deletedFilter: DeletedFilter;
   },
 ) => {
@@ -27,7 +26,6 @@ export const useTasks = (
       params.size,
       params.search,
       params.status,
-      params.statusFilter,
       params.sort,
       params.deletedFilter,
     ],
@@ -37,7 +35,7 @@ export const useTasks = (
         page: params.page,
         size: params.size,
         search: params.search,
-        statuses: params.statusFilter,
+        status: params.status,
         sort: params.sort,
         deletedFilter: params.deletedFilter,
       }),

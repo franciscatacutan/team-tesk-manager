@@ -112,7 +112,7 @@ export default function ProjectDetails() {
       size,
       search: debouncedSearch,
       sort,
-      statusFilter,
+      status: statusFilter,
       deletedFilter,
     },
   );

@@ -2,7 +2,7 @@ import type { FilterGroup } from "@/common/types/filter.types";
 
 export const TEAM_MEMBER_FILTER: FilterGroup[] = [
   {
-    key: "rolesFilter",
+    key: "roles",
     label: "Roles",
     type: "multi",
     options: [

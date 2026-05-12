@@ -8,18 +8,18 @@ import { TEAM_MEMBER_FILTER } from "../constants/teamMember.constants";
 interface Props {
   search: string;
   onSearchChange: (value: string) => void;
-  role: TeamRole[];
+  roleFilter: TeamRole[];
   handleFilterChange: (key: string, value: string | string[]) => void;
 }
 
 export default function MembersToolbar({
   search,
   onSearchChange,
-  role,
+  roleFilter,
   handleFilterChange,
 }: Props) {
   const filterValues = {
-    rolesFilter: role,
+    roles: roleFilter,
   };
 
   return (

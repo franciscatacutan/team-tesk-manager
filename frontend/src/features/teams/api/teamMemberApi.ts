@@ -12,10 +12,18 @@ import type {
 export const getTeamMembers = async (
   teamId: string,
   params: BaseQueryParams & {
-    role?: TeamRole[];
+    roles?: TeamRole[];
   },
 ): Promise<PageResponse<TeamMember>> => {
-  const response = await apiClient.get(`/teams/${teamId}/members`, { params });
+  const response = await apiClient.get(`/teams/${teamId}/members`, {
+    params: {
+      ...params,
+      role: params.roles?.length ? params.roles : undefined,
+    },
+    paramsSerializer: {
+      indexes: null,
+    },
+  });
   return response.data;
 };
 

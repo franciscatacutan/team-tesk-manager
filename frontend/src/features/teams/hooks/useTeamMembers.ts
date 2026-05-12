@@ -8,7 +8,7 @@ interface Params {
   size?: number;
   search?: string;
   sort?: string;
-  role?: TeamRole[];
+  roles?: TeamRole[];
 }
 
 export const useTeamMembers = (teamId: string, params?: Params) => {
@@ -20,7 +20,7 @@ export const useTeamMembers = (teamId: string, params?: Params) => {
       params?.size,
       params?.search,
       params?.sort,
-      params?.role,
+      params?.roles,
     ],
     queryFn: () =>
       getTeamMembers(teamId, {
@@ -28,8 +28,9 @@ export const useTeamMembers = (teamId: string, params?: Params) => {
         size: params?.size,
         search: params?.search,
         sort: params?.sort,
-        role: params?.role,
+        roles: params?.roles,
       }),
+    enabled: Boolean(teamId),
     placeholderData: keepPreviousData,
   });
 };

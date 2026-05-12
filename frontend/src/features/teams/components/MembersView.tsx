@@ -25,8 +25,8 @@ export default function MembersPage() {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [search, setSearch] = useState("");
-  const [role, setRole] = useState<TeamRole[]>([]);
   const [sort, setSort] = useState("joinedAt,desc");
+  const [roleFilter, setRoleFilter] = useState<TeamRole[]>([]);
 
   const debouncedSearch = useDebounce(search, 400);
 
@@ -37,7 +37,7 @@ export default function MembersPage() {
       size: 10,
       search: debouncedSearch,
       sort,
-      role,
+      roles: roleFilter,
     },
   );
   const { data: teamMe } = useTeamMe(teamId || "");
@@ -58,8 +58,8 @@ export default function MembersPage() {
   function handleFilterChange(key: string, value: string | string[]) {
     setPage(0);
 
-    if (key === "rolesFilter") {
-      setRole(Array.isArray(value) ? (value as TeamRole[]) : []);
+    if (key === "roles") {
+      setRoleFilter(Array.isArray(value) ? (value as TeamRole[]) : []);
     }
   }
 
@@ -77,7 +77,7 @@ export default function MembersPage() {
       <MembersToolbar
         search={search}
         onSearchChange={setSearch}
-        role={role}
+        roleFilter={roleFilter}
         handleFilterChange={handleFilterChange}
       />
 
