@@ -1,4 +1,4 @@
-export type ProjectStatus = "ACTIVE" | "ON_HOLD" | "COMPLETED";
+export type ProjectStatus = "ACTIVE" | "ON_HOLD" | "COMPLETED" | "DELETED";
 
 export type Project = {
   id: string;

@@ -1,41 +1,69 @@
 import EditableField from "../../../common/components/EditableField";
 import { Button } from "../../../components/ui/button";
 import { useUpdateProject } from "../hooks/useUpdateProject";
+import { useUpdateProjectStatus } from "../hooks/useUpdateProjectStatus";
+import type { Project, ProjectStatus } from "../types/project.types";
+import {
+  ProjectStatusLabel,
+  ProjectStatusStyles,
+} from "../utils/project.constants";
 import type { ProjectPermissions } from "../utils/projectPermissions";
 import { DeleteProjectButton } from "./DeleteProjectButton";
+import ProjectStatusSelector from "./ProjectStatusSelector";
 
 interface Props {
   permissions: ProjectPermissions;
   teamId: string;
-  projectId: string;
-  name: string;
-  description?: string;
+  project: Project;
   onCreateTask: () => void;
   onProjectDeleted?: () => void;
 }
 
 export default function ProjectHeader({
   teamId,
-  projectId,
-  name,
-  description,
+  project,
   permissions,
   onCreateTask,
   onProjectDeleted,
 }: Props) {
-  const updateProject = useUpdateProject(teamId, projectId);
+  const updateProject = useUpdateProject(teamId, project.id);
+
+  const updateProjectStatus = useUpdateProjectStatus(teamId);
+
+  function handleStatusChange(projectId: string, status: ProjectStatus) {
+    updateProjectStatus.mutate({
+      projectId,
+      status,
+    });
+  }
 
   return (
     <header className="rounded-2xl border border-border/60 bg-background/95 p-4 shadow-sm">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex-1 space-y-1.5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Project workspace
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Project workspace
+            </p>
+
+            <div>
+              {permissions.canChangeProjectStatus ? (
+                <ProjectStatusSelector
+                  value={project.status}
+                  onChange={(status) => handleStatusChange(project.id, status)}
+                />
+              ) : (
+                <span className={ProjectStatusStyles[project.status]}>
+                  {ProjectStatusLabel[project.status]}
+                </span>
+              )}
+            </div>
+          </div>
+
           <EditableField
             displayClassName="w-full text-2xl font-semibold tracking-tight"
             inputClassName="w-full text-2xl font-semibold"
-            value={name}
+            value={project.name}
             maxLength={100}
             onSave={(value) => updateProject.mutate({ name: value })}
             disabled={!permissions.canEditProjectDetails}
@@ -46,7 +74,7 @@ export default function ProjectHeader({
             inputClassName="w-full text-sm"
             placeholder="No Description Yet"
             multiline
-            value={description}
+            value={project.description}
             maxLength={2000}
             onSave={(value) => updateProject.mutate({ description: value })}
             disabled={!permissions.canEditProjectDetails}
@@ -60,8 +88,8 @@ export default function ProjectHeader({
           {permissions.canDeleteProject && (
             <DeleteProjectButton
               teamId={teamId}
-              projectId={projectId}
-              projectName={name}
+              projectId={project.id}
+              projectName={project.name}
               onProjectDeleted={onProjectDeleted}
             />
           )}

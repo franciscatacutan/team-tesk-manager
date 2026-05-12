@@ -237,9 +237,7 @@ export default function ProjectDetails() {
     <div className="flex flex-col h-full min-h-0 gap-6 ">
       <ProjectHeader
         teamId={teamId}
-        projectId={projectId}
-        name={project.name}
-        description={project?.description}
+        project={project}
         onCreateTask={() => setOpen(true)}
         onProjectDeleted={() => navigate(`/teams/${teamId}/projects`)}
         permissions={permissions}

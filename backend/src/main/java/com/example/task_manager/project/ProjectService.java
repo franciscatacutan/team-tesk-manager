@@ -224,6 +224,8 @@ public class ProjectService {
     List<TaskEntity> activeTasks = taskRepository
         .findAllByProjectIdAndDeletedAtIsNull(projectId);
 
+    project.setStatus(ProjectStatus.DELETED);
+    project.setStatusChangedAt(Instant.now());
     project.setDeletedAt(now);
     project.setDeletedBy(requester);
 
