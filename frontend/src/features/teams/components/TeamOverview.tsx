@@ -101,6 +101,7 @@ export default function TeamOverview() {
   return (
     <section className="flex flex-1 flex-col gap-4 min-h-0 h-fit">
       <TeamHeader
+        isLoading={isLoading}
         teamId={team.id}
         name={team.name}
         description={team.description}

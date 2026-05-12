@@ -397,19 +397,17 @@ export default function ProjectDetails() {
 function ProjectDetailsSkeleton() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-6">
-      <div className="h-4 w-44 animate-pulse rounded-md bg-muted" />
+      <header className="rounded-2xl border border-border/60 bg-background/95 p-4 shadow-sm">
+        <div className="flex items-start justify-between gap-6">
+          <div className="flex-1 space-y-3">
+            <div className="h-8 w-72 animate-pulse rounded-md bg-muted" />
+            <div className="h-4 w-full max-w-xl animate-pulse rounded-md bg-muted" />
+            <div className="h-4 w-2/3 max-w-md animate-pulse rounded-md bg-muted" />
+          </div>
 
-      <div className="flex items-start justify-between gap-6">
-        <div className="flex-1 space-y-3">
-          <div className="h-8 w-72 animate-pulse rounded-md bg-muted" />
-          <div className="h-4 w-full max-w-xl animate-pulse rounded-md bg-muted" />
-          <div className="h-4 w-2/3 max-w-md animate-pulse rounded-md bg-muted" />
+          <div className="h-10 w-28 animate-pulse rounded-xl bg-muted" />
         </div>
-
-        <div className="h-10 w-28 animate-pulse rounded-xl bg-muted" />
-      </div>
-
-      <div className="h-10 w-72 animate-pulse rounded-xl bg-muted" />
+      </header>
 
       <div className="grid gap-4 lg:grid-cols-3">
         {Array.from({ length: 3 }).map((_, index) => (
