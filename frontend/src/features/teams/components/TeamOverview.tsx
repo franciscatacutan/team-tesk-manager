@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Activity, FolderKanban, Plus, Sparkles, Users } from "lucide-react";
+import { Activity, FolderKanban, Sparkles, Users } from "lucide-react";
 
 import { Button } from "../../../components/ui/button";
 import {
@@ -103,32 +103,8 @@ export default function TeamOverview() {
       <TeamHeader
         isLoading={isLoading}
         teamId={team.id}
-        name={team.name}
-        description={team.description}
+        team={team}
         permissions={permissions}
-        actions={
-          <>
-            {permissions.canAddMember && (
-              <Button
-                variant="outline"
-                className="rounded-xl"
-                onClick={() => setOpenAddMember(true)}
-              >
-                <Users className="h-4 w-4" />
-                Add member
-              </Button>
-            )}
-            {permissions.canCreateProject && (
-              <Button
-                className="rounded-xl"
-                onClick={() => setOpenCreateTeam(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Create project
-              </Button>
-            )}
-          </>
-        }
       />
 
       <section className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
