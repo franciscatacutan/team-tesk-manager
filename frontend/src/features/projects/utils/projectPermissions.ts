@@ -16,11 +16,13 @@ export interface ProjectPermissions {
 interface Params {
   globalRole?: UserRole;
   teamRole?: NullableTeamRole;
+  isReadOnly?: boolean;
 }
 
 export function getProjectPermissions({
   globalRole,
   teamRole,
+  isReadOnly = false,
 }: Params): ProjectPermissions {
   const { isSuperAdmin, isGlobalAdmin, isOwner, isAdmin } = resolveRoles(
     globalRole,
@@ -29,21 +31,22 @@ export function getProjectPermissions({
 
   const isSystemAdmin = isSuperAdmin || isGlobalAdmin;
   const canManage = isOwner || isAdmin;
+  const canWrite = !isReadOnly;
 
   return {
     canManageProject: isSystemAdmin || canManage,
 
-    canCreateProject: canManage,
+    canCreateProject: canWrite && canManage,
 
-    canEditProjectDetails: canManage,
+    canEditProjectDetails: canWrite && canManage,
 
-    canDeleteProject: canManage,
+    canDeleteProject: canWrite && canManage,
 
     canViewDeleteProject: isSystemAdmin || canManage,
 
-    canCreateTask: canManage,
+    canCreateTask: canWrite && canManage,
 
-    canChangeProjectStatus: isSystemAdmin || canManage,
+    canChangeProjectStatus: canWrite && (isSystemAdmin || canManage),
 
     canViewDeleteTask: isSystemAdmin || canManage,
   };

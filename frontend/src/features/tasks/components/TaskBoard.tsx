@@ -37,7 +37,7 @@ import type { DeletedFilter } from "@/common/types/deletedFilter.types";
 
 interface Params {
   search?: string;
-  status?: string;
+  status?: TaskStatus;
   sort?: string;
   deletedFilter: DeletedFilter;
 }

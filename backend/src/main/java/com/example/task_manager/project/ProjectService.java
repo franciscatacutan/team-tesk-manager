@@ -39,6 +39,7 @@ import com.example.task_manager.task.TaskRepository;
 import com.example.task_manager.task.entity.TaskEntity;
 import com.example.task_manager.team.TeamMemberRepository;
 import com.example.task_manager.team.TeamRepository;
+import com.example.task_manager.team.entity.TeamEntity;
 import com.example.task_manager.team.entity.TeamMemberEntity;
 import com.example.task_manager.team.entity.TeamRole;
 import com.example.task_manager.user.UserRepository;
@@ -261,7 +262,7 @@ public class ProjectService {
 
     UserEntity requester = getUserByEmail(requesterEmail);
 
-    ProjectEntity project = getExistingProject(projectId, teamId);
+    ProjectEntity project = getActiveProject(projectId, teamId);
 
     validateCanManageTeamProject(teamId, requester.getId());
 
@@ -318,20 +319,31 @@ public class ProjectService {
 
     UserEntity requester = getUserByEmail(authentication.getName());
 
-    validateTeam(teamId);
+    TeamEntity team = getExistingTeam(teamId);
+    boolean isTeamDeleted = team.getDeletedAt() != null;
 
     boolean isGlobalAdmin = authentication.getAuthorities()
         .stream()
         .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
 
-    if (!isGlobalAdmin) {
+    boolean canViewDeleted = isGlobalAdmin || isTeamManager(teamId, requester.getId());
+
+    if (isTeamDeleted && !canViewDeleted) {
+      throw new ResourceNotFoundException("Team not found");
+    }
+
+    if (!isGlobalAdmin && !canViewDeleted) {
       validateMembership(teamId, requester.getId());
     }
 
     DeletedFilter filter = request.deletedFilter();
 
-    if (!isGlobalAdmin && filter != DeletedFilter.ACTIVE) {
-      throw new ForbiddenException("Not allowed to view deleted tasks");
+    if (!canViewDeleted && filter != DeletedFilter.ACTIVE) {
+      throw new ForbiddenException("Not allowed to view deleted projects");
+    }
+
+    if (isTeamDeleted && filter == DeletedFilter.ACTIVE) {
+      filter = DeletedFilter.ALL;
     }
 
     pageable = request.all()
@@ -343,8 +355,8 @@ public class ProjectService {
         request.search(),
         request.status(),
         request.createdBy(),
-        request.deletedFilter(),
-        isGlobalAdmin);
+        filter,
+        canViewDeleted);
 
     Page<ProjectEntity> page = projectRepository.findAll(spec, pageable);
 
@@ -365,13 +377,17 @@ public class ProjectService {
   public ProjectResponse getActiveProjectById(
       UUID teamId,
       UUID projectId,
-      String requesterEmail) {
+      Authentication authentication) {
 
-    UserEntity requester = getUserByEmail(requesterEmail);
+    UserEntity requester = getUserByEmail(authentication.getName());
+    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
 
-    ProjectEntity project = getActiveProject(projectId, teamId);
+    TeamEntity team = getExistingTeam(teamId);
+    ProjectEntity project = team.getDeletedAt() != null
+        ? getExistingProject(projectId, teamId)
+        : getActiveProject(projectId, teamId);
 
-    validateMembership(teamId, requester.getId());
+    validateCanReadProject(project, requester.getId(), isGlobalAdmin);
 
     return mapToResponse(project);
   }
@@ -379,18 +395,18 @@ public class ProjectService {
   /**
    * Returns an existing projects by id.
    */
-  @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
   @Transactional(readOnly = true)
   public ProjectResponse getExistingProjectById(
       UUID teamId,
       UUID projectId,
-      String requesterEmail) {
+      Authentication authentication) {
 
-    UserEntity requester = getUserByEmail(requesterEmail);
+    UserEntity requester = getUserByEmail(authentication.getName());
+    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
 
     ProjectEntity project = getExistingProject(projectId, teamId);
 
-    validateMembership(teamId, requester.getId());
+    validateCanReadProject(project, requester.getId(), isGlobalAdmin);
 
     return mapToResponse(project);
   }
@@ -400,8 +416,15 @@ public class ProjectService {
    */
   @Transactional(readOnly = true)
   public PageResponse<ProjectActivityResponse> getProjectActivities(
+      UUID teamId,
       UUID projectId,
-      Pageable pageable) {
+      Pageable pageable,
+      Authentication authentication) {
+
+    UserEntity requester = getUserByEmail(authentication.getName());
+    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
+    ProjectEntity project = getExistingProject(projectId, teamId);
+    validateCanReadProject(project, requester.getId(), isGlobalAdmin);
 
     Page<ActivityEventEntity> page = activityEventRepository.findByProjectId(projectId, pageable);
 
@@ -423,6 +446,12 @@ public class ProjectService {
    * Maps a ProjectEntity to a Project Response.
    */
   private ProjectResponse mapToResponse(ProjectEntity project) {
+    ProjectResponse.ProjectUserSummary owner = new ProjectResponse.ProjectUserSummary(
+        project.getOwner().getId(),
+        project.getOwner().getFirstName(),
+        project.getOwner().getLastName(),
+        project.getOwner().getEmail());
+
     ProjectResponse.ProjectUserSummary createdBy = new ProjectResponse.ProjectUserSummary(
         project.getCreatedBy().getId(),
         project.getCreatedBy().getFirstName(),
@@ -437,6 +466,14 @@ public class ProjectService {
             project.getCompletedBy().getLastName(),
             project.getCompletedBy().getEmail());
 
+    ProjectResponse.ProjectUserSummary deletedBy = project.getDeletedBy() == null
+        ? null
+        : new ProjectResponse.ProjectUserSummary(
+            project.getDeletedBy().getId(),
+            project.getDeletedBy().getFirstName(),
+            project.getDeletedBy().getLastName(),
+            project.getDeletedBy().getEmail());
+
     Boolean isDeleted = project.getDeletedAt() != null ? true : false;
 
     return new ProjectResponse(
@@ -445,8 +482,10 @@ public class ProjectService {
         project.getDescription(),
         project.getStatus(),
         project.getTeam().getId(),
+        owner,
         createdBy,
         completedBy,
+        deletedBy,
         project.getPlannedStartDate(),
         project.getPlannedDueDate(),
         project.getActualStartDate(),
@@ -455,6 +494,7 @@ public class ProjectService {
         project.getUpdatedAt(),
         project.getLastActivityAt(),
         project.getStatusChangedAt(),
+        project.getDeletedAt(),
         isDeleted);
   }
 
@@ -478,8 +518,11 @@ public class ProjectService {
    */
   private TeamMemberEntity getMembership(UUID teamId, UUID userId) {
     TeamMemberEntity member = teamMemberRepository
-        .findByTeamIdAndUserIdAndTeamDeletedAtIsNull(teamId, userId)
+        .findByTeamIdAndUserId(teamId, userId)
         .orElseThrow(() -> new ForbiddenException("User is not a team member"));
+    if (member.getTeam().getDeletedAt() != null) {
+      throw new ConflictException("Team is deleted and cannot be changed");
+    }
     return member;
   }
 
@@ -556,21 +599,48 @@ public class ProjectService {
       throw new BadRequestInputException("Project status is required");
     }
 
+    if (newStatus == ProjectStatus.DELETED) {
+      throw new BadRequestInputException("Use the delete endpoint to delete a project");
+    }
+
     if (project.getStatus() == newStatus) {
       throw new ConflictException(
           "Project is already in this status");
     }
   }
 
-  /**
-   * Get an existing team
-   */
-  private void validateTeam(UUID teamId) {
-    boolean team = teamRepository.existsById(teamId);
+  private TeamEntity getExistingTeam(UUID teamId) {
+    return teamRepository.findById(teamId)
+        .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+  }
 
-    if (!team) {
-      throw new ResourceNotFoundException("Team not found");
+  private boolean hasGlobalAdminAuthority(Authentication authentication) {
+    return authentication.getAuthorities()
+        .stream()
+        .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
+  }
+
+  private void validateCanReadProject(ProjectEntity project, UUID requesterId, boolean isGlobalAdmin) {
+    if (isGlobalAdmin) {
+      return;
     }
+
+    UUID teamId = project.getTeam().getId();
+    TeamMemberEntity membership = teamMemberRepository.findByTeamIdAndUserId(teamId, requesterId)
+        .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+    boolean deleted = project.getDeletedAt() != null || project.getTeam().getDeletedAt() != null;
+    if (deleted &&
+        membership.getRole() != TeamRole.OWNER &&
+        membership.getRole() != TeamRole.ADMIN) {
+      throw new ResourceNotFoundException("Project not found");
+    }
+  }
+
+  private boolean isTeamManager(UUID teamId, UUID requesterId) {
+    return teamMemberRepository.findByTeamIdAndUserId(teamId, requesterId)
+        .map(member -> member.getRole() == TeamRole.OWNER || member.getRole() == TeamRole.ADMIN)
+        .orElse(false);
   }
 
   /*

@@ -8,7 +8,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.example.task_manager.project.ProjectService;
+import com.example.task_manager.exception.api.ResourceNotFoundException;
+import com.example.task_manager.project.ProjectRepository;
 import com.example.task_manager.task.TaskService;
 import com.example.task_manager.task.dto.ChangeStatusRequest;
 import com.example.task_manager.task.dto.CreateTaskRequest;
@@ -26,7 +27,7 @@ import lombok.RequiredArgsConstructor;
 public class TaskSeederService {
 
   private final TaskService taskService;
-  private final ProjectService projectService;
+  private final ProjectRepository projectRepository;
   private final TeamMemberRepository teamMemberRepository;
 
   @Transactional
@@ -37,8 +38,9 @@ public class TaskSeederService {
       String batchId,
       String requesterEmail) {
 
-    // ✅ Validate project belongs to team
-    projectService.getActiveProjectById(teamId, projectId, requesterEmail);
+    if (!projectRepository.existsByIdAndTeamIdAndDeletedAtIsNull(projectId, teamId)) {
+      throw new ResourceNotFoundException("Project not found");
+    }
 
     List<TeamMemberEntity> members = teamMemberRepository.findMembersByTeamId(teamId);
 

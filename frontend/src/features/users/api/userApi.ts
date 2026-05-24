@@ -41,8 +41,24 @@ export const updateUserProfile = async (
     email?: string;
   },
 ): Promise<User> => {
-  const { data } = await apiClient.patch<User>(`/users/${userId}`, payload);
-  return data;
+  const profilePayload = {
+    firstName: payload.firstName,
+    lastName: payload.lastName,
+  };
+
+  const { data: updatedProfile } = await apiClient.patch<User>(
+    `/users/${userId}`,
+    profilePayload,
+  );
+
+  if (payload.email && payload.email !== updatedProfile.email) {
+    const { data } = await apiClient.patch<User>(`/admin/users/${userId}/email`, {
+      email: payload.email,
+    });
+    return data;
+  }
+
+  return updatedProfile;
 };
 
 export const updateUserRole = async (

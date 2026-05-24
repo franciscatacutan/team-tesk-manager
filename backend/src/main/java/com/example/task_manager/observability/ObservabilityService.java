@@ -39,6 +39,9 @@ import com.example.task_manager.task.entity.TaskEntity;
 import com.example.task_manager.task.entity.TaskPriority;
 import com.example.task_manager.task.entity.TaskStatus;
 import com.example.task_manager.team.TeamMemberRepository;
+import com.example.task_manager.team.TeamRepository;
+import com.example.task_manager.team.entity.TeamEntity;
+import com.example.task_manager.team.entity.TeamMemberEntity;
 import com.example.task_manager.team.entity.TeamRole;
 import com.example.task_manager.user.UserRepository;
 import com.example.task_manager.user.entity.UserEntity;
@@ -60,6 +63,7 @@ public class ObservabilityService {
   private final ActivityEventRepository activityEventRepository;
   private final TaskRepository taskRepository;
   private final ProjectRepository projectRepository;
+  private final TeamRepository teamRepository;
   private final TeamMemberRepository teamMemberRepository;
   private final UserRepository userRepository;
 
@@ -411,11 +415,23 @@ public class ObservabilityService {
     UserEntity requester = userRepository.findByEmail(authentication.getName())
         .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+    TeamEntity team = teamRepository.findById(teamId)
+        .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+
     boolean isGlobalAdmin = authentication.getAuthorities().stream()
         .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
 
-    if (!isGlobalAdmin && !teamMemberRepository.existsByTeamIdAndUserId(teamId, requester.getId())) {
-      throw new ForbiddenException("User is not a team member");
+    if (isGlobalAdmin) {
+      return;
+    }
+
+    TeamMemberEntity membership = teamMemberRepository.findByTeamIdAndUserId(teamId, requester.getId())
+        .orElseThrow(() -> new ForbiddenException("User is not a team member"));
+
+    if (team.getDeletedAt() != null &&
+        membership.getRole() != TeamRole.OWNER &&
+        membership.getRole() != TeamRole.ADMIN) {
+      throw new ResourceNotFoundException("Team not found");
     }
   }
 
@@ -428,6 +444,22 @@ public class ObservabilityService {
         .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
     validateCanReadTeamObservability(teamId, authentication);
+
+    if (project.getDeletedAt() != null || project.getTeam().getDeletedAt() != null) {
+      UserEntity requester = userRepository.findByEmail(authentication.getName())
+          .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+      boolean isGlobalAdmin = authentication.getAuthorities().stream()
+          .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
+
+      if (!isGlobalAdmin) {
+        TeamMemberEntity membership = teamMemberRepository.findByTeamIdAndUserId(teamId, requester.getId())
+            .orElseThrow(() -> new ForbiddenException("User is not a team member"));
+        if (membership.getRole() != TeamRole.OWNER && membership.getRole() != TeamRole.ADMIN) {
+          throw new ResourceNotFoundException("Project not found");
+        }
+      }
+    }
 
     return project;
   }

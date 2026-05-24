@@ -5,8 +5,11 @@ export type Project = {
   name: string;
   description?: string;
   status: ProjectStatus;
-  owner: User;
+  teamId: string;
+  owner?: User;
   createdBy: User;
+  completedBy?: User | null;
+  deletedBy?: User | null;
   lastActivityAt: string;
   plannedStartDate?: string;
   plannedDueDate?: string;
@@ -14,11 +17,14 @@ export type Project = {
   actualCompletionDate?: string;
   createdAt: string;
   updatedAt: string;
-  deletedAt: string;
+  statusChangedAt?: string;
+  deletedAt?: string | null;
+  deleted?: boolean;
 };
 
 type User = {
-  id: number;
+  id?: string;
+  userId?: string;
   firstName: string;
   lastName: string;
   email: string;

@@ -19,6 +19,7 @@ interface Params {
   userId?: string;
   assigneeId?: string;
   supportId?: string;
+  isReadOnly?: boolean;
 }
 
 export function getTaskPermissions({
@@ -27,6 +28,7 @@ export function getTaskPermissions({
   userId,
   assigneeId,
   supportId,
+  isReadOnly = false,
 }: Params): TaskPermissions {
   const { isSuperAdmin, isGlobalAdmin, isOwner, isAdmin } = resolveRoles(
     globalRole,
@@ -39,22 +41,23 @@ export function getTaskPermissions({
   const isSystemAdmin = isSuperAdmin || isGlobalAdmin;
 
   const canManage = isOwner || isAdmin;
+  const canWrite = !isReadOnly;
 
   return {
-    canEditTaskDetails: canManage,
+    canEditTaskDetails: canWrite && canManage,
 
-    canDeleteTask: canManage,
+    canDeleteTask: canWrite && canManage,
 
     canViewDeleteTask: isSystemAdmin || canManage,
 
-    canChangeStatus: canManage || isAssignee || isSupport,
+    canChangeStatus: canWrite && (canManage || isAssignee || isSupport),
 
-    canChangePriority: canManage,
+    canChangePriority: canWrite && canManage,
 
-    canAssign: canManage,
+    canAssign: canWrite && canManage,
 
-    canChangeSchedule: canManage,
+    canChangeSchedule: canWrite && canManage,
 
-    canComment: canManage || isAssignee || isSupport,
+    canComment: canWrite && (canManage || isAssignee || isSupport),
   };
 }

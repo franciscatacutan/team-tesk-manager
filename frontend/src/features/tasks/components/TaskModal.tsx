@@ -3,6 +3,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "../../../components/ui/dialog";
+import { useOutletContext } from "react-router-dom";
 import { useTeamMe } from "../../teams/hooks/useTeamMe";
 import { useTask } from "../hooks/useTask";
 import { getTaskPermissions } from "../utils/taskPermissions";
@@ -12,6 +13,7 @@ import TaskMetadata from "./TaskMetadata";
 import TaskActivity from "./TaskActivity";
 import TaskCommentForm from "./TaskCommentForm";
 import { getUserFromToken } from "../../users/api/userApi";
+import type { WorkspaceOutletContext } from "@/layout/workspace/WorkspaceLayout";
 
 interface Props {
   open: boolean;
@@ -33,6 +35,8 @@ export default function TaskModal({
   const { data: task, isLoading } = useTask(teamId, projectId, taskId);
   const user = getUserFromToken();
   const { data: teamMe } = useTeamMe(teamId);
+  const { team } = useOutletContext<WorkspaceOutletContext>();
+  const isWorkspaceReadOnly = Boolean(team.deletedAt);
 
   const permissions = getTaskPermissions({
     globalRole: user?.role,
@@ -40,6 +44,7 @@ export default function TaskModal({
     userId: teamMe?.userId,
     assigneeId: task?.assignedUser?.id,
     supportId: task?.supportUser?.id,
+    isReadOnly: isWorkspaceReadOnly,
   });
 
   if (isLoading || !task) {

@@ -106,7 +106,7 @@ public class ProjectController {
       @PathVariable UUID teamId,
       @PathVariable UUID projectId,
       Authentication authentication) {
-    return ResponseEntity.ok(projectService.getActiveProjectById(teamId, projectId, authentication.getName()));
+    return ResponseEntity.ok(projectService.getActiveProjectById(teamId, projectId, authentication));
   }
 
   /**
@@ -117,7 +117,7 @@ public class ProjectController {
       @PathVariable UUID teamId,
       @PathVariable UUID projectId,
       Authentication authentication) {
-    return ResponseEntity.ok(projectService.getExistingProjectById(teamId, projectId, authentication.getName()));
+    return ResponseEntity.ok(projectService.getExistingProjectById(teamId, projectId, authentication));
   }
 
   /**
@@ -125,9 +125,11 @@ public class ProjectController {
    */
   @GetMapping("/{projectId}/activities")
   public ResponseEntity<PageResponse<ProjectActivityResponse>> getProjectActivities(
+      @PathVariable UUID teamId,
       @PathVariable UUID projectId,
-      @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-    return ResponseEntity.ok(projectService.getProjectActivities(projectId, pageable));
+      @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+      Authentication authentication) {
+    return ResponseEntity.ok(projectService.getProjectActivities(teamId, projectId, pageable, authentication));
   }
 
   /**

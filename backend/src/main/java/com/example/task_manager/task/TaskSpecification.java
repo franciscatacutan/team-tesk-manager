@@ -29,7 +29,7 @@ public class TaskSpecification {
       UUID supportId,
       Boolean overdue,
       DeletedFilter deletedFilter,
-      boolean isGlobalAdmin) {
+      boolean canViewDeleted) {
 
     return Specification
         .where(belongsToProject(projectId))
@@ -39,7 +39,7 @@ public class TaskSpecification {
         .and(hasAssignee(assigneeId))
         .and(hasSupport(supportId))
         .and(isOverdue(overdue))
-        .and(deletedFilter(deletedFilter, isGlobalAdmin));
+        .and(deletedFilter(deletedFilter, canViewDeleted));
   }
 
   private static Specification<TaskEntity> belongsToProject(UUID projectId) {
@@ -60,7 +60,7 @@ public class TaskSpecification {
       Join<TaskEntity, UserEntity> supportJoin = root.join("support", JoinType.LEFT);
 
       return cb.or(
-          cb.like(cb.lower(root.get("title")), pattern),
+          cb.like(cb.lower(root.get("name")), pattern),
           cb.like(cb.lower(root.get("description")), pattern),
           cb.like(cb.lower(assigneeJoin.get("firstName")), pattern),
           cb.like(cb.lower(assigneeJoin.get("lastName")), pattern),
@@ -124,11 +124,11 @@ public class TaskSpecification {
 
   private static Specification<TaskEntity> deletedFilter(
       DeletedFilter filter,
-      boolean isGlobalAdmin) {
+      boolean canViewDeleted) {
 
     return (root, query, cb) -> {
 
-      if (!isGlobalAdmin) {
+      if (!canViewDeleted) {
         return cb.isNull(root.get("deletedAt"));
       }
 

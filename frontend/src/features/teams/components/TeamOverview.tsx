@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { Activity, FolderKanban, Sparkles, Users } from "lucide-react";
 
 import { Button } from "../../../components/ui/button";
@@ -19,7 +19,6 @@ import {
 import { CreateProjectModal } from "../../projects/components/CreateProjectModal";
 import { getUserFromToken } from "../../users/api/userApi";
 import { useProjects } from "../../projects/hooks/useProjects";
-import { useTeam } from "../hooks/useTeam";
 import { useTeamActivities } from "../hooks/useTeamActivities";
 import { useTeamMe } from "../hooks/useTeamMe";
 import { useTeamMembers } from "../hooks/useTeamMembers";
@@ -27,6 +26,7 @@ import AddMembersModal from "./AddMembersModal";
 import TeamHeader from "./TeamHeader";
 import TeamOverviewCard from "./TeamOverviewCard";
 import { getTeamPermissions } from "../utils/teamPermissions";
+import type { WorkspaceOutletContext } from "@/layout/workspace/WorkspaceLayout";
 
 export default function TeamOverview() {
   const navigate = useNavigate();
@@ -39,7 +39,8 @@ export default function TeamOverview() {
 
   // ---------------- DATA ----------------
 
-  const { data: team, isLoading } = useTeam(teamId || "");
+  const { team } = useOutletContext<WorkspaceOutletContext>();
+  const isLoading = false;
 
   const { data: teamMe } = useTeamMe(teamId || "");
 
@@ -86,6 +87,7 @@ export default function TeamOverview() {
   const permissions = getTeamPermissions({
     globalRole: user?.role,
     teamRole: teamMe?.role,
+    isReadOnly: Boolean(team.deletedAt),
   });
 
   if (isLoading || !team) {

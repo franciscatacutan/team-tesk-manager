@@ -91,7 +91,7 @@ public class TaskService {
     TaskEntity task = new TaskEntity();
     task.setProject(project);
     task.setTaskNumber(taskNumber);
-    task.setName(request.name());
+    task.setName(request.name().trim());
     task.setDescription(request.description());
     task.setStatus(TaskStatus.TODO);
     task.setPriority(request.priority());
@@ -147,11 +147,14 @@ public class TaskService {
     Instant currentPlannedDue = task.getPlannedDueDate();
 
     if (request.name() != null) {
-      task.setName(request.name());
+      if (request.name().isBlank()) {
+        throw new BadRequestInputException("Task name cannot be blank");
+      }
+      task.setName(request.name().trim());
     }
 
     if (request.description() != null) {
-      task.setDescription(request.description());
+      task.setDescription(request.description().trim());
     }
 
     if (request.priority() != null) {
@@ -255,7 +258,7 @@ public class TaskService {
       task.setCompletedBy(requester);
     }
 
-    if (current == TaskStatus.DONE && newStatus != null) {
+    if (current == TaskStatus.DONE && newStatus != TaskStatus.DONE) {
       task.setActualCompletionDate(null);
       task.setCompletedBy(null);
     }
@@ -477,21 +480,21 @@ public class TaskService {
   /**
    * Returns an existing task by id.
    */
-  @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
   @Transactional(readOnly = true)
   public TaskResponse getExistingTaskById(
       UUID teamId,
       UUID projectId,
       UUID taskId,
-      String requesterEmail) {
+      Authentication authentication) {
 
-    UserEntity requester = getUserByEmail(requesterEmail);
+    UserEntity requester = getUserByEmail(authentication.getName());
+    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
 
-    TaskEntity team = getExistingTask(taskId, projectId, teamId);
+    TaskEntity task = getExistingTask(taskId, projectId, teamId);
 
-    validateMembership(teamId, requester.getId());
+    validateCanReadTask(task, requester.getId(), isGlobalAdmin);
 
-    return mapToResponse(team);
+    return mapToResponse(task);
   }
 
   /**
@@ -502,15 +505,19 @@ public class TaskService {
       UUID teamId,
       UUID projectId,
       UUID taskId,
-      String requesterEmail) {
+      Authentication authentication) {
 
-    UserEntity requester = getUserByEmail(requesterEmail);
+    UserEntity requester = getUserByEmail(authentication.getName());
+    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
 
-    TaskEntity team = getActiveTask(taskId, projectId, teamId);
+    ProjectEntity project = getExistingProject(projectId, teamId);
+    TaskEntity task = project.getTeam().getDeletedAt() != null
+        ? getExistingTask(taskId, projectId, teamId)
+        : getActiveTask(taskId, projectId, teamId);
 
-    validateMembership(teamId, requester.getId());
+    validateCanReadTask(task, requester.getId(), isGlobalAdmin);
 
-    return mapToResponse(team);
+    return mapToResponse(task);
   }
 
   /**
@@ -531,20 +538,31 @@ public class TaskService {
 
     UserEntity requester = getUserByEmail(authentication.getName());
 
-    validateProject(projectId, teamId);
+    ProjectEntity project = getExistingProject(projectId, teamId);
+    boolean isTeamDeleted = project.getTeam().getDeletedAt() != null;
 
     boolean isGlobalAdmin = authentication.getAuthorities()
         .stream()
         .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
 
-    if (!isGlobalAdmin) {
+    boolean canViewDeleted = isGlobalAdmin || isTeamManager(teamId, requester.getId());
+
+    if ((isTeamDeleted || project.getDeletedAt() != null) && !canViewDeleted) {
+      throw new ResourceNotFoundException("Project not found");
+    }
+
+    if (!isGlobalAdmin && !canViewDeleted) {
       validateMembership(teamId, requester.getId());
     }
 
     DeletedFilter filter = request.deletedFilter();
 
-    if (!isGlobalAdmin && filter != DeletedFilter.ACTIVE) {
+    if (!canViewDeleted && filter != DeletedFilter.ACTIVE) {
       throw new ForbiddenException("Not allowed to view deleted tasks");
+    }
+
+    if (isTeamDeleted && filter == DeletedFilter.ACTIVE) {
+      filter = DeletedFilter.ALL;
     }
 
     pageable = validateSorting(pageable);
@@ -557,8 +575,8 @@ public class TaskService {
         request.assigneeId(),
         request.supportId(),
         request.overdue(),
-        request.deletedFilter(),
-        isGlobalAdmin);
+        filter,
+        canViewDeleted);
 
     Page<TaskEntity> page = taskRepository.findAll(spec, pageable);
 
@@ -628,16 +646,16 @@ public class TaskService {
       UUID teamId,
       UUID taskId,
       Pageable pageable,
-      String requesterEmail) {
+      Authentication authentication) {
 
-    UserEntity currentUser = getUserByEmail(requesterEmail);
-    validateActiveTask(taskId);
+    UserEntity currentUser = getUserByEmail(authentication.getName());
+    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
+    TaskEntity task = getExistingTask(taskId, teamId);
+    validateCanReadTask(task, currentUser.getId(), isGlobalAdmin);
 
-    validateMembership(teamId, currentUser.getId());
-
-    Page<ActivityEventEntity> page = activityEventRepository.findActiveTaskActivity(
-        taskId,
-        pageable);
+    Page<ActivityEventEntity> page = isDeleted(task)
+        ? activityEventRepository.findByTaskId(taskId, pageable)
+        : activityEventRepository.findActiveTaskActivity(taskId, pageable);
 
     return new PageResponse<>(
         page.map(this::mapToUpdateResponse).getContent(),
@@ -652,18 +670,18 @@ public class TaskService {
   /**
    * Get all task update for an Existing Task
    */
-  @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
   @Transactional(readOnly = true)
   public PageResponse<TaskActivityResponse> getAllExistingTaskActivities(
       UUID teamId,
       UUID taskId,
       Pageable pageable,
-      String requesterEmail) {
+      Authentication authentication) {
 
-    UserEntity currentUser = getUserByEmail(requesterEmail);
-    validateExistingTask(taskId);
+    UserEntity currentUser = getUserByEmail(authentication.getName());
+    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
+    TaskEntity task = getExistingTask(taskId, teamId);
 
-    validateMembership(teamId, currentUser.getId());
+    validateCanReadTask(task, currentUser.getId(), isGlobalAdmin);
 
     Page<ActivityEventEntity> page = activityEventRepository.findByTaskId(
         taskId,
@@ -796,8 +814,11 @@ public class TaskService {
    */
   private TeamMemberEntity getMembership(UUID teamId, UUID userId) {
     TeamMemberEntity member = teamMemberRepository
-        .findByTeamIdAndUserIdAndTeamDeletedAtIsNull(teamId, userId)
+        .findByTeamIdAndUserId(teamId, userId)
         .orElseThrow(() -> new ForbiddenException("User is not a team member"));
+    if (member.getTeam().getDeletedAt() != null) {
+      throw new ConflictException("Team is deleted and cannot be changed");
+    }
     return member;
   }
 
@@ -836,6 +857,11 @@ public class TaskService {
         .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
   }
 
+  private ProjectEntity getExistingProject(UUID projectId, UUID teamId) {
+    return projectRepository.findByIdAndTeamId(projectId, teamId)
+        .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+  }
+
   /**
    * Ensures:
    * - Task exists
@@ -871,15 +897,9 @@ public class TaskService {
         .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
   }
 
-  /**
-   * Ensures:
-   * - Task exists
-   */
-  private void validateExistingTask(UUID taskId) {
-    boolean task = taskRepository.existsById(taskId);
-    if (!task) {
-      throw new ResourceNotFoundException("Task not found");
-    }
+  private TaskEntity getExistingTask(UUID taskId, UUID teamId) {
+    return taskRepository.findByIdAndProjectTeamId(taskId, teamId)
+        .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
   }
 
   /**
@@ -935,6 +955,10 @@ public class TaskService {
       throw new BadRequestInputException("Task status is required");
     }
 
+    if (current == next) {
+      throw new ConflictException("Task is already in this status");
+    }
+
     if (next == TaskStatus.TODO && current != TaskStatus.TODO) {
       throw new BadRequestInputException("Cannot transition back to TODO");
     }
@@ -958,17 +982,6 @@ public class TaskService {
       String message,
       List<String> fields,
       List<ActivityEventDetails.ActivityChange> changes) {
-  }
-
-  /**
-   * Get an active project
-   */
-  private void validateProject(UUID projectId, UUID teamId) {
-    boolean project = projectRepository.existsByIdAndTeamId(projectId, teamId);
-
-    if (!project) {
-      throw new ResourceNotFoundException("Project not found");
-    }
   }
 
   /*
@@ -1042,6 +1055,40 @@ public class TaskService {
     }
 
     return changes;
+  }
+
+  private boolean hasGlobalAdminAuthority(Authentication authentication) {
+    return authentication.getAuthorities()
+        .stream()
+        .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
+  }
+
+  private void validateCanReadTask(TaskEntity task, UUID requesterId, boolean isGlobalAdmin) {
+    if (isGlobalAdmin) {
+      return;
+    }
+
+    UUID teamId = task.getProject().getTeam().getId();
+    TeamMemberEntity membership = teamMemberRepository.findByTeamIdAndUserId(teamId, requesterId)
+        .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+    if (isDeleted(task) &&
+        membership.getRole() != TeamRole.OWNER &&
+        membership.getRole() != TeamRole.ADMIN) {
+      throw new ResourceNotFoundException("Task not found");
+    }
+  }
+
+  private boolean isTeamManager(UUID teamId, UUID requesterId) {
+    return teamMemberRepository.findByTeamIdAndUserId(teamId, requesterId)
+        .map(member -> member.getRole() == TeamRole.OWNER || member.getRole() == TeamRole.ADMIN)
+        .orElse(false);
+  }
+
+  private boolean isDeleted(TaskEntity task) {
+    return task.getDeletedAt() != null ||
+        task.getProject().getDeletedAt() != null ||
+        task.getProject().getTeam().getDeletedAt() != null;
   }
 
 }

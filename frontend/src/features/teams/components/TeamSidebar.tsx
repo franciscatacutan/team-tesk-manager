@@ -16,8 +16,15 @@ import { cn } from "../../../lib/utils";
 import { getUserFromToken } from "@/features/users/api/userApi";
 import { getTeamPermissions } from "../utils/teamPermissions";
 import { useTeamMe } from "../hooks/useTeamMe";
+import type { Team } from "../types/team.type";
 
-export default function TeamSidebar({ teamId }: { teamId: string }) {
+export default function TeamSidebar({
+  teamId,
+  team,
+}: {
+  teamId: string;
+  team: Team;
+}) {
   const [collapsed, setCollapsed] = useState(false);
 
   const user = getUserFromToken();
@@ -26,6 +33,7 @@ export default function TeamSidebar({ teamId }: { teamId: string }) {
   const permissions = getTeamPermissions({
     globalRole: user?.role,
     teamRole: teamMe?.role,
+    isReadOnly: Boolean(team.deletedAt),
   });
   return (
     <aside

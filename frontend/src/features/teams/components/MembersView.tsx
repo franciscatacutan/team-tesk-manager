@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
 import { useState } from "react";
 
 import { useTeamMembers } from "../hooks/useTeamMembers";
@@ -13,6 +13,7 @@ import { getUserFromToken } from "../../users/api/userApi";
 import { useTeamMe } from "../hooks/useTeamMe";
 import RemoveMultiMembersModal from "./RemoveMultiMemberModal";
 import type { TeamRole } from "../types/team.type";
+import type { WorkspaceOutletContext } from "@/layout/workspace/WorkspaceLayout";
 
 export default function MembersPage() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -41,6 +42,8 @@ export default function MembersPage() {
     },
   );
   const { data: teamMe } = useTeamMe(teamId || "");
+  const { team } = useOutletContext<WorkspaceOutletContext>();
+  const isWorkspaceReadOnly = Boolean(team.deletedAt);
   if (!teamMe?.role) return;
 
   const members = membersData?.content ?? [];
@@ -53,6 +56,7 @@ export default function MembersPage() {
   const permissions = getTeamPermissions({
     globalRole: user.role,
     teamRole: teamMe?.role,
+    isReadOnly: isWorkspaceReadOnly,
   });
 
   function handleFilterChange(key: string, value: string | string[]) {

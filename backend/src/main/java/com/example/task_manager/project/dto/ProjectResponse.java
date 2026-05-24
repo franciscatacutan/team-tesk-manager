@@ -14,8 +14,10 @@ public record ProjectResponse(
     String description,
     ProjectStatus status,
     UUID teamId,
+    ProjectUserSummary owner,
     ProjectUserSummary createdBy,
     ProjectUserSummary completedBy,
+    ProjectUserSummary deletedBy,
     Instant plannedStartDate,
     Instant plannedDueDate,
     Instant actualStartDate,
@@ -24,6 +26,7 @@ public record ProjectResponse(
     Instant updatedAt,
     Instant lastActivityAt,
     Instant statusChangedAt,
+    Instant deletedAt,
     boolean deleted) {
 
   /**

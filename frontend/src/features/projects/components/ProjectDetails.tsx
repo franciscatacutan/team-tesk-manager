@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useState } from "react";
 
 import { useProject } from "../hooks/useProject";
@@ -42,6 +42,7 @@ import Toolbar from "@/common/components/toolbar/ToolBar";
 import { TASK_STATUS_FILTER } from "@/features/tasks/constants/taksFilter.constants";
 import type { SortField, SortOrder } from "@/common/types/sort.types";
 import { Pagination } from "@/common/components/pagination/Pagination";
+import type { WorkspaceOutletContext } from "@/layout/workspace/WorkspaceLayout";
 
 export default function ProjectDetails() {
   const { teamId, projectId } = useParams<{
@@ -78,11 +79,6 @@ export default function ProjectDetails() {
   const debouncedSearch = useDebounce(search, 400);
   const sort = `${sortField},${sortOrder}`;
 
-  const filterValues = {
-    statusFilter,
-    deletedFilter,
-  };
-
   const sortOptions =
     view === "board" ? BASE_SORT_OPTIONS : TASK_LIST_SORT_OPTIONS;
   const hasActiveFilters =
@@ -97,6 +93,16 @@ export default function ProjectDetails() {
     isLoading,
     isError,
   } = useProject(teamId || "", projectId || "");
+
+  const { team } = useOutletContext<WorkspaceOutletContext>();
+  const isWorkspaceReadOnly = Boolean(team.deletedAt);
+  const effectiveDeletedFilter: DeletedFilter = isWorkspaceReadOnly
+    ? "ALL"
+    : deletedFilter;
+  const filterValues = {
+    statusFilter,
+    deletedFilter: effectiveDeletedFilter,
+  };
 
   const {
     data: projectInsights,
@@ -113,7 +119,7 @@ export default function ProjectDetails() {
       search: debouncedSearch,
       sort,
       status: statusFilter,
-      deletedFilter,
+      deletedFilter: effectiveDeletedFilter,
     },
   );
 
@@ -196,6 +202,7 @@ export default function ProjectDetails() {
   const permissions = getProjectPermissions({
     globalRole: user?.role,
     teamRole: teamMe?.role,
+    isReadOnly: isWorkspaceReadOnly,
   });
 
   // ------------------ FILTERS ------------------
@@ -318,7 +325,7 @@ export default function ProjectDetails() {
                 search: debouncedSearch,
                 status: statusFilter[0],
                 sort,
-                deletedFilter,
+                deletedFilter: effectiveDeletedFilter,
               }}
               onStatusChange={handleStatusChange}
               onOpenTask={setSelectedTask}

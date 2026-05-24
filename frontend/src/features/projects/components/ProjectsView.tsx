@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useState } from "react";
 import { useDebounce } from "../../../common/hooks/useDebounce";
 import { useProjects } from "../hooks/useProjects";
@@ -26,6 +26,7 @@ import { BASE_SORT_OPTIONS } from "@/common/constants/sort.constants";
 import Toolbar from "@/common/components/toolbar/ToolBar";
 import { PROJECT_STATUS_FILTER } from "../constants/projectFilter.constants";
 import { Button } from "@/components/ui/button";
+import type { WorkspaceOutletContext } from "@/layout/workspace/WorkspaceLayout";
 
 export default function ProjectsPage() {
   const { teamId } = useParams<{
@@ -60,11 +61,6 @@ export default function ProjectsPage() {
   const debouncedSearch = useDebounce(search, 400);
   const sort = `${sortField},${sortOrder}`;
 
-  const filterValues = {
-    statusFilter,
-    deletedFilter,
-  };
-
   const sortOptions =
     view === "board" ? BASE_SORT_OPTIONS : PROJECT_LIST_SORT_OPTIONS;
   const hasActiveFilters =
@@ -73,13 +69,23 @@ export default function ProjectsPage() {
     deletedFilter !== "ACTIVE";
 
   // ---------------- DATA ----------------
+  const { team } = useOutletContext<WorkspaceOutletContext>();
+  const isWorkspaceReadOnly = Boolean(team.deletedAt);
+  const effectiveDeletedFilter: DeletedFilter = isWorkspaceReadOnly
+    ? "ALL"
+    : deletedFilter;
+  const filterValues = {
+    statusFilter,
+    deletedFilter: effectiveDeletedFilter,
+  };
+
   const { data, isError, isLoading, refetch } = useProjects(teamId || "", {
     page,
     size,
     search: debouncedSearch,
     status: statusFilter,
     sort,
-    deletedFilter,
+    deletedFilter: effectiveDeletedFilter,
   });
 
   const projects = data?.content ?? [];
@@ -156,6 +162,7 @@ export default function ProjectsPage() {
   const permissions = getProjectPermissions({
     globalRole: user?.role,
     teamRole: teamMe?.role,
+    isReadOnly: isWorkspaceReadOnly,
   });
 
   // ------------------ FILTERS ------------------

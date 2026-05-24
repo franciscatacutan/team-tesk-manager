@@ -24,14 +24,14 @@ public class ProjectSpecification {
       List<ProjectStatus> status,
       UUID createdBy,
       DeletedFilter deletedFilter,
-      boolean isGlobalAdmin) {
+      boolean canViewDeleted) {
 
     return Specification
         .where(belongsToTeam(teamId))
         .and(search(search))
         .and(hasStatuses(status))
         .and(hasCreatedBy(createdBy))
-        .and(deletedFilter(deletedFilter, isGlobalAdmin));
+        .and(deletedFilter(deletedFilter, canViewDeleted));
   }
 
   private static Specification<ProjectEntity> belongsToTeam(UUID teamId) {
@@ -79,11 +79,11 @@ public class ProjectSpecification {
 
   private static Specification<ProjectEntity> deletedFilter(
       DeletedFilter filter,
-      boolean isGlobalAdmin) {
+      boolean canViewDeleted) {
 
     return (root, query, cb) -> {
 
-      if (!isGlobalAdmin) {
+      if (!canViewDeleted) {
         return cb.isNull(root.get("deletedAt"));
       }
 

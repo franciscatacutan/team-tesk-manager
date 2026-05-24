@@ -1,14 +1,9 @@
 package com.example.task_manager.user;
 
-import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
-
-import org.hibernate.annotations.NotFound;
-import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -23,10 +18,9 @@ import com.example.task_manager.exception.api.ConflictException;
 import com.example.task_manager.exception.api.ForbiddenException;
 import com.example.task_manager.exception.api.ResourceNotFoundException;
 import com.example.task_manager.exception.api.UserNotFoundException;
-import com.example.task_manager.team.TeamMemberSpecification;
-import com.example.task_manager.team.entity.TeamMemberEntity;
 import com.example.task_manager.auth.RefreshTokenService;
 import com.example.task_manager.common.PageResponse;
+import com.example.task_manager.user.dto.AdminUpdateEmailRequest;
 import com.example.task_manager.user.dto.AdminResetPasswordRequest;
 import com.example.task_manager.user.dto.UpdateEmailRequest;
 import com.example.task_manager.user.dto.UpdatePasswordRequest;
@@ -51,8 +45,9 @@ public class UserService {
   private final RefreshTokenService refreshTokenService;
 
   /*
-   * Fetch all User
+   * Fetch all users.
    */
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
   @Transactional(readOnly = true)
   public PageResponse<UserResponse> getAllUsers(
       UserSearchRequest request,
@@ -77,7 +72,7 @@ public class UserService {
   }
 
   /*
-   * Fetch all User
+   * Fetch one user.
    */
   @Transactional(readOnly = true)
   public UserResponse getUser(UUID userId) {
@@ -94,8 +89,8 @@ public class UserService {
   }
 
   /*
-   * Update role for users
-   * Only super user can update roles
+   * Update role for users.
+   * Only SUPER_ADMIN can update roles.
    */
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @Transactional
@@ -107,7 +102,6 @@ public class UserService {
     UserEntity targetUser = userRepository.findById(targetUserId)
         .orElseThrow(UserNotFoundException::new);
 
-    // Prevent self-demotion of the only SUPER_ADMIN (optional advanced safety)
     if (currentUser.getId().equals(targetUserId) && request.role() != UserRole.SUPER_ADMIN) {
       throw new ForbiddenException("SUPER ADMIN cannot demote themselves.");
     }
@@ -116,8 +110,8 @@ public class UserService {
   }
 
   /*
-   * Update profile for users
-   * User, Admin, and Super Admin can update profile
+   * Update profile names for users.
+   * Login email changes use dedicated email endpoints because they affect tokens.
    */
   @PreAuthorize("#userId == authentication.principal.id or hasAnyRole('ADMIN', 'SUPER_ADMIN')")
   @Transactional
@@ -133,20 +127,11 @@ public class UserService {
     assertCanManageTargetUser(requester, user);
 
     if (request.firstName() != null) {
-      user.setFirstName(request.firstName());
+      user.setFirstName(cleanRequiredName(request.firstName(), "First name"));
     }
 
     if (request.lastName() != null) {
-      user.setLastName(request.lastName());
-    }
-
-    if (request.email() != null) {
-      String normalizedEmail = normalizeEmail(request.email());
-      if (!normalizedEmail.equalsIgnoreCase(user.getEmail())
-          && userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
-        throw new ConflictException("Email already exists");
-      }
-      user.setEmail(normalizedEmail);
+      user.setLastName(cleanRequiredName(request.lastName(), "Last name"));
     }
 
     return mapToResponse(user);
@@ -180,10 +165,9 @@ public class UserService {
   }
 
   /*
-   * Update profile for users
-   * User and Super Admin can update their password
+   * Update the current user's password.
    */
-  @PreAuthorize("#userId == authentication.principal.id or hasRole('SUPER_ADMIN')")
+  @PreAuthorize("#userId == authentication.principal.id")
   @Transactional
   public void updatePassword(
       UUID userId,
@@ -195,7 +179,7 @@ public class UserService {
         .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
     if (!requester.getId().equals(target.getId())) {
-      assertCanManageTargetUser(requester, target);
+      throw new ForbiddenException("Use the admin password reset flow for another user.");
     }
 
     if (!passwordEncoder.matches(request.currentPassword(),
@@ -233,6 +217,42 @@ public class UserService {
     refreshTokenService.revokeAllForUser(target.getId());
   }
 
+  /*
+   * Update another user's login email.
+   * Admin email changes revoke sessions because JWT subjects are email-based.
+   */
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+  @Transactional
+  public UserResponse updateEmailByAdmin(
+      UUID targetUserId,
+      AdminUpdateEmailRequest request,
+      String requesterEmail) {
+
+    UserEntity requester = getUserByEmail(requesterEmail);
+    UserEntity target = userRepository.findById(targetUserId)
+        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+    if (requester.getId().equals(target.getId())) {
+      throw new ForbiddenException("Use the regular email change flow for your own account.");
+    }
+
+    assertCanManageTargetUser(requester, target);
+
+    String normalizedEmail = normalizeEmail(request.email());
+    if (normalizedEmail.equalsIgnoreCase(target.getEmail())) {
+      return mapToResponse(target);
+    }
+
+    if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+      throw new ConflictException("Email already exists");
+    }
+
+    target.setEmail(normalizedEmail);
+    refreshTokenService.revokeAllForUser(target.getId());
+
+    return mapToResponse(target);
+  }
+
   public UserResponse getByEmail(String email) {
     UserEntity user = getUserByEmail(email);
 
@@ -263,7 +283,13 @@ public class UserService {
     throw new ForbiddenException("You do not have permission to manage this user.");
   }
 
-  // HELPER
+  private String cleanRequiredName(String value, String fieldName) {
+    if (value.isBlank()) {
+      throw new BadRequestInputException(fieldName + " cannot be blank");
+    }
+    return value.trim();
+  }
+
   private UserResponse mapToResponse(UserEntity user) {
     return new UserResponse(
         user.getId(),

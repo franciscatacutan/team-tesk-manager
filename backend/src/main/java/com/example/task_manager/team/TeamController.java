@@ -166,7 +166,7 @@ public class TeamController {
       @PathVariable UUID teamId,
       Authentication authentication) {
 
-    return ResponseEntity.ok(teamService.getExistingTeamById(teamId, authentication.getName()));
+    return ResponseEntity.ok(teamService.getExistingTeamById(teamId, authentication));
   }
 
   /**
@@ -206,7 +206,8 @@ public class TeamController {
   @GetMapping("/{teamId}/activities")
   public ResponseEntity<PageResponse<TeamActivityResponse>> getProjectActivity(
       @PathVariable UUID teamId,
-      @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-    return ResponseEntity.ok(teamService.getTeamActivities(teamId, pageable));
+      @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+      Authentication authentication) {
+    return ResponseEntity.ok(teamService.getTeamActivities(teamId, pageable, authentication));
   }
 }
