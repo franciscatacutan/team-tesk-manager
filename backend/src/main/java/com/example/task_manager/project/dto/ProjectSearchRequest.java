@@ -3,6 +3,7 @@ package com.example.task_manager.project.dto;
 import java.util.List;
 import java.util.UUID;
 
+import com.example.task_manager.common.DeletedFilter;
 import com.example.task_manager.project.entity.ProjectStatus;
 
 /*
@@ -10,8 +11,16 @@ import com.example.task_manager.project.entity.ProjectStatus;
 */
 public record ProjectSearchRequest(
     String search,
-    List<ProjectStatus> statuses,
+    List<ProjectStatus> status,
     UUID createdBy,
-    Boolean includeDeleted,
-    Boolean onlyDeleted) {
+    DeletedFilter deletedFilter,
+    Boolean all) {
+
+  public Boolean all() {
+    return Boolean.TRUE.equals(all);
+  }
+
+  public DeletedFilter deletedFilter() {
+    return deletedFilter == null ? DeletedFilter.ACTIVE : deletedFilter;
+  }
 }

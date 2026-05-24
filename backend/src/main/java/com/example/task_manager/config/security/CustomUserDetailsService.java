@@ -1,6 +1,9 @@
 package com.example.task_manager.config.security;
 
+import java.util.Locale;
+
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsPasswordService;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -17,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService
-    implements UserDetailsService {
+    implements UserDetailsService, UserDetailsPasswordService {
 
   private final UserRepository userRepository;
 
@@ -28,10 +31,21 @@ public class CustomUserDetailsService
   public UserDetails loadUserByUsername(String email)
       throws UsernameNotFoundException {
 
-    // Load user from the database
-    UserEntity user = userRepository.findByEmail(email)
+    UserEntity user = userRepository.findByEmailIgnoreCase(normalizeEmail(email))
         .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     return new CustomUserPrincipal(user);
+  }
 
+  @Override
+  public UserDetails updatePassword(UserDetails user, String newPassword) {
+    UserEntity persistedUser = userRepository.findByEmailIgnoreCase(normalizeEmail(user.getUsername()))
+        .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+    persistedUser.setPassword(newPassword);
+    return new CustomUserPrincipal(userRepository.save(persistedUser));
+  }
+
+  private String normalizeEmail(String email) {
+    return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
   }
 }

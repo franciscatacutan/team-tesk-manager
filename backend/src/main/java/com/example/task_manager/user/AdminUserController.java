@@ -10,7 +10,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.task_manager.user.dto.AdminResetPasswordRequest;
+import com.example.task_manager.user.dto.AdminUpdateEmailRequest;
 import com.example.task_manager.user.dto.UpdateUserRoleRequest;
+import com.example.task_manager.user.dto.UserResponse;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -39,5 +42,25 @@ public class AdminUserController {
     userService.updateUserRole(id, request, authentication.getName());
 
     return ResponseEntity.noContent().build();
+  }
+
+  @PatchMapping("/{id}/password")
+  public ResponseEntity<Void> resetUserPassword(
+      @PathVariable UUID id,
+      @Valid @RequestBody AdminResetPasswordRequest request,
+      Authentication authentication) {
+
+    userService.resetPasswordByAdmin(id, request, authentication.getName());
+
+    return ResponseEntity.noContent().build();
+  }
+
+  @PatchMapping("/{id}/email")
+  public ResponseEntity<UserResponse> updateUserEmail(
+      @PathVariable UUID id,
+      @Valid @RequestBody AdminUpdateEmailRequest request,
+      Authentication authentication) {
+
+    return ResponseEntity.ok(userService.updateEmailByAdmin(id, request, authentication.getName()));
   }
 }

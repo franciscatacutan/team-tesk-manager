@@ -21,10 +21,11 @@ import lombok.Setter;
 @Setter
 @Entity
 @EntityListeners(AuditingEntityListener.class) // Enable auditing for createdAt and updatedAt fields
-@Table(name = "projects", uniqueConstraints = {
-    @UniqueConstraint(name = "uk_project_team_name", columnNames = { "team_id", "name" })
-}, indexes = {
-    @Index(name = "idx_project_team_deleted", columnList = "team_id, deleted_at")
+@Table(name = "projects", indexes = {
+    @Index(name = "idx_project_team_deleted", columnList = "team_id, deleted_at"),
+    @Index(name = "idx_project_team_name", columnList = "team_id, name"),
+    @Index(name = "idx_project_team_status_due", columnList = "team_id, status, planned_due_date, deleted_at")
+
 })
 public class ProjectEntity {
   @Id
@@ -34,7 +35,7 @@ public class ProjectEntity {
   @Column(nullable = false, length = 100)
   private String name;
 
-  @Column(length = 500)
+  @Column(length = 2000)
   private String description;
 
   @Enumerated(EnumType.STRING)
@@ -47,11 +48,31 @@ public class ProjectEntity {
 
   // Many-to-one relationship with user (owner)
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "created_by", nullable = false)
+  @JoinColumn(name = "owner_id", nullable = false)
+  private UserEntity owner;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "created_by")
   private UserEntity createdBy;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "completed_by")
+  private UserEntity completedBy;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "deleted_by")
+  private UserEntity deletedBy;
 
   @Column(name = "next_task_number", nullable = false)
   private Long nextTaskNumber = 1L;
+
+  private Instant plannedStartDate;
+
+  private Instant plannedDueDate;
+
+  private Instant actualStartDate;
+
+  private Instant actualCompletionDate;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
@@ -60,6 +81,10 @@ public class ProjectEntity {
   @LastModifiedDate
   @Column(nullable = false)
   private Instant updatedAt;
+
+  private Instant lastActivityAt;
+
+  private Instant statusChangedAt;
 
   private Instant deletedAt;
 

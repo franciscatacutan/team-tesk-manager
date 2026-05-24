@@ -2,9 +2,9 @@ package com.example.task_manager.config.security;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.example.task_manager.user.UserRepository;
 import com.example.task_manager.user.entity.UserEntity;
@@ -38,7 +38,6 @@ public class DataInitializer implements CommandLineRunner {
   private String password;
 
   @Override
-  @Transactional
   public void run(String... args) {
 
     if (!isBootstrapConfigured()) {
@@ -58,9 +57,14 @@ public class DataInitializer implements CommandLineRunner {
     admin.setPassword(passwordEncoder.encode(password));
     admin.setRole(UserRole.SUPER_ADMIN);
 
-    userRepository.save(admin);
-
-    log.info("Bootstrap SUPER_ADMIN account created successfully.");
+    try {
+      userRepository.saveAndFlush(admin);
+      log.info("Bootstrap SUPER_ADMIN account created successfully.");
+    } catch (DataAccessException ex) {
+      log.error(
+          "Bootstrap SUPER_ADMIN creation failed. Application startup will continue, but the database schema may not yet support the SUPER_ADMIN role.",
+          ex);
+    }
   }
 
   /**

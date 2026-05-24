@@ -1,6 +1,7 @@
 package com.example.task_manager.project;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,6 +13,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import com.example.task_manager.project.entity.ProjectEntity;
+import com.example.task_manager.project.entity.ProjectStatus;
 
 /**
  * Repository interface for Project entities.
@@ -30,7 +32,7 @@ public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID>, J
 
   boolean existsByIdAndTeamId(UUID projectId, UUID teamId);
 
-  boolean existsByTeamIdAndNameAndDeletedAtIsNull(UUID teamId, String name);
+  boolean existsByTeamIdAndNameIgnoreCaseAndDeletedAtIsNull(UUID teamId, String name);
 
   @Modifying(clearAutomatically = true)
   @Query("""
@@ -41,4 +43,23 @@ public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID>, J
       """)
   int softDeleteByTeamId(UUID teamId, Instant deletedAt);
 
+  List<ProjectEntity> findAllByTeamIdAndDeletedAtIsNull(UUID teamId);
+
+  long countByTeamIdAndDeletedAtIsNull(UUID teamId);
+
+  long countByTeamIdAndStatusAndDeletedAtIsNull(UUID teamId, ProjectStatus status);
+
+  long countByTeamIdAndStatusAndActualCompletionDateAfterAndDeletedAtIsNull(
+      UUID teamId,
+      ProjectStatus status,
+      Instant actualCompletionDate);
+
+  @Modifying
+  @Query("""
+      UPDATE ProjectEntity p
+      SET p.lastActivityAt = :timestamp
+      WHERE p.id = :projectId
+      AND (p.lastActivityAt IS NULL OR p.lastActivityAt < :timestamp)
+      """)
+  void updateLastActivity(UUID projectId, Instant timestamp);
 }

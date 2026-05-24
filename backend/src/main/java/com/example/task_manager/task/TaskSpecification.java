@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.domain.Specification;
 
+import com.example.task_manager.common.DeletedFilter;
 import com.example.task_manager.task.entity.TaskEntity;
 import com.example.task_manager.task.entity.TaskPriority;
 import com.example.task_manager.task.entity.TaskStatus;
@@ -27,9 +28,8 @@ public class TaskSpecification {
       UUID assigneeId,
       UUID supportId,
       Boolean overdue,
-      Boolean includeDeleted,
-      Boolean onlyDeleted,
-      boolean isGlobalAdmin) {
+      DeletedFilter deletedFilter,
+      boolean canViewDeleted) {
 
     return Specification
         .where(belongsToProject(projectId))
@@ -39,7 +39,7 @@ public class TaskSpecification {
         .and(hasAssignee(assigneeId))
         .and(hasSupport(supportId))
         .and(isOverdue(overdue))
-        .and(deletedFilter(includeDeleted, onlyDeleted, isGlobalAdmin));
+        .and(deletedFilter(deletedFilter, canViewDeleted));
   }
 
   private static Specification<TaskEntity> belongsToProject(UUID projectId) {
@@ -60,7 +60,7 @@ public class TaskSpecification {
       Join<TaskEntity, UserEntity> supportJoin = root.join("support", JoinType.LEFT);
 
       return cb.or(
-          cb.like(cb.lower(root.get("title")), pattern),
+          cb.like(cb.lower(root.get("name")), pattern),
           cb.like(cb.lower(root.get("description")), pattern),
           cb.like(cb.lower(assigneeJoin.get("firstName")), pattern),
           cb.like(cb.lower(assigneeJoin.get("lastName")), pattern),
@@ -123,25 +123,20 @@ public class TaskSpecification {
   }
 
   private static Specification<TaskEntity> deletedFilter(
-      Boolean includeDeleted,
-      Boolean onlyDeleted,
-      boolean isGlobalAdmin) {
+      DeletedFilter filter,
+      boolean canViewDeleted) {
 
     return (root, query, cb) -> {
 
-      if (!isGlobalAdmin) {
+      if (!canViewDeleted) {
         return cb.isNull(root.get("deletedAt"));
       }
 
-      if (Boolean.TRUE.equals(onlyDeleted)) {
-        return cb.isNotNull(root.get("deletedAt"));
-      }
-
-      if (Boolean.TRUE.equals(includeDeleted)) {
-        return cb.conjunction();
-      }
-
-      return cb.isNull(root.get("deletedAt"));
+      return switch (filter) {
+        case DELETED -> cb.isNotNull(root.get("deletedAt"));
+        case ALL -> cb.conjunction();
+        case ACTIVE -> cb.isNull(root.get("deletedAt"));
+      };
     };
   }
 }

@@ -20,10 +20,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.task_manager.common.PageResponse;
 import com.example.task_manager.task.dto.ChangeStatusRequest;
 import com.example.task_manager.task.dto.CreateTaskRequest;
-import com.example.task_manager.task.dto.CreateTaskUpdateRequest;
+import com.example.task_manager.task.dto.CreateTaskCommentRequest;
 import com.example.task_manager.task.dto.TaskResponse;
 import com.example.task_manager.task.dto.TaskSearchRequest;
-import com.example.task_manager.task.dto.TaskUpdateResponse;
+import com.example.task_manager.task.dto.TaskActivityResponse;
 import com.example.task_manager.task.dto.UpdateTaskDetailsRequest;
 
 import jakarta.validation.Valid;
@@ -130,15 +130,15 @@ public class TaskController {
   /**
    * Add an update for a Task
    */
-  @PostMapping("/{taskId}/updates")
-  public ResponseEntity<TaskUpdateResponse> addTaskUpdate(
+  @PostMapping("/{taskId}/activities")
+  public ResponseEntity<TaskActivityResponse> addTaskComment(
       @PathVariable UUID teamId,
       @PathVariable UUID projectId,
       @PathVariable UUID taskId,
-      @Valid @RequestBody CreateTaskUpdateRequest request,
+      @Valid @RequestBody CreateTaskCommentRequest request,
       Authentication authentication) {
 
-    return ResponseEntity.ok(taskService.addTaskUpdate(teamId, projectId, taskId, request, authentication.getName()));
+    return ResponseEntity.ok(taskService.addTaskComment(teamId, projectId, taskId, request, authentication.getName()));
   }
 
   /**
@@ -151,7 +151,7 @@ public class TaskController {
       @PathVariable UUID taskId,
       Authentication authentication) {
 
-    return ResponseEntity.ok(taskService.getExistingTaskById(teamId, projectId, taskId, authentication.getName()));
+    return ResponseEntity.ok(taskService.getExistingTaskById(teamId, projectId, taskId, authentication));
   }
 
   /**
@@ -164,7 +164,7 @@ public class TaskController {
       @PathVariable UUID taskId,
       Authentication authentication) {
 
-    return ResponseEntity.ok(taskService.getActiveTaskById(teamId, projectId, taskId, authentication.getName()));
+    return ResponseEntity.ok(taskService.getActiveTaskById(teamId, projectId, taskId, authentication));
   }
 
   /**
@@ -206,28 +206,43 @@ public class TaskController {
   }
 
   /**
+   * Get all authenticated user's assignments per project.
+   */
+  @GetMapping("/project-task")
+  public ResponseEntity<PageResponse<TaskResponse>> getMyTasksByProject(
+      @PathVariable UUID projectId,
+      @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+      Authentication authentication) {
+
+    PageResponse<TaskResponse> response = taskService.getMyTasksByProject(projectId, authentication.getName(),
+        pageable);
+
+    return ResponseEntity.ok(response);
+  }
+
+  /**
    * Get all updates for an Active Task
    */
-  @GetMapping("/{taskId}/updates")
-  public ResponseEntity<PageResponse<TaskUpdateResponse>> getAllActiveTaskUpdates(
+  @GetMapping("/{taskId}/activities")
+  public ResponseEntity<PageResponse<TaskActivityResponse>> getTaskActivities(
       @PathVariable UUID teamId,
       @PathVariable UUID taskId,
       @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
       Authentication authentication) {
 
-    return ResponseEntity.ok(taskService.getAllActiveTaskUpdates(teamId, taskId, pageable, authentication.getName()));
+    return ResponseEntity.ok(taskService.getTaskActivity(teamId, taskId, pageable, authentication));
   }
 
   /**
    * Get all updates for an Existing Task
    */
   @GetMapping("/{taskId}/updates-all")
-  public ResponseEntity<PageResponse<TaskUpdateResponse>> getAllExistingTaskUpdates(
+  public ResponseEntity<PageResponse<TaskActivityResponse>> getAllExistingTaskActivities(
       @PathVariable UUID teamId,
       @PathVariable UUID taskId,
       @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
       Authentication authentication) {
 
-    return ResponseEntity.ok(taskService.getAllExistingTaskUpdates(teamId, taskId, pageable, authentication.getName()));
+    return ResponseEntity.ok(taskService.getAllExistingTaskActivities(teamId, taskId, pageable, authentication));
   }
 }

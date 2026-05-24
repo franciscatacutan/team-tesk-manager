@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import com.example.task_manager.common.PageResponse;
 import com.example.task_manager.project.dto.ChangeProjectStatusRequest;
 import com.example.task_manager.project.dto.CreateProjectRequest;
+import com.example.task_manager.project.dto.ProjectActivityResponse;
 import com.example.task_manager.project.dto.ProjectResponse;
 import com.example.task_manager.project.dto.ProjectSearchRequest;
 import com.example.task_manager.project.dto.UpdateProjectDetailsRequest;
@@ -88,13 +89,13 @@ public class ProjectController {
    * ?includeDeleted=true
    */
   @GetMapping
-  public PageResponse<ProjectResponse> getProjects(
+  public ResponseEntity<PageResponse<ProjectResponse>> getProjects(
       @PathVariable UUID teamId,
       ProjectSearchRequest request,
       @PageableDefault(page = 0, size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
       Authentication authentication) {
 
-    return projectService.getProjects(teamId, request, pageable, authentication);
+    return ResponseEntity.ok(projectService.getProjects(teamId, request, pageable, authentication));
   }
 
   /**
@@ -105,7 +106,7 @@ public class ProjectController {
       @PathVariable UUID teamId,
       @PathVariable UUID projectId,
       Authentication authentication) {
-    return ResponseEntity.ok(projectService.getActiveProjectById(teamId, projectId, authentication.getName()));
+    return ResponseEntity.ok(projectService.getActiveProjectById(teamId, projectId, authentication));
   }
 
   /**
@@ -116,7 +117,19 @@ public class ProjectController {
       @PathVariable UUID teamId,
       @PathVariable UUID projectId,
       Authentication authentication) {
-    return ResponseEntity.ok(projectService.getExistingProjectById(teamId, projectId, authentication.getName()));
+    return ResponseEntity.ok(projectService.getExistingProjectById(teamId, projectId, authentication));
+  }
+
+  /**
+   * Get project's activity.
+   */
+  @GetMapping("/{projectId}/activities")
+  public ResponseEntity<PageResponse<ProjectActivityResponse>> getProjectActivities(
+      @PathVariable UUID teamId,
+      @PathVariable UUID projectId,
+      @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+      Authentication authentication) {
+    return ResponseEntity.ok(projectService.getProjectActivities(teamId, projectId, pageable, authentication));
   }
 
   /**

@@ -1,70 +1,69 @@
 import { useState } from "react";
-import { useLogin, useRegister } from "../auth/useAuth";
 import { useNavigate } from "react-router-dom";
 
-/*
- * Authentication page component
- */
-export default function Auth() {
-  // State to toggle between login and registration forms
-  // Checks if the register form should be displayed
+import { useLogin } from "../features/auth/hooks/useLogin";
+import { useRegister } from "../features/auth/hooks/useRegister";
+
+import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Button } from "../components/ui/button";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "../components/ui/card";
+import { Input } from "../components/ui/input";
+
+export default function AuthPage() {
+  const navigate = useNavigate();
+
+  const login = useLogin();
+  const register = useRegister();
+
   const [isRegister, setIsRegister] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
 
-  // State to hold form validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
-  // State to hold server error messages
   const [serverError, setServerError] = useState("");
 
-  // Highlight input field if there's an error
-  const inputClass = (hasError?: string) =>
-    hasError ? "input border-red-500 focus:ring-red-500" : "input";
-
-  // const isLoading = login.isPending || register.isPending;
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  // Hooks for login and registration mutations
-  const login = useLogin();
-  const register = useRegister();
-  const navigate = useNavigate();
-
-  // Loading state for form submission
   const isLoading = login.isPending || register.isPending;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    // Basic email validation
     if (!form.email.includes("@")) {
       newErrors.email = "Invalid email";
     }
 
-    // Password strength validation
-    const strongPasswordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
-
-    if (!strongPasswordRegex.test(form.password)) {
-      newErrors.password =
-        "Password must be at least 8 characters and include uppercase, number, and special character";
+    if (form.password.length < 6) {
+      newErrors.password = "Minimum 6 characters";
     }
 
-    // Additional validations for registration form
     if (isRegister) {
-      if (!form.firstName) newErrors.firstName = "First name required";
-      if (!form.lastName) newErrors.lastName = "Last name required";
+      if (!form.firstName) newErrors.firstName = "Required";
+      if (!form.lastName) newErrors.lastName = "Required";
+      if (form.password !== form.confirmPassword) {
+        newErrors.confirmPassword = "Passwords do not match";
+      }
     }
 
-    // Update error state
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -75,146 +74,160 @@ export default function Auth() {
 
     if (!validateForm()) return;
 
-    // Handle form submission for registration
     if (isRegister) {
       register.mutate(form, {
-        // On successful registration, switch to login form
-        onSuccess: () => setIsRegister(false),
-
-        // Set server error message on registration failure
-        onError: (error: unknown) => {
-          const axiosError = error as {
-            response?: { data?: { message?: string } };
-          };
-
-          // Set server error message from response or default message
-          setServerError(
-            axiosError?.response?.data?.message || "Registration failed",
-          );
-        },
+        onSuccess: () => navigate("/teams"),
+        onError: () => setServerError("Registration failed"),
       });
-      // Handle form submission for login
     } else {
       login.mutate(
+        { email: form.email, password: form.password },
         {
-          email: form.email,
-          password: form.password,
-        },
-        {
-          // On successful login, store token and navigate to home page
-          onSuccess: (data) => {
-            localStorage.setItem("token", data.token);
-            navigate("/projects");
-          },
-          // Set server error message on login failure
-          onError: (error: unknown) => {
-            const axiosError = error as {
-              response?: { data?: { message?: string } };
-            };
-
-            // Set server error message from response or default message
-            setServerError(
-              axiosError?.response?.data?.message ||
-                "Invalid email or password",
-            );
-          },
+          onSuccess: () => navigate("/teams"),
+          onError: () => setServerError("Invalid credentials"),
         },
       );
     }
   };
 
   return (
-    <div className="page">
-      <form onSubmit={handleSubmit} className="card w-96 space-y-4">
-        <h1 className="text-2xl font-bold text-center">
-          {isRegister ? "Create Account" : "Login"}
-        </h1>
+    // <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/40 to-background px-4">
+    <div className="min-h-screen flex items-center justify-center bg-main-layout bg-cover bg-center px-4">
+      <Card className="w-full max-w-md rounded-2xl border-border/60 shadow-xl">
+        <CardHeader className="space-y-2 text-center">
+          <CardTitle className="text-2xl font-semibold">
+            {isRegister ? "Create your account" : "Welcome back"}
+          </CardTitle>
 
-        {isRegister && (
-          <>
-            <input
-              name="firstName"
-              placeholder="First name"
-              className={inputClass(errors.firstName)}
-              value={form.firstName}
-              onChange={handleChange}
-            />
-            {/*
-             * Display first name error message
-             */}
-            {errors.firstName && (
-              <p className="text-red-500 text-sm">{errors.firstName}</p>
+          <CardDescription>
+            {isRegister
+              ? "Enter your details to get started"
+              : "Sign in to continue"}
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isRegister && (
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  name="firstName"
+                  placeholder="First name"
+                  value={form.firstName}
+                  onChange={handleChange}
+                />
+                <Input
+                  name="lastName"
+                  placeholder="Last name"
+                  value={form.lastName}
+                  onChange={handleChange}
+                />
+              </div>
             )}
 
-            <input
-              name="lastName"
-              placeholder="Last name"
-              className={inputClass(errors.lastName)}
-              value={form.lastName}
+            <Input
+              name="email"
+              type="email"
+              placeholder="Email"
+              value={form.email}
               onChange={handleChange}
             />
-            {errors.lastName && (
-              <p className="text-red-500 text-sm">{errors.lastName}</p>
+
+            <div className="relative">
+              <Input
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={form.password}
+                onChange={handleChange}
+                className="pr-10"
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+
+            {isRegister && (
+              <div className="relative">
+                <Input
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Confirm password"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff size={16} />
+                  ) : (
+                    <Eye size={16} />
+                  )}
+                </button>
+              </div>
             )}
-          </>
-        )}
 
-        <input
-          name="email"
-          placeholder="Email"
-          className={inputClass(errors.email)}
-          value={form.email}
-          onChange={handleChange}
-        />
-        {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+            {Object.values(errors).length > 0 && (
+              <div className="text-xs text-destructive space-y-1">
+                {Object.values(errors).map((err, i) => (
+                  <p key={i}>{err}</p>
+                ))}
+              </div>
+            )}
 
-        <input
-          name="password"
-          type="password"
-          placeholder="Password"
-          className={inputClass(errors.password)}
-          value={form.password}
-          onChange={handleChange}
-        />
-        {errors.password && (
-          <p className="text-red-500 text-sm">{errors.password}</p>
-        )}
+            {serverError && (
+              <div className="text-sm text-destructive text-center">
+                {serverError}
+              </div>
+            )}
 
-        {serverError && (
-          <p className=" text-red-600 text-sm text-center">{serverError}</p>
-        )}
+            <Button type="submit" className="w-full h-11" disabled={isLoading}>
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Please wait
+                </span>
+              ) : isRegister ? (
+                "Create account"
+              ) : (
+                "Sign in"
+              )}
+            </Button>
+          </form>
 
-        <button className="btn w-full" disabled={isLoading}>
-          {isLoading ? "Please wait..." : isRegister ? "Register" : "Login"}
-        </button>
-
-        {/* Toggle between login and registration forms*/}
-        <p className="text-sm text-center">
-          {isRegister ? (
-            <>
-              Already have an account?{" "}
-              <button
-                type="button"
-                className="text-blue-600 underline"
-                onClick={() => setIsRegister(false)}
-              >
-                Login
-              </button>
-            </>
-          ) : (
-            <>
-              Don’t have an account?{" "}
-              <button
-                type="button"
-                className="text-blue-600 underline"
-                onClick={() => setIsRegister(true)}
-              >
-                Create account
-              </button>
-            </>
-          )}
-        </p>
-      </form>
+          <div className="text-center text-sm mt-4">
+            {isRegister ? (
+              <>
+                Already have an account?{" "}
+                <button
+                  onClick={() => setIsRegister(false)}
+                  className="cursor-pointer text-primary hover:underline"
+                >
+                  Sign in
+                </button>
+              </>
+            ) : (
+              <>
+                Don’t have an account?{" "}
+                <button
+                  onClick={() => setIsRegister(true)}
+                  className="text-primary hover:underline"
+                >
+                  Create account
+                </button>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

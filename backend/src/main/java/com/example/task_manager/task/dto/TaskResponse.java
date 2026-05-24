@@ -23,7 +23,8 @@ public record TaskResponse(
     Instant actualStartDate,
     Instant actualCompletionDate,
     Instant createdAt,
-    Instant updatedAt) {
+    Instant updatedAt,
+    Instant lastActivityAt) {
 
   /**
    * DTO for user assigned to task.

@@ -1,5 +1,7 @@
 package com.example.task_manager.project.dto;
 
+import java.time.Instant;
+
 import jakarta.validation.constraints.Size;
 
 /**
@@ -7,6 +9,7 @@ import jakarta.validation.constraints.Size;
  */
 public record UpdateProjectDetailsRequest(
     @Size(max = 100) String name,
-    @Size(max = 500) String description) {
-
+    @Size(max = 2000) String description,
+    Instant plannedStartDate,
+    Instant plannedDueDate) {
 }

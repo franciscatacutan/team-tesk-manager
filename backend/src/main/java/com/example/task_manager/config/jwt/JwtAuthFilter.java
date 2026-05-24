@@ -2,11 +2,11 @@ package com.example.task_manager.config.jwt;
 
 import java.io.IOException;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -26,10 +26,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-  @Autowired
-  private JwtService jwtService;
-  @Autowired
-  private CustomUserDetailsService userDetailsService;
+  private final JwtService jwtService;
+  private final CustomUserDetailsService userDetailsService;
+  private final AuthenticationEntryPoint authenticationEntryPoint;
 
   /**
    * Processes incoming requests and validates JWT tokens.
@@ -42,38 +41,47 @@ public class JwtAuthFilter extends OncePerRequestFilter {
       FilterChain filterChain)
       throws ServletException, IOException {
 
-    final String authHeader = request.getHeader("Authorization");
+    String authHeader = request.getHeader("Authorization");
 
     if (authHeader == null || !authHeader.startsWith("Bearer ")) {
       filterChain.doFilter(request, response);
       return;
     }
 
-    final String token = authHeader.substring(7);
-    String email;
-
-    try {
-      email = jwtService.extractEmail(token);
-    } catch (Exception ex) {
+    String token = authHeader.substring(7).trim();
+    if (token.isEmpty()) {
       filterChain.doFilter(request, response);
       return;
     }
 
-    if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-      UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+    try {
+      String email = jwtService.extractEmail(token);
 
-      if (jwtService.isTokenValid(token, userDetails)) {
-        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-            userDetails, null, userDetails.getAuthorities());
+      if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-        authToken.setDetails(
-            new WebAuthenticationDetailsSource().buildDetails(request));
-        SecurityContextHolder.getContext().setAuthentication(authToken);
-      } else {
-        throw new BadCredentialsException("Invalid JWT token");
+        if (jwtService.isTokenValid(token, userDetails)) {
+          UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+              userDetails, null, userDetails.getAuthorities());
+
+          authToken.setDetails(
+              new WebAuthenticationDetailsSource().buildDetails(request));
+          SecurityContextHolder.getContext().setAuthentication(authToken);
+        }
       }
-    }
 
-    filterChain.doFilter(request, response);
+      filterChain.doFilter(request, response);
+    } catch (AuthenticationException ex) {
+      SecurityContextHolder.clearContext();
+      authenticationEntryPoint.commence(request, response, ex);
+    } catch (RuntimeException ex) {
+      SecurityContextHolder.clearContext();
+      authenticationEntryPoint.commence(
+          request,
+          response,
+          new org.springframework.security.authentication.BadCredentialsException(
+              "Invalid or expired bearer token",
+              ex));
+    }
   }
 }
