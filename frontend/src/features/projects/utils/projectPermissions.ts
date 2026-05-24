@@ -3,21 +3,26 @@ import type { NullableTeamRole } from "../../teams/types/team.type";
 import type { UserRole } from "../../users/types/userRole";
 
 export interface ProjectPermissions {
+  canManageProject: boolean;
   canCreateProject: boolean;
   canEditProjectDetails: boolean;
   canDeleteProject: boolean;
   canViewDeleteProject: boolean;
   canCreateTask: boolean;
+  canViewDeleteTask: boolean;
+  canChangeProjectStatus: boolean;
 }
 
 interface Params {
   globalRole?: UserRole;
   teamRole?: NullableTeamRole;
+  isReadOnly?: boolean;
 }
 
 export function getProjectPermissions({
   globalRole,
   teamRole,
+  isReadOnly = false,
 }: Params): ProjectPermissions {
   const { isSuperAdmin, isGlobalAdmin, isOwner, isAdmin } = resolveRoles(
     globalRole,
@@ -26,16 +31,23 @@ export function getProjectPermissions({
 
   const isSystemAdmin = isSuperAdmin || isGlobalAdmin;
   const canManage = isOwner || isAdmin;
+  const canWrite = !isReadOnly;
 
   return {
-    canCreateProject: canManage,
+    canManageProject: isSystemAdmin || canManage,
 
-    canEditProjectDetails: canManage,
+    canCreateProject: canWrite && canManage,
 
-    canDeleteProject: canManage,
+    canEditProjectDetails: canWrite && canManage,
+
+    canDeleteProject: canWrite && canManage,
 
     canViewDeleteProject: isSystemAdmin || canManage,
 
-    canCreateTask: canManage,
+    canCreateTask: canWrite && canManage,
+
+    canChangeProjectStatus: canWrite && (isSystemAdmin || canManage),
+
+    canViewDeleteTask: isSystemAdmin || canManage,
   };
 }

@@ -33,10 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../components/ui/select";
-import {
-  TEAM_ROLE_LABEL,
-  TEAM_ROLE_STYLES,
-} from "../../../common/constants/team.constants";
+import { TEAM_ROLE_STYLES, TEAM_ROLE_LABEL } from "../constants/team.constants";
 import { cn } from "../../../lib/utils";
 import TransferOwnershipModal from "./TransferOwnershipModal";
 import type { TeamPermissions } from "../../teams/utils/teamPermissions";

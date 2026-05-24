@@ -7,5 +7,7 @@ export function getBasePermissions(globalRole?: UserRole) {
   return {
     canManageSystem: isSuperAdmin,
     canManageTeams: isSuperAdmin || isGlobalAdmin,
+    canManageUsers: isSuperAdmin || isGlobalAdmin,
+    canManageAdmins: isSuperAdmin,
   };
 }

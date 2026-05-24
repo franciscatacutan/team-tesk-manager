@@ -94,6 +94,9 @@ public class TeamService {
     team.setName(request.name().trim());
     team.setDescription(request.description());
     team.setOwner(owner);
+    team.setCreatedBy(owner);
+    team.setOwnerChangedAt(Instant.now());
+    team.setMembershipChangedAt(Instant.now());
 
     // Flush immediately so unique-constraint violations are caught here
     // and mapped to a domain conflict.
@@ -151,13 +154,15 @@ public class TeamService {
 
     if (request.name() != null) {
 
-      if (request.name().isEmpty()) {
+      if (request.name().isBlank()) {
         throw new BadRequestInputException("Team name cannot be blank");
       }
 
       String trimmedName = request.name().trim().toLowerCase(Locale.ROOT);
 
-      validateExistByOwnerAndName(requester.getId(), trimmedName);
+      if (!team.getName().equalsIgnoreCase(request.name().trim())) {
+        validateExistByOwnerAndName(requester.getId(), trimmedName);
+      }
 
       team.setName(request.name().trim());
     }
@@ -213,6 +218,7 @@ public class TeamService {
         .findAllByTeamIdAndDeletedAtIsNull(teamId);
 
     team.setDeletedAt(now);
+    team.setDeletedBy(requester);
 
     for (com.example.task_manager.task.entity.TaskEntity task : activeTasks) {
       task.setDeletedAt(now);
@@ -255,7 +261,7 @@ public class TeamService {
     UserEntity requester = getUserByEmail(requesterEmail);
     TeamEntity team = getActiveTeam(teamId);
 
-    validateCanManageTeam(teamId, requester.getId());
+    canManageTeam(teamId, requester.getId());
 
     List<TeamMemberResponse> success = new ArrayList<>();
     List<FailedMember> failed = new ArrayList<>();
@@ -284,6 +290,7 @@ public class TeamService {
                     activityEventService.change("role", "role", null, member.getRole())),
                 member.getUser()),
             null);
+        team.setMembershipChangedAt(Instant.now());
       } catch (Exception ex) {
         failed.add(new FailedMember(user.userId(), ex.getMessage()));
       }
@@ -306,7 +313,7 @@ public class TeamService {
     UserEntity requester = getUserByEmail(requesterEmail);
     TeamMemberEntity requesterMembership = getMembership(teamId, requester.getId());
 
-    validateCanManageTeam(teamId, requester.getId());
+    canManageTeam(teamId, requester.getId());
 
     List<UUID> success = new ArrayList<>();
     List<FailedMember> failed = new ArrayList<>();
@@ -332,6 +339,7 @@ public class TeamService {
         teamMemberRepository.delete(memberToRemove);
 
         teamMemberRepository.flush();
+        team.setMembershipChangedAt(Instant.now());
 
         activityEventService.recordTeamEvent(
             team,
@@ -379,7 +387,7 @@ public class TeamService {
       throw new ForbiddenException("Insufficient permissions");
     }
 
-    if (owner.getId().equals(newOwnerUserId)) {
+    if (requester.getId().equals(newOwnerUserId)) {
       throw new ConflictException("You are already the OWNER");
     }
 
@@ -389,6 +397,9 @@ public class TeamService {
 
     owner.setRole(TeamRole.ADMIN);
     newOwner.setRole(TeamRole.OWNER);
+    newOwner.getTeam().setOwner(newOwner.getUser());
+    newOwner.getTeam().setOwnerChangedAt(Instant.now());
+    newOwner.getTeam().setMembershipChangedAt(Instant.now());
 
     activityEventService.recordTeamEvent(
         newOwner.getTeam(),
@@ -444,6 +455,7 @@ public class TeamService {
     }
 
     targetMember.setRole(newRole);
+    targetMember.getTeam().setMembershipChangedAt(Instant.now());
 
     activityEventService.recordTeamEvent(
         targetMember.getTeam(),
@@ -472,10 +484,7 @@ public class TeamService {
     UserEntity requester = getUserByEmail(authentication.getName());
 
     TeamEntity team = getActiveTeam(teamId);
-
-    boolean isGlobalAdmin = authentication.getAuthorities()
-        .stream()
-        .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
+    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
 
     if (!isGlobalAdmin) {
       validateMembership(teamId, requester.getId());
@@ -486,13 +495,16 @@ public class TeamService {
   /**
    * Returns an existing team by id.
    */
-  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
   @Transactional(readOnly = true)
   public TeamResponse getExistingTeamById(
       UUID teamId,
-      String requesterEmail) {
+      Authentication authentication) {
 
+    UserEntity requester = getUserByEmail(authentication.getName());
+    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
     TeamEntity team = getExistingTeam(teamId);
+
+    validateCanReadTeam(team, requester.getId(), isGlobalAdmin);
 
     return mapToResponse(team);
   }
@@ -517,24 +529,13 @@ public class TeamService {
         .stream()
         .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
 
-    UUID ownerId = null, memberId = null;
-
-    if (isGlobalAdmin) {
-      ownerId = request.ownerId();
-      memberId = request.memberId();
-    }
-
     DeletedFilter filter = request.deletedFilter();
-
-    if (!isGlobalAdmin && filter != DeletedFilter.ACTIVE) {
-      throw new ForbiddenException("Not allowed to view deleted tasks");
-    }
 
     Specification<TeamEntity> spec = TeamSpecification.build(
         requester.getId(),
         request.search(),
-        ownerId,
-        memberId,
+        request.ownerId(),
+        request.memberId(),
         request.deletedFilter(),
         isGlobalAdmin);
 
@@ -602,6 +603,13 @@ public class TeamService {
       Pageable pageable,
       Authentication authentication) {
 
+    UserEntity requester = getUserByEmail(authentication.getName());
+    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
+    getActiveTeam(teamId);
+    if (!isGlobalAdmin) {
+      canManageTeam(teamId, requester.getId());
+    }
+
     Specification<UserEntity> spec = UserSpecification.availableUsers(teamId, search);
 
     pageable = validateSorting(pageable);
@@ -650,7 +658,13 @@ public class TeamService {
   @Transactional(readOnly = true)
   public PageResponse<TeamActivityResponse> getTeamActivities(
       UUID teamId,
-      Pageable pageable) {
+      Pageable pageable,
+      Authentication authentication) {
+
+    UserEntity requester = getUserByEmail(authentication.getName());
+    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
+    TeamEntity team = getExistingTeam(teamId);
+    validateCanReadTeam(team, requester.getId(), isGlobalAdmin);
 
     Page<ActivityEventEntity> page = activityEventRepository.findTeamActivity(teamId, pageable);
 
@@ -676,6 +690,22 @@ public class TeamService {
         team.getOwner().getLastName(),
         team.getOwner().getEmail());
 
+    TeamResponse.User createdBy = team.getCreatedBy() == null
+        ? null
+        : new TeamResponse.User(
+            team.getCreatedBy().getId(),
+            team.getCreatedBy().getFirstName(),
+            team.getCreatedBy().getLastName(),
+            team.getCreatedBy().getEmail());
+
+    TeamResponse.User deletedBy = team.getDeletedBy() == null
+        ? null
+        : new TeamResponse.User(
+            team.getDeletedBy().getId(),
+            team.getDeletedBy().getFirstName(),
+            team.getDeletedBy().getLastName(),
+            team.getDeletedBy().getEmail());
+
     Boolean isDeleted = team.getDeletedAt() != null ? true : false;
 
     return new TeamResponse(
@@ -683,9 +713,14 @@ public class TeamService {
         team.getName(),
         team.getDescription(),
         user,
+        createdBy,
+        deletedBy,
         team.getCreatedAt(),
         team.getUpdatedAt(),
         team.getLastActivityAt(),
+        team.getOwnerChangedAt(),
+        team.getMembershipChangedAt(),
+        team.getDeletedAt(),
         isDeleted);
   }
 
@@ -787,7 +822,7 @@ public class TeamService {
    * - User is member
    * - Role is OWNER or ADMIN
    */
-  private TeamMemberEntity validateCanManageTeam(UUID teamId, UUID userId) {
+  private TeamMemberEntity canManageTeam(UUID teamId, UUID userId) {
 
     TeamMemberEntity membership = getMembership(teamId, userId);
 
@@ -799,12 +834,49 @@ public class TeamService {
     return membership;
   }
 
+  // /**
+  // * Ensures:
+  // * - User is member
+  // * - Role is OWNER or ADMIN
+  // */
+  // private Boolean validateCnManageTeam(UUID teamId, UUID userId) {
+
+  // TeamMemberEntity membership = getMembership(teamId, userId);
+
+  // if (membership.getRole() == TeamRole.OWNER ||
+  // membership.getRole() == TeamRole.ADMIN) {
+  // return true;
+  // }
+  // return false;
+  // }
+
   private void validateGlobalAdminOrSuperAdmin(UserRole role) {
     if (role != UserRole.ADMIN
         && role != UserRole.SUPER_ADMIN) {
 
       throw new ForbiddenException(
           "You are not allowed to perform this action");
+    }
+  }
+
+  private boolean hasGlobalAdminAuthority(Authentication authentication) {
+    return authentication.getAuthorities()
+        .stream()
+        .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
+  }
+
+  private void validateCanReadTeam(TeamEntity team, UUID requesterId, boolean isGlobalAdmin) {
+    if (isGlobalAdmin) {
+      return;
+    }
+
+    TeamMemberEntity membership = teamMemberRepository.findByTeamIdAndUserId(team.getId(), requesterId)
+        .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+
+    if (team.getDeletedAt() != null &&
+        membership.getRole() != TeamRole.OWNER &&
+        membership.getRole() != TeamRole.ADMIN) {
+      throw new ResourceNotFoundException("Team not found");
     }
   }
 
@@ -822,7 +894,7 @@ public class TeamService {
   private void validateActiveTeam(UUID teamId) {
     boolean team = teamRepository.existsByIdAndDeletedAtIsNull(teamId);
     if (!team) {
-      new ResourceNotFoundException("Team not found");
+      throw new ResourceNotFoundException("Team not found");
     }
   }
 
@@ -869,7 +941,7 @@ public class TeamService {
   private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
       "name",
       "lastName",
-      "ownerId",
+      "owner",
       "lastActivityAt",
       "joinedAt",
       "createdAt",

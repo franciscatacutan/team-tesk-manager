@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
 import { useState } from "react";
 
 import { useTeamMembers } from "../hooks/useTeamMembers";
@@ -13,6 +13,7 @@ import { getUserFromToken } from "../../users/api/userApi";
 import { useTeamMe } from "../hooks/useTeamMe";
 import RemoveMultiMembersModal from "./RemoveMultiMemberModal";
 import type { TeamRole } from "../types/team.type";
+import type { WorkspaceOutletContext } from "@/layout/workspace/WorkspaceLayout";
 
 export default function MembersPage() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -25,8 +26,8 @@ export default function MembersPage() {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [search, setSearch] = useState("");
-  const [role, setRole] = useState<TeamRole[]>([]);
   const [sort, setSort] = useState("joinedAt,desc");
+  const [roleFilter, setRoleFilter] = useState<TeamRole[]>([]);
 
   const debouncedSearch = useDebounce(search, 400);
 
@@ -37,10 +38,12 @@ export default function MembersPage() {
       size: 10,
       search: debouncedSearch,
       sort,
-      role,
+      roles: roleFilter,
     },
   );
   const { data: teamMe } = useTeamMe(teamId || "");
+  const { team } = useOutletContext<WorkspaceOutletContext>();
+  const isWorkspaceReadOnly = Boolean(team.deletedAt);
   if (!teamMe?.role) return;
 
   const members = membersData?.content ?? [];
@@ -53,13 +56,14 @@ export default function MembersPage() {
   const permissions = getTeamPermissions({
     globalRole: user.role,
     teamRole: teamMe?.role,
+    isReadOnly: isWorkspaceReadOnly,
   });
 
   function handleFilterChange(key: string, value: string | string[]) {
     setPage(0);
 
-    if (key === "rolesFilter") {
-      setRole(Array.isArray(value) ? (value as TeamRole[]) : []);
+    if (key === "roles") {
+      setRoleFilter(Array.isArray(value) ? (value as TeamRole[]) : []);
     }
   }
 
@@ -77,7 +81,7 @@ export default function MembersPage() {
       <MembersToolbar
         search={search}
         onSearchChange={setSearch}
-        role={role}
+        roleFilter={roleFilter}
         handleFilterChange={handleFilterChange}
       />
 

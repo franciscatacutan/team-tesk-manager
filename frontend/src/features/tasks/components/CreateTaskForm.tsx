@@ -41,7 +41,7 @@ export function CreateTaskForm({
     resolver: zodResolver(createTaskSchema),
     mode: "onChange",
     defaultValues: {
-      title: "",
+      name: "",
       description: "",
       assigneeId: "",
       supportId: undefined,
@@ -55,7 +55,7 @@ export function CreateTaskForm({
 
   const title = useWatch({
     control: form.control,
-    name: "title",
+    name: "name",
   });
 
   const priority = useWatch({
@@ -97,12 +97,12 @@ export function CreateTaskForm({
       <div className="space-y-2">
         <FormField
           label="Title"
-          error={form.formState.errors.title?.message}
+          error={form.formState.errors.name?.message}
           length={title.length}
           maxLength={MAX_TITLE}
         >
           <Input
-            {...form.register("title")}
+            {...form.register("name")}
             maxLength={MAX_TITLE}
             placeholder="Enter task title..."
             className="

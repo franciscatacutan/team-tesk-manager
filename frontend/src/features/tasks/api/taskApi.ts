@@ -3,6 +3,7 @@ import type { PageResponse } from "../../../common/types/pageResponse.types";
 import type { CreateTaskInput } from "../types/createTaskSchema";
 import type { Task, TaskActivity, UpdateTaskInput } from "../types/task.types";
 import type { DeletedFilter } from "../../../common/types/deletedFilter.types";
+import type { TaskStatus } from "../utils/task.constants";
 
 export const getTasks = async (
   teamId: string,
@@ -11,14 +12,22 @@ export const getTasks = async (
     page?: number;
     size?: number;
     search?: string;
-    status?: string;
+    status?: TaskStatus[];
     sort?: string;
     deletedFilter: DeletedFilter;
   },
 ) => {
   const response = await apiClient.get(
     `/teams/${teamId}/projects/${projectId}/tasks`,
-    { params },
+    {
+      params: {
+        ...params,
+        status: params.status?.length ? params.status : undefined,
+      },
+      paramsSerializer: {
+        indexes: null,
+      },
+    },
   );
 
   return response.data;

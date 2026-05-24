@@ -13,6 +13,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import com.example.task_manager.task.entity.TaskEntity;
+import com.example.task_manager.task.entity.TaskPriority;
+import com.example.task_manager.task.entity.TaskStatus;
 
 /**
  * Repository interface for Task entities.
@@ -23,6 +25,8 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID>, JpaSpec
   Optional<TaskEntity> findByIdAndProjectIdAndProjectTeamIdAndDeletedAtIsNull(UUID taskId, UUID projectID, UUID teamID);
 
   Optional<TaskEntity> findByIdAndProjectIdAndProjectTeamId(UUID taskId, UUID projectID, UUID teamID);
+
+  Optional<TaskEntity> findByIdAndProjectTeamId(UUID taskId, UUID teamId);
 
   boolean existsByIdAndDeletedAtIsNull(UUID id);
 
@@ -73,6 +77,58 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID>, JpaSpec
   List<TaskEntity> findAllByProjectTeamIdAndDeletedAtIsNull(UUID teamId);
 
   List<TaskEntity> findAllByProjectIdAndDeletedAtIsNull(UUID projectId);
+
+  long countByProjectTeamIdAndDeletedAtIsNull(UUID teamId);
+
+  long countByProjectTeamIdAndStatusAndDeletedAtIsNull(UUID teamId, TaskStatus status);
+
+  long countByProjectTeamIdAndPriorityAndDeletedAtIsNull(UUID teamId, TaskPriority priority);
+
+  long countByProjectIdAndDeletedAtIsNull(UUID projectId);
+
+  long countByProjectIdAndStatusAndDeletedAtIsNull(UUID projectId, TaskStatus status);
+
+  long countByProjectIdAndPriorityAndDeletedAtIsNull(UUID projectId, TaskPriority priority);
+
+  long countByProjectTeamIdAndStatusAndActualCompletionDateAfterAndDeletedAtIsNull(
+      UUID teamId,
+      TaskStatus status,
+      Instant actualCompletionDate);
+
+  long countByProjectIdAndStatusAndActualCompletionDateAfterAndDeletedAtIsNull(
+      UUID projectId,
+      TaskStatus status,
+      Instant actualCompletionDate);
+
+  List<TaskEntity>
+      findTop500ByProjectTeamIdAndStatusAndActualStartDateIsNotNullAndActualCompletionDateIsNotNullAndDeletedAtIsNullOrderByActualCompletionDateDesc(
+          UUID teamId,
+          TaskStatus status);
+
+  List<TaskEntity>
+      findTop500ByProjectIdAndStatusAndActualStartDateIsNotNullAndActualCompletionDateIsNotNullAndDeletedAtIsNullOrderByActualCompletionDateDesc(
+          UUID projectId,
+          TaskStatus status);
+
+  @Query("""
+      SELECT COUNT(t)
+      FROM TaskEntity t
+      WHERE t.project.team.id = :teamId
+        AND t.deletedAt IS NULL
+        AND t.plannedDueDate < :now
+        AND t.status NOT IN :terminalStatuses
+      """)
+  long countOverdueOpenTasks(UUID teamId, Instant now, List<TaskStatus> terminalStatuses);
+
+  @Query("""
+      SELECT COUNT(t)
+      FROM TaskEntity t
+      WHERE t.project.id = :projectId
+        AND t.deletedAt IS NULL
+        AND t.plannedDueDate < :now
+        AND t.status NOT IN :terminalStatuses
+      """)
+  long countOverdueOpenTasksByProject(UUID projectId, Instant now, List<TaskStatus> terminalStatuses);
 
   @Modifying
   @Query("""

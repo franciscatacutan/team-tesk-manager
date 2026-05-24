@@ -3,6 +3,7 @@ import type { UserRole } from "../../users/types/userRole";
 import type { NullableTeamRole } from "../types/team.type";
 
 export interface TeamPermissions {
+  canAccessTeam: boolean;
   canCreateTeam: boolean;
   canEditTeamDetails: boolean;
   canDeleteTeam: boolean;
@@ -18,11 +19,13 @@ export interface TeamPermissions {
 interface Params {
   globalRole?: UserRole;
   teamRole?: NullableTeamRole;
+  isReadOnly?: boolean;
 }
 
 export function getTeamPermissions({
   globalRole,
   teamRole,
+  isReadOnly = false,
 }: Params): TeamPermissions {
   const { isSuperAdmin, isGlobalAdmin, isOwner, isAdmin } = resolveRoles(
     globalRole,
@@ -31,26 +34,29 @@ export function getTeamPermissions({
 
   const isSystemAdmin = isSuperAdmin || isGlobalAdmin;
   const canManage = isOwner || isAdmin;
+  const canWrite = !isReadOnly;
 
   return {
+    canAccessTeam: isSystemAdmin || canManage,
+
     canCreateTeam: isSuperAdmin,
 
-    canEditTeamDetails: isSystemAdmin,
+    canEditTeamDetails: canWrite && isSystemAdmin,
 
-    canDeleteTeam: isSuperAdmin,
+    canDeleteTeam: canWrite && isSuperAdmin,
 
     canViewDeleteTeam: isSystemAdmin || canManage,
 
-    canTransferOwnership: isOwner && isSystemAdmin,
+    canTransferOwnership: canWrite && isOwner && isSystemAdmin,
 
-    canChangeRole: isOwner,
+    canChangeRole: canWrite && isOwner,
 
-    canAddMember: canManage,
+    canAddMember: canWrite && canManage,
 
-    canRemoveMember: canManage,
+    canRemoveMember: canWrite && canManage,
 
-    canCreateProject: canManage,
+    canCreateProject: canWrite && canManage,
 
-    canCreateTask: canManage,
+    canCreateTask: canWrite && canManage,
   };
 }

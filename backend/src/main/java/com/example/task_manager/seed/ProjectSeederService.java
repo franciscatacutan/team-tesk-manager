@@ -3,6 +3,8 @@ package com.example.task_manager.seed;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import org.springframework.stereotype.Service;
 
@@ -37,7 +39,9 @@ public class ProjectSeederService {
           teamId,
           new CreateProjectRequest(
               "Demo Project " + number + " [" + batchId + "]",
-              "Seeded project " + number + " used to populate project lists and history."),
+              "Seeded project " + number + " used to populate project lists and history.",
+              Instant.now().plus(number, ChronoUnit.DAYS),
+              Instant.now().plus(number + 30, ChronoUnit.DAYS)),
           requesterEmail);
 
       if (number % 5 == 0) {

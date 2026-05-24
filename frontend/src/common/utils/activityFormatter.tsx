@@ -1,5 +1,10 @@
 import type { ActivityDetails, ActivityType } from "../types/activity.types";
-import { TaskStatusStyles } from "../../features/tasks/utils/taskStatus";
+import {
+  isProjectStatus,
+  ProjectStatusLabel,
+  ProjectStatusStyles,
+} from "../../features/projects/utils/project.constants";
+import { TaskStatusStyles } from "../../features/tasks/utils/task.constants";
 
 type ActivityLike = {
   message: string;
@@ -229,6 +234,24 @@ function getStatusColor(status: string): string {
   }
 }
 
+function renderProjectStatus(status: string) {
+  if (!isProjectStatus(status)) {
+    return (
+      <span className="font-medium text-foreground">
+        {formatStatus(status)}
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-semibold ${ProjectStatusStyles[status]}`}
+    >
+      {ProjectStatusLabel[status]}
+    </span>
+  );
+}
+
 export function activityFormatter(
   activity: string | ActivityLike,
 ): React.ReactNode {
@@ -388,16 +411,16 @@ export function activityFormatter(
       );
 
     case "PROJECT_STATUS_CHANGED":
+      if (!details.from || !details.to) {
+        return "Updated the project status.";
+      }
+
       return (
         <>
           Changed the project status from{" "}
-          <span className="font-medium text-foreground">
-            {details.from ?? "unknown"}
-          </span>{" "}
+          {renderProjectStatus(details.from)}{" "}
           to{" "}
-          <span className="font-medium text-foreground">
-            {details.to ?? "unknown"}
-          </span>
+          {renderProjectStatus(details.to)}
           .
         </>
       );

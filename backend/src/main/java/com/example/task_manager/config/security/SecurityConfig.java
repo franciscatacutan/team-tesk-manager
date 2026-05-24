@@ -54,7 +54,7 @@ public class SecurityConfig {
             .requestMatchers("/api/auth/**")
             .permitAll()
             .requestMatchers("/api/dev/**")
-            .permitAll()
+            .hasAnyRole("ADMIN", "SUPER_ADMIN")
             .anyRequest()
             .authenticated())
 

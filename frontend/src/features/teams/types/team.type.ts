@@ -9,9 +9,15 @@ export interface Team {
   name: string;
   description?: string;
   owner?: User;
+  createdBy?: User | null;
+  deletedBy?: User | null;
   createdAt: string;
   updatedAt: string;
   lastActivityAt: string;
+  ownerChangedAt?: string | null;
+  membershipChangedAt?: string | null;
+  deletedAt?: string | null;
+  isDeleted?: boolean;
 }
 
 export interface AddMembersInput {
@@ -38,7 +44,7 @@ export interface TeamMember {
 }
 
 type User = {
-  id: number;
+  id?: string;
   firstName: string;
   lastName: string;
   email: string;

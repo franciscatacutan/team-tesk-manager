@@ -3,7 +3,7 @@ import PriorityBadge from "../../../common/components/PriorityBadge";
 import { useUpdateTask } from "../hooks/useUpdateTask";
 import type { Task } from "../types/task.types";
 import type { TaskPermissions } from "../utils/taskPermissions";
-import { TaskStatusLabel, TaskStatusStyles } from "../utils/taskStatus";
+import { TaskStatusLabel, TaskStatusStyles } from "../utils/task.constants";
 import DeleteTaskButton from "./DeleteTaskButton";
 
 interface Props {

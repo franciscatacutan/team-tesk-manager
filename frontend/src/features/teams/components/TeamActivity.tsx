@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   ActivityFeed,
   type ActivityFeedGroupBy,
-} from "../../../common/components/ActivityFeed";
+} from "../../../common/components/activity/ActivityFeed";
 import { useTeamActivities } from "../hooks/useTeamActivities";
 import { useNavigate, useParams } from "react-router-dom";
 

@@ -12,7 +12,7 @@ import {
   TaskStatusLabel,
   TaskStatusStyles,
   type TaskStatus,
-} from "../utils/taskStatus";
+} from "../utils/task.constants";
 import { useUpdateTaskStatus } from "../hooks/useUpdateTaskStatus";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
@@ -22,7 +22,7 @@ import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
 import {
   TASK_PRIORITY_LABEL,
   TASK_PRIORITY_STYLES,
-} from "../../../common/constants/task.constants";
+} from "../constants/task.constants";
 
 interface Props {
   permissions: TaskPermissions;

@@ -13,7 +13,7 @@ import {
   TASK_PRIORITY_LABEL,
   TASK_PRIORITY_STYLES,
   TASK_PRIORITY_ORDER,
-} from "../constants/task.constants";
+} from "../../features/tasks/constants/task.constants";
 
 interface Props {
   value: TaskPriority;

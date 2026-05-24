@@ -18,7 +18,10 @@ import lombok.Setter;
 @Setter
 @Entity
 @EntityListeners(AuditingEntityListener.class) // Enable auditing for createdAt and updatedAt fields
-@Table(name = "users")
+@Table(name = "users", indexes = {
+    @Index(name = "idx_user_email", columnList = "email"),
+    @Index(name = "idx_user_role", columnList = "role")
+})
 public class UserEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
@@ -52,4 +55,7 @@ public class UserEntity {
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private UserRole role;
+
+  @Version
+  private Long version;
 }

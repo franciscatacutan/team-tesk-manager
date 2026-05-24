@@ -3,7 +3,7 @@ import { useTaskActivities } from "../hooks/useTaskActivities";
 import {
   ActivityFeed,
   type ActivityFeedGroupBy,
-} from "../../../common/components/ActivityFeed";
+} from "../../../common/components/activity/ActivityFeed";
 import { cn } from "../../../lib/utils";
 
 interface Props {

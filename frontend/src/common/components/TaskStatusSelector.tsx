@@ -9,7 +9,7 @@ import {
   type TaskStatus,
   TaskStatusStyles,
   TaskStatusLabel,
-} from "../../features/tasks/utils/taskStatus";
+} from "../../features/tasks/utils/task.constants";
 
 import { cn } from "../../lib/utils";
 

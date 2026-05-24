@@ -151,7 +151,7 @@ public class TaskController {
       @PathVariable UUID taskId,
       Authentication authentication) {
 
-    return ResponseEntity.ok(taskService.getExistingTaskById(teamId, projectId, taskId, authentication.getName()));
+    return ResponseEntity.ok(taskService.getExistingTaskById(teamId, projectId, taskId, authentication));
   }
 
   /**
@@ -164,7 +164,7 @@ public class TaskController {
       @PathVariable UUID taskId,
       Authentication authentication) {
 
-    return ResponseEntity.ok(taskService.getActiveTaskById(teamId, projectId, taskId, authentication.getName()));
+    return ResponseEntity.ok(taskService.getActiveTaskById(teamId, projectId, taskId, authentication));
   }
 
   /**
@@ -230,7 +230,7 @@ public class TaskController {
       @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
       Authentication authentication) {
 
-    return ResponseEntity.ok(taskService.getTaskActivity(teamId, taskId, pageable, authentication.getName()));
+    return ResponseEntity.ok(taskService.getTaskActivity(teamId, taskId, pageable, authentication));
   }
 
   /**
@@ -243,6 +243,6 @@ public class TaskController {
       @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
       Authentication authentication) {
 
-    return ResponseEntity.ok(taskService.getAllExistingTaskActivities(teamId, taskId, pageable, authentication.getName()));
+    return ResponseEntity.ok(taskService.getAllExistingTaskActivities(teamId, taskId, pageable, authentication));
   }
 }

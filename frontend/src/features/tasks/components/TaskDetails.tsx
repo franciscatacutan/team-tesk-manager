@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
 import TaskDescription from "./TaskDescription";
 import TaskHeader from "./TaskHeader";
 import TaskMetadata from "./TaskMetadata";
@@ -8,6 +8,7 @@ import { useTask } from "../hooks/useTask";
 import { useTeamMe } from "../../teams/hooks/useTeamMe";
 import { getTaskPermissions } from "../utils/taskPermissions";
 import { getUserFromToken } from "../../users/api/userApi";
+import type { WorkspaceOutletContext } from "@/layout/workspace/WorkspaceLayout";
 
 export default function TaskDetailsPage() {
   const { teamId, projectId, taskId } = useParams<{
@@ -24,6 +25,8 @@ export default function TaskDetailsPage() {
 
   const user = getUserFromToken();
   const { data: teamMe } = useTeamMe(teamId || "");
+  const { team } = useOutletContext<WorkspaceOutletContext>();
+  const isWorkspaceReadOnly = Boolean(team.deletedAt);
 
   if (!teamId || !projectId || !taskId) {
     return <div className="p-6">Invalid task</div>;
@@ -39,6 +42,7 @@ export default function TaskDetailsPage() {
     userId: teamMe?.userId,
     assigneeId: task?.assignedUser?.id,
     supportId: task?.supportUser?.id,
+    isReadOnly: isWorkspaceReadOnly,
   });
 
   return (

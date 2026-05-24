@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Activity, FolderKanban, Plus, Sparkles, Users } from "lucide-react";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { Activity, FolderKanban, Sparkles, Users } from "lucide-react";
 
 import { Button } from "../../../components/ui/button";
 import {
@@ -11,15 +11,14 @@ import {
 } from "../../../components/ui/card";
 import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
 import { formatDate } from "../../../common/utils/dateFormatter";
-import { ActivityItem } from "../../../common/components/ActivityItem";
+import { ActivityItem } from "../../../common/components/activity/ActivityItem";
 import {
   ProjectStatusLabel,
   ProjectStatusStyles,
-} from "../../projects/utils/projectStatus";
+} from "../../projects/utils/project.constants";
 import { CreateProjectModal } from "../../projects/components/CreateProjectModal";
 import { getUserFromToken } from "../../users/api/userApi";
 import { useProjects } from "../../projects/hooks/useProjects";
-import { useTeam } from "../hooks/useTeam";
 import { useTeamActivities } from "../hooks/useTeamActivities";
 import { useTeamMe } from "../hooks/useTeamMe";
 import { useTeamMembers } from "../hooks/useTeamMembers";
@@ -27,53 +26,69 @@ import AddMembersModal from "./AddMembersModal";
 import TeamHeader from "./TeamHeader";
 import TeamOverviewCard from "./TeamOverviewCard";
 import { getTeamPermissions } from "../utils/teamPermissions";
+import type { WorkspaceOutletContext } from "@/layout/workspace/WorkspaceLayout";
 
 export default function TeamOverview() {
   const navigate = useNavigate();
   const { teamId } = useParams<{ teamId: string }>();
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  // ---------------- STATE ----------------
 
-  const { data: team, isLoading } = useTeam(teamId || "");
+  const [openCreateTeam, setOpenCreateTeam] = useState(false);
+  const [openAddMember, setOpenAddMember] = useState(false);
+
+  // ---------------- DATA ----------------
+
+  const { team } = useOutletContext<WorkspaceOutletContext>();
+  const isLoading = false;
+
   const { data: teamMe } = useTeamMe(teamId || "");
+
   const { data: projectsData } = useProjects(teamId || "", {
-    page: 0,
-    size: 10,
     sort: "updatedAt,desc",
     deletedFilter: "ACTIVE",
   });
+
+  const projects = projectsData?.content ?? [];
+  const projectCount = projectsData?.totalElements ?? 0;
+
+  // IMPLEMENT STATISTICS
   const { data: activeProjectsData } = useProjects(teamId || "", {
-    page: 0,
-    size: 10,
-    status: "ACTIVE",
+    status: ["ACTIVE"],
+    all: true,
     sort: "updatedAt,desc",
     deletedFilter: "ACTIVE",
   });
+
+  const activeProjectCount = activeProjectsData?.totalElements ?? 0;
+
   const { data: membersData } = useTeamMembers(teamId || "", {
     page: 0,
     size: 10,
     sort: "joinedAt,desc",
   });
+
+  const members = membersData?.content ?? [];
+  const memberCount = membersData?.totalElements ?? 0;
+
   const { data: activitiesData } = useTeamActivities(teamId || "", {
     page: 0,
     size: 5,
     sort: "createdAt,desc",
   });
+
+  const activities = activitiesData?.content ?? [];
+  const activityCount = activitiesData?.totalElements ?? 0;
+
+  // ---------------- PERMISSIONS ----------------
+
   const user = getUserFromToken();
 
   const permissions = getTeamPermissions({
     globalRole: user?.role,
     teamRole: teamMe?.role,
+    isReadOnly: Boolean(team.deletedAt),
   });
-
-  const projects = projectsData?.content ?? [];
-  const members = membersData?.content ?? [];
-  const activities = activitiesData?.content ?? [];
-  const projectCount = projectsData?.totalElements ?? 0;
-  const memberCount = membersData?.totalElements ?? 0;
-  const activityCount = activitiesData?.totalElements ?? 0;
-  const activeProjectCount = activeProjectsData?.totalElements ?? 0;
 
   if (isLoading || !team) {
     return (
@@ -86,35 +101,12 @@ export default function TeamOverview() {
   }
 
   return (
-    <section className="space-y-4">
+    <section className="flex flex-1 flex-col gap-4 min-h-0 h-fit">
       <TeamHeader
+        isLoading={isLoading}
         teamId={team.id}
-        name={team.name}
-        description={team.description}
+        team={team}
         permissions={permissions}
-        actions={
-          <>
-            {permissions.canAddMember && (
-              <Button
-                variant="outline"
-                className="rounded-xl"
-                onClick={() => setAddMemberOpen(true)}
-              >
-                <Users className="h-4 w-4" />
-                Add member
-              </Button>
-            )}
-            {permissions.canCreateProject && (
-              <Button
-                className="rounded-xl"
-                onClick={() => setCreateOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Create project
-              </Button>
-            )}
-          </>
-        }
       />
 
       <section className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
@@ -267,7 +259,7 @@ export default function TeamOverview() {
         </div>
       </section>
 
-      <Card className="border-border/60 bg-background/92">
+      <Card className="border-border/60 bg-background/92 mb-4">
         <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
           <div>
             <CardTitle className="text-base">Recent Activity</CardTitle>
@@ -313,16 +305,16 @@ export default function TeamOverview() {
 
       <CreateProjectModal
         teamId={team.id}
-        open={createOpen}
-        onOpenChange={setCreateOpen}
+        open={openCreateTeam}
+        onOpenChange={setOpenCreateTeam}
       />
 
       <AddMembersModal
         userTeamRole={teamMe?.role ?? "MEMBER"}
         teamId={team.id}
-        open={addMemberOpen}
+        open={openAddMember}
         isLoading={false}
-        onOpenChange={setAddMemberOpen}
+        onOpenChange={setOpenAddMember}
       />
     </section>
   );

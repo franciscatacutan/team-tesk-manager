@@ -3,15 +3,16 @@ import type { PageResponse } from "../../../common/types/pageResponse.types";
 import { getTasks } from "../api/taskApi";
 import type { DeletedFilter } from "../../../common/types/deletedFilter.types";
 import type { Task } from "../types/task.types";
+import type { TaskStatus } from "../utils/task.constants";
 
 export const useTasks = (
   teamId: string,
   projectId: string,
   params: {
-    page?: number;
-    size?: number;
+    page: number;
+    size: number;
     search?: string;
-    status?: string;
+    status?: TaskStatus[];
     sort?: string;
     deletedFilter: DeletedFilter;
   },

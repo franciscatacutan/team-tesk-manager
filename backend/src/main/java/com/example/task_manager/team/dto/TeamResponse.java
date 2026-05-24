@@ -11,9 +11,14 @@ public record TeamResponse(
     String name,
     String description,
     User owner,
+    User createdBy,
+    User deletedBy,
     Instant createdAt,
     Instant updatedAt,
     Instant lastActivityAt,
+    Instant ownerChangedAt,
+    Instant membershipChangedAt,
+    Instant deletedAt,
     Boolean isDeleted) {
 
   // Owner Info

@@ -10,6 +10,8 @@ import com.example.task_manager.activity.dto.ActivityEventDetails.ActivityRefere
 import com.example.task_manager.activity.dto.ActivityEventDetails;
 import com.example.task_manager.activity.dto.ActivityEventType;
 import com.example.task_manager.activity.entity.ActivityEventEntity;
+import com.example.task_manager.observability.ObservabilityService;
+import com.example.task_manager.notification.NotificationService;
 import com.example.task_manager.project.entity.ProjectEntity;
 import com.example.task_manager.project.ProjectRepository;
 import com.example.task_manager.project.dto.ProjectActivityResponse;
@@ -35,6 +37,8 @@ public class ActivityEventService {
   private final TeamRepository teamRepository;
   private final ProjectRepository projectRepository;
   private final TaskRepository taskRepository;
+  private final ObservabilityService observabilityService;
+  private final NotificationService notificationService;
 
   public ActivityEventEntity recordTeamEvent(
       TeamEntity team,
@@ -113,7 +117,7 @@ public class ActivityEventService {
         details,
         reference(task.getProject().getTeam().getId(), task.getProject().getTeam().getName()),
         reference(task.getProject().getId(), task.getProject().getName()),
-        reference(task.getId(), task.getTitle()));
+        reference(task.getId(), task.getName()));
 
     ActivityEventEntity event = saveEvent(
         task.getProject().getTeam().getId(),
@@ -161,7 +165,11 @@ public class ActivityEventService {
     event.setMessage(resolveMessage(eventType, details, message));
     event.setUser(actor);
 
-    return activityEventRepository.save(event);
+    ActivityEventEntity savedEvent = activityEventRepository.save(event);
+    observabilityService.recordFromActivity(savedEvent);
+    notificationService.createFromActivity(savedEvent);
+
+    return savedEvent;
   }
 
   public ActivityEventEntity recordTaskComment(
@@ -189,7 +197,7 @@ public class ActivityEventService {
         ? null
         : new TaskActivityResponse.Task(
             entity.getTaskId(),
-            entity.getTask() != null ? entity.getTask().getTitle() : null);
+            entity.getTask() != null ? entity.getTask().getName() : null);
 
     return new TaskActivityResponse(
         entity.getId(),
@@ -356,7 +364,7 @@ public class ActivityEventService {
     }
 
     if (entity.getTask() != null) {
-      return entity.getTask().getTitle();
+      return entity.getTask().getName();
     }
 
     return null;

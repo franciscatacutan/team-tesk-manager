@@ -1,6 +1,7 @@
 package com.example.task_manager.activity;
 
 import java.util.UUID;
+import java.time.Instant;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,4 +35,8 @@ public interface ActivityEventRepository extends JpaRepository<ActivityEventEnti
       WHERE e.teamId = :teamId
       """)
   Page<ActivityEventEntity> findTeamActivity(UUID teamId, Pageable pageable);
+
+  long countByTeamIdAndCreatedAtAfter(UUID teamId, Instant createdAt);
+
+  long countByProjectIdAndCreatedAtAfter(UUID projectId, Instant createdAt);
 }

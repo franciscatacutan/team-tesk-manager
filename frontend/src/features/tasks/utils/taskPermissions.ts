@@ -5,6 +5,7 @@ import type { UserRole } from "../../users/types/userRole";
 export interface TaskPermissions {
   canEditTaskDetails: boolean;
   canDeleteTask: boolean;
+  canViewDeleteTask: boolean;
   canChangeStatus: boolean;
   canChangePriority: boolean;
   canAssign: boolean;
@@ -18,6 +19,7 @@ interface Params {
   userId?: string;
   assigneeId?: string;
   supportId?: string;
+  isReadOnly?: boolean;
 }
 
 export function getTaskPermissions({
@@ -26,33 +28,36 @@ export function getTaskPermissions({
   userId,
   assigneeId,
   supportId,
+  isReadOnly = false,
 }: Params): TaskPermissions {
-  const {
-    // isSuperAdmin, isGlobalAdmin,
-    isOwner,
-    isAdmin,
-  } = resolveRoles(globalRole, teamRole);
+  const { isSuperAdmin, isGlobalAdmin, isOwner, isAdmin } = resolveRoles(
+    globalRole,
+    teamRole,
+  );
 
   const isAssignee = userId === assigneeId;
   const isSupport = userId === supportId;
 
-  // const isSystemAdmin = isSuperAdmin || isGlobalAdmin;
+  const isSystemAdmin = isSuperAdmin || isGlobalAdmin;
 
   const canManage = isOwner || isAdmin;
+  const canWrite = !isReadOnly;
 
   return {
-    canEditTaskDetails: canManage,
+    canEditTaskDetails: canWrite && canManage,
 
-    canDeleteTask: canManage,
+    canDeleteTask: canWrite && canManage,
 
-    canChangeStatus: canManage || isAssignee || isSupport,
+    canViewDeleteTask: isSystemAdmin || canManage,
 
-    canChangePriority: canManage,
+    canChangeStatus: canWrite && (canManage || isAssignee || isSupport),
 
-    canAssign: canManage,
+    canChangePriority: canWrite && canManage,
 
-    canChangeSchedule: canManage,
+    canAssign: canWrite && canManage,
 
-    canComment: canManage || isAssignee || isSupport,
+    canChangeSchedule: canWrite && canManage,
+
+    canComment: canWrite && (canManage || isAssignee || isSupport),
   };
 }
