@@ -531,7 +531,7 @@ public class ProjectService {
    */
   private void validateMembership(UUID teamId, UUID userId) {
     boolean isMember = teamMemberRepository
-        .existsByTeamIdAndUserId(
+        .existsByTeamIdAndUserIdAndTeamDeletedAtIsNull(
             teamId, userId);
 
     if (!isMember) {

@@ -828,7 +828,7 @@ public class TaskService {
   private void validateMembership(UUID teamId, UUID userId) {
     validateUserExist(userId);
 
-    if (!teamMemberRepository.existsByTeamIdAndUserId(teamId, userId)) {
+    if (!teamMemberRepository.existsByTeamIdAndUserIdAndTeamDeletedAtIsNull(teamId, userId)) {
       throw new ConflictException("User must belong to the same team");
     }
   }
