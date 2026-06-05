@@ -1,6 +1,7 @@
 package com.example.task_manager.project;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 import org.springframework.data.jpa.domain.Specification;
@@ -16,7 +17,10 @@ import jakarta.persistence.criteria.JoinType;
 /**
  * Builds dynamic filtering logic for ProjectEntity queries.
  */
-public class ProjectSpecification {
+public final class ProjectSpecification {
+
+  private ProjectSpecification() {
+  }
 
   public static Specification<ProjectEntity> build(
       UUID teamId,
@@ -46,7 +50,7 @@ public class ProjectSpecification {
         return cb.conjunction();
       }
 
-      String pattern = "%" + keyword.toLowerCase() + "%";
+      String pattern = "%" + keyword.toLowerCase(Locale.ROOT) + "%";
 
       Join<ProjectEntity, UserEntity> creatorJoin = root.join("createdBy", JoinType.LEFT);
 
@@ -87,7 +91,7 @@ public class ProjectSpecification {
         return cb.isNull(root.get("deletedAt"));
       }
 
-      return switch (filter) {
+      return switch (filter == null ? DeletedFilter.ACTIVE : filter) {
         case DELETED -> cb.isNotNull(root.get("deletedAt"));
         case ALL -> cb.conjunction();
         case ACTIVE -> cb.isNull(root.get("deletedAt"));
