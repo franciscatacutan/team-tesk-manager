@@ -477,7 +477,6 @@ public class ProjectService {
    * - Membership exists
    *
    * Returns membership entity.
-   * Uses ResourceNotFound to prevent ID probing.
    */
   private TeamMemberEntity requireActiveMembership(UUID teamId, UUID userId) {
     TeamMemberEntity member = teamMemberRepository

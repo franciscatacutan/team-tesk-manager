@@ -17,7 +17,12 @@ public record TaskSearchRequest(
     UUID assigneeId,
     UUID supportId,
     Boolean overdue,
-    DeletedFilter deletedFilter) {
+    DeletedFilter deletedFilter,
+    Boolean all) {
+
+  public Boolean all() {
+    return Boolean.TRUE.equals(all);
+  }
 
   public DeletedFilter deletedFilter() {
     return deletedFilter == null ? DeletedFilter.ACTIVE : deletedFilter;

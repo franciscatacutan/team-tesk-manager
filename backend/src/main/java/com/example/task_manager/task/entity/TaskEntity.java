@@ -78,6 +78,10 @@ public class TaskEntity {
   @JoinColumn(name = "completed_by")
   private UserEntity completedBy;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "deleted_by")
+  private UserEntity deletedBy;
+
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private Instant createdAt;
