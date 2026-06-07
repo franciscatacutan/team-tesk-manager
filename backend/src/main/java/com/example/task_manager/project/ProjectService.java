@@ -284,7 +284,7 @@ public class ProjectService {
     UserEntity requester = getUserByEmail(authentication.getName());
 
     TeamEntity team = requireTeam(teamId);
-    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
+    boolean isGlobalAdmin = isGlobalAdmin(authentication);
     boolean canViewDeleted = canViewDeletedProjects(team, requester.getId(), isGlobalAdmin);
 
     pageable = request.all()
@@ -306,7 +306,7 @@ public class ProjectService {
 
   /**
    * Returns a project by id.
-   * Only Global Admin, Owner and Team Admin can view deleted task
+   * Only Global Admin, Owner and Team Admin can view deleted project
    */
   @Transactional(readOnly = true)
   public ProjectResponse getProjectById(
@@ -315,7 +315,7 @@ public class ProjectService {
       Authentication authentication) {
 
     UserEntity requester = getUserByEmail(authentication.getName());
-    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
+    boolean isGlobalAdmin = isGlobalAdmin(authentication);
 
     ProjectEntity project = requireProject(projectId, teamId);
 
@@ -335,7 +335,7 @@ public class ProjectService {
       Authentication authentication) {
 
     UserEntity requester = getUserByEmail(authentication.getName());
-    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
+    boolean isGlobalAdmin = isGlobalAdmin(authentication);
     ProjectEntity project = requireProject(projectId, teamId);
     validateCanReadProject(project, requester.getId(), isGlobalAdmin);
 
@@ -589,7 +589,7 @@ public class ProjectService {
 
   /**
    * Ensures:
-   * - User is able to read task
+   * - User is able to read project
    * - User is Global admin or team member
    */
   private void validateCanReadProject(ProjectEntity project, UUID requesterId, boolean isGlobalAdmin) {
@@ -624,7 +624,7 @@ public class ProjectService {
   /**
    * Ensures is Global Admin or Super Admin
    */
-  private boolean hasGlobalAdminAuthority(Authentication authentication) {
+  private boolean isGlobalAdmin(Authentication authentication) {
     return authentication.getAuthorities()
         .stream()
         .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));

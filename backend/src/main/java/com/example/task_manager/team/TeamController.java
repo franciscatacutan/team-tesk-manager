@@ -71,40 +71,6 @@ public class TeamController {
     return ResponseEntity.noContent().build();
   }
 
-  @PostMapping("/{teamId}/members")
-  public ResponseEntity<AddTeamMembersResponse> addMembers(
-      @PathVariable UUID teamId,
-      @Valid @RequestBody AddTeamMembersRequest request,
-      Authentication authentication) {
-    return ResponseEntity.status(HttpStatus.CREATED)
-        .body(teamService.addMembers(teamId, request, authentication.getName()));
-  }
-
-  @DeleteMapping("/{teamId}/members")
-  public ResponseEntity<RemoveTeamMembersResponse> removeMembers(
-      @PathVariable UUID teamId,
-      @Valid @RequestBody RemoveTeamMembersRequest request,
-      Authentication authentication) {
-    return ResponseEntity.ok(teamService.removeMembers(teamId, request, authentication.getName()));
-  }
-
-  @PatchMapping("/{teamId}/transfer/{userId}")
-  public ResponseEntity<TeamMemberResponse> transferOwnership(
-      @PathVariable UUID teamId,
-      @PathVariable UUID userId,
-      Authentication authentication) {
-    return ResponseEntity.ok(teamService.transferOwnership(teamId, userId, authentication.getName()));
-  }
-
-  @PatchMapping("/{teamId}/members/{userId}/role")
-  public ResponseEntity<TeamMemberResponse> changeTeamRole(
-      @PathVariable UUID teamId,
-      @PathVariable UUID userId,
-      @Valid @RequestBody ChangeTeamRoleRequest request,
-      Authentication authentication) {
-    return ResponseEntity.ok(teamService.changeTeamRole(teamId, userId, request.role(), authentication.getName()));
-  }
-
   @GetMapping
   public ResponseEntity<PageResponse<TeamResponse>> getTeams(
       @ModelAttribute TeamSearchRequest request,
@@ -154,4 +120,39 @@ public class TeamController {
       Authentication authentication) {
     return ResponseEntity.ok(teamService.getTeamActivities(teamId, pageable, authentication));
   }
+
+  @PostMapping("/{teamId}/members")
+  public ResponseEntity<AddTeamMembersResponse> addMembers(
+      @PathVariable UUID teamId,
+      @Valid @RequestBody AddTeamMembersRequest request,
+      Authentication authentication) {
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(teamService.addMembers(teamId, request, authentication.getName()));
+  }
+
+  @DeleteMapping("/{teamId}/members")
+  public ResponseEntity<RemoveTeamMembersResponse> removeMembers(
+      @PathVariable UUID teamId,
+      @Valid @RequestBody RemoveTeamMembersRequest request,
+      Authentication authentication) {
+    return ResponseEntity.ok(teamService.removeMembers(teamId, request, authentication.getName()));
+  }
+
+  @PatchMapping("/{teamId}/members/{userId}/role")
+  public ResponseEntity<TeamMemberResponse> changeTeamRole(
+      @PathVariable UUID teamId,
+      @PathVariable UUID userId,
+      @Valid @RequestBody ChangeTeamRoleRequest request,
+      Authentication authentication) {
+    return ResponseEntity.ok(teamService.changeTeamRole(teamId, userId, request.role(), authentication.getName()));
+  }
+
+  @PatchMapping("/{teamId}/transfer/{userId}")
+  public ResponseEntity<TeamMemberResponse> transferOwnership(
+      @PathVariable UUID teamId,
+      @PathVariable UUID userId,
+      Authentication authentication) {
+    return ResponseEntity.ok(teamService.transferOwnership(teamId, userId, authentication.getName()));
+  }
+
 }

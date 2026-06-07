@@ -280,7 +280,7 @@ public class TaskService {
     UserEntity requester = getUserByEmail(authentication.getName());
 
     TeamEntity team = requireTeam(teamId);
-    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
+    boolean isGlobalAdmin = isGlobalAdmin(authentication);
     boolean canViewDeleted = canViewDeletedTasks(team, requester.getId(), isGlobalAdmin);
 
     pageable = request.all()
@@ -315,7 +315,7 @@ public class TaskService {
       Authentication authentication) {
 
     UserEntity requester = getUserByEmail(authentication.getName());
-    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
+    boolean isGlobalAdmin = isGlobalAdmin(authentication);
 
     TaskEntity task = requireTask(taskId, projectId, teamId);
 
@@ -370,7 +370,7 @@ public class TaskService {
       Authentication authentication) {
 
     UserEntity currentUser = getUserByEmail(authentication.getName());
-    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
+    boolean isGlobalAdmin = isGlobalAdmin(authentication);
     TaskEntity task = requireTask(taskId, projectId, teamId);
     validateCanReadTask(task, currentUser.getId(), isGlobalAdmin);
 
@@ -851,7 +851,7 @@ public class TaskService {
   /**
    * Ensures is Global Admin or Super Admin
    */
-  private boolean hasGlobalAdminAuthority(Authentication authentication) {
+  private boolean isGlobalAdmin(Authentication authentication) {
     return authentication.getAuthorities()
         .stream()
         .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
