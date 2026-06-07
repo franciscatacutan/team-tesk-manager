@@ -4,8 +4,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -21,11 +19,9 @@ public interface TeamMemberRepository
 
   Optional<TeamMemberEntity> findByTeamIdAndUserIdAndTeamDeletedAtIsNull(UUID teamId, UUID userId);
 
-  boolean existsByTeamIdAndUserId(UUID teamId, UUID userId);
+  boolean existsByTeamIdAndUserIdAndTeamDeletedAtIsNull(UUID teamId, UUID userId);
 
   List<TeamMemberEntity> findMembersByTeamId(UUID teamId);
-
-  Page<TeamMemberEntity> findByUserId(UUID userId, Pageable pageable);
 
   Optional<TeamMemberEntity> findByTeamIdAndUserId(UUID teamId, UUID userId);
 

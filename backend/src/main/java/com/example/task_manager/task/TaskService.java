@@ -3,14 +3,15 @@ package com.example.task_manager.task;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +20,6 @@ import com.example.task_manager.activity.ActivityEventService;
 import com.example.task_manager.activity.dto.ActivityEventDetails;
 import com.example.task_manager.activity.dto.ActivityEventType;
 import com.example.task_manager.activity.entity.ActivityEventEntity;
-import com.example.task_manager.common.DeletedFilter;
 import com.example.task_manager.common.PageResponse;
 import com.example.task_manager.exception.api.BadRequestInputException;
 import com.example.task_manager.exception.api.ConflictException;
@@ -38,6 +38,8 @@ import com.example.task_manager.task.entity.TaskEntity;
 import com.example.task_manager.task.entity.TaskPriority;
 import com.example.task_manager.task.entity.TaskStatus;
 import com.example.task_manager.team.TeamMemberRepository;
+import com.example.task_manager.team.TeamRepository;
+import com.example.task_manager.team.entity.TeamEntity;
 import com.example.task_manager.team.entity.TeamMemberEntity;
 import com.example.task_manager.team.entity.TeamRole;
 import com.example.task_manager.user.UserRepository;
@@ -53,15 +55,33 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TaskService {
 
+  private static final Set<TeamRole> TEAM_MANAGEMENT_ROLES = Set.of(TeamRole.OWNER, TeamRole.ADMIN);
+
+  private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+      "name",
+      "priority",
+      "status",
+      "assignee",
+      "support",
+      "plannedStartDate",
+      "plannedDueDate",
+      "createdAt",
+      "taskNumber",
+      "updatedAt",
+      "lastActivityAt");
+
   private final TaskRepository taskRepository;
   private final ProjectRepository projectRepository;
+  private final TeamRepository teamRepository;
   private final TeamMemberRepository teamMemberRepository;
   private final UserRepository userRepository;
   private final ActivityEventRepository activityEventRepository;
   private final ActivityEventService activityEventService;
 
   /**
-   * Creates task under a project and optionally add a support user.
+   * Creates a new task under a project
+   * User must be Team Owner or Admin
+   * Optionally add a support user.
    */
   @Transactional
   public TaskResponse createTask(
@@ -72,26 +92,28 @@ public class TaskService {
 
     UserEntity requester = getUserByEmail(requesterEmail);
 
-    ProjectEntity project = getActiveProject(projectId, teamId);
+    ProjectEntity project = requireActiveProject(projectId, teamId);
 
-    validateCanManageProjectTask(teamId, requester.getId());
+    validateManagerMembership(teamId, requester.getId());
     validateDates(request.plannedStartDate(), request.plannedDueDate());
 
-    TeamMemberEntity assigneeMember = getMembership(teamId, request.assigneeId());
+    TeamMemberEntity assigneeMember = requireActiveMembership(teamId, request.assigneeId());
 
     TeamMemberEntity supportMember = new TeamMemberEntity();
 
     if (request.supportId() != null) {
-      supportMember = getMembership(teamId, request.supportId());
+      supportMember = requireActiveMembership(teamId, request.supportId());
       validateAssignment(teamId, request.assigneeId(), request.supportId());
     }
+
+    String trimmedName = normalizeTaskName(request.name());
 
     Long taskNumber = project.getNextTaskNumber();
 
     TaskEntity task = new TaskEntity();
     task.setProject(project);
     task.setTaskNumber(taskNumber);
-    task.setName(request.name().trim());
+    task.setName(trimmedName);
     task.setDescription(request.description());
     task.setStatus(TaskStatus.TODO);
     task.setPriority(request.priority());
@@ -124,7 +146,9 @@ public class TaskService {
   }
 
   /**
-   * Updates task.
+   * Updates an existing task.
+   * Only Owner and Admin can update the task
+   * 
    */
   @Transactional
   public TaskResponse updateTask(
@@ -136,9 +160,9 @@ public class TaskService {
 
     UserEntity requester = getUserByEmail(requesterEmail);
 
-    TaskEntity task = getActiveTask(taskId, projectId, teamId);
+    TaskEntity task = requireActiveTask(taskId, projectId, teamId);
 
-    validateCanManageProjectTask(teamId, requester.getId());
+    validateManagerMembership(teamId, requester.getId());
 
     String currentTitle = task.getName();
     String currentDescription = task.getDescription();
@@ -147,6 +171,7 @@ public class TaskService {
     Instant currentPlannedDue = task.getPlannedDueDate();
 
     if (request.name() != null) {
+
       if (request.name().isBlank()) {
         throw new BadRequestInputException("Task name cannot be blank");
       }
@@ -205,7 +230,8 @@ public class TaskService {
   }
 
   /**
-   * Deletes task.
+   * Soft-deletes a task.
+   * Only Owner and Admin can soft-delete task
    */
   @Transactional
   public void deleteTask(
@@ -216,11 +242,17 @@ public class TaskService {
 
     UserEntity requester = getUserByEmail(requesterEmail);
 
-    TaskEntity task = getActiveTask(taskId, projectId, teamId);
+    validateManagerMembership(teamId, requester.getId());
 
-    validateCanManageProjectTask(teamId, requester.getId());
+    TaskEntity task = requireActiveTask(taskId, projectId, teamId);
 
-    task.setDeletedAt(Instant.now());
+    Instant now = Instant.now();
+
+    task.setStatus(TaskStatus.DELETED);
+    task.setStatusChangedAt(now);
+    task.setDeletedAt(now);
+    task.setDeletedBy(requester);
+
     activityEventService.recordTaskEvent(
         task,
         requester,
@@ -230,7 +262,127 @@ public class TaskService {
   }
 
   /**
+   * Retrieves tasks for a projects with support for:
+   * - Search
+   * - Filtering
+   * - Sorting
+   * - Pagination
+   * - Role-based soft-delete visibility
+   */
+  @Transactional(readOnly = true)
+  public PageResponse<TaskResponse> getTasks(
+      UUID teamId,
+      UUID projectId,
+      TaskSearchRequest request,
+      Pageable pageable,
+      Authentication authentication) {
+
+    UserEntity requester = getUserByEmail(authentication.getName());
+
+    TeamEntity team = requireTeam(teamId);
+    boolean isGlobalAdmin = isGlobalAdmin(authentication);
+    boolean canViewDeleted = canViewDeletedTasks(team, requester.getId(), isGlobalAdmin);
+
+    pageable = request.all()
+        ? Pageable.unpaged()
+        : requireSortable(pageable);
+
+    Specification<TaskEntity> spec = TaskSpecification.build(
+        projectId,
+        request.search(),
+        request.status(),
+        request.priority(),
+        request.assigneeId(),
+        request.supportId(),
+        request.overdue(),
+        request.deletedFilter(),
+        canViewDeleted);
+
+    Page<TaskEntity> page = taskRepository.findAll(spec, pageable);
+
+    return toPageResponse(page, this::mapToResponse);
+  }
+
+  /**
+   * Returns a task by id.
+   * Only Global Admin, Owner and Team Admin can view deleted task
+   */
+  @Transactional(readOnly = true)
+  public TaskResponse getTaskById(
+      UUID teamId,
+      UUID projectId,
+      UUID taskId,
+      Authentication authentication) {
+
+    UserEntity requester = getUserByEmail(authentication.getName());
+    boolean isGlobalAdmin = isGlobalAdmin(authentication);
+
+    TaskEntity task = requireTask(taskId, projectId, teamId);
+
+    validateCanReadTask(task, requester.getId(), isGlobalAdmin);
+
+    return mapToResponse(task);
+  }
+
+  /**
+   * Returns all user's task.
+   * Assignee and Support
+   */
+  @Transactional(readOnly = true)
+  public PageResponse<TaskResponse> getMyTasks(
+      String requesterEmail,
+      Pageable pageable) {
+
+    UserEntity requester = getUserByEmail(requesterEmail);
+
+    Page<TaskEntity> page = taskRepository.findMyTasks(requester.getId(),
+        pageable);
+
+    return toPageResponse(page, this::mapToResponse);
+  }
+
+  /**
+   * Returns all user's task by project.
+   * Assignee and Support
+   */
+  @Transactional(readOnly = true)
+  public PageResponse<TaskResponse> getMyTasksByProject(
+      UUID projectId,
+      String requesterEmail,
+      Pageable pageable) {
+
+    UserEntity requester = getUserByEmail(requesterEmail);
+
+    Page<TaskEntity> page = taskRepository.findMyTasksByProject(projectId, requester.getId(), pageable);
+
+    return toPageResponse(page, this::mapToResponse);
+  }
+
+  /**
+   * Returns all activity in a task
+   */
+  @Transactional(readOnly = true)
+  public PageResponse<TaskActivityResponse> getTaskActivities(
+      UUID teamId,
+      UUID projectId,
+      UUID taskId,
+      Pageable pageable,
+      Authentication authentication) {
+
+    UserEntity currentUser = getUserByEmail(authentication.getName());
+    boolean isGlobalAdmin = isGlobalAdmin(authentication);
+    TaskEntity task = requireTask(taskId, projectId, teamId);
+    validateCanReadTask(task, currentUser.getId(), isGlobalAdmin);
+
+    Page<ActivityEventEntity> page = activityEventRepository.findByTaskId(taskId, pageable);
+
+    return toPageResponse(page, activityEventService::toTaskActivitiesResponse);
+  }
+
+  /**
    * Change the status of a task
+   * Only admin, owner, assignee and support can change status
+   * 
    */
   @Transactional
   public TaskResponse changeStatus(
@@ -241,7 +393,7 @@ public class TaskService {
       String requesterEmail) {
 
     UserEntity requester = getUserByEmail(requesterEmail);
-    TaskEntity task = getActiveTask(taskId, projectId, teamId);
+    TaskEntity task = requireActiveTask(taskId, projectId, teamId);
 
     validateCanChangeStatusAndUpdate(teamId, task, requester.getId());
     validateStatusTransition(task.getStatus(), request.status());
@@ -284,7 +436,8 @@ public class TaskService {
   }
 
   /**
-   * Change or Assign a Task's Assignee
+   * Change or Assign a task
+   * Only admin and owner can change assignee
    */
   @Transactional
   public TaskResponse changeAssignee(
@@ -295,9 +448,9 @@ public class TaskService {
       String requesterEmail) {
 
     UserEntity requester = getUserByEmail(requesterEmail);
-    TaskEntity task = getActiveTask(taskId, projectId, teamId);
+    TaskEntity task = requireActiveTask(taskId, projectId, teamId);
 
-    validateCanManageProjectTask(teamId, requester.getId());
+    validateManagerMembership(teamId, requester.getId());
 
     UserEntity currentAssignee = task.getAssignee();
     UserEntity currentSupport = task.getSupport();
@@ -306,7 +459,7 @@ public class TaskService {
       return mapToResponse(task);
     }
 
-    UserEntity newAssignee = getMembership(teamId, newAssigneeId).getUser();
+    UserEntity newAssignee = requireActiveMembership(teamId, newAssigneeId).getUser();
 
     if (currentSupport != null && newAssignee.getId().equals(currentSupport.getId())) {
 
@@ -363,7 +516,8 @@ public class TaskService {
   }
 
   /**
-   * Change or Assign a Task's Support
+   * Change support of a task
+   * Only admin and owner can change support
    */
   @Transactional
   public TaskResponse changeSupport(
@@ -374,9 +528,9 @@ public class TaskService {
       String requesterEmail) {
 
     UserEntity currentUser = getUserByEmail(requesterEmail);
-    TaskEntity task = getActiveTask(taskId, projectId, teamId);
+    TaskEntity task = requireActiveTask(taskId, projectId, teamId);
 
-    validateCanManageProjectTask(teamId, currentUser.getId());
+    validateManagerMembership(teamId, currentUser.getId());
 
     UserEntity currentAssignee = task.getAssignee();
     UserEntity currentSupport = task.getSupport();
@@ -416,7 +570,7 @@ public class TaskService {
       return mapToResponse(task);
     }
 
-    UserEntity newSupport = getMembership(teamId, newSupportId).getUser();
+    UserEntity newSupport = requireActiveMembership(teamId, newSupportId).getUser();
 
     task.setSupport(newSupport);
 
@@ -465,252 +619,42 @@ public class TaskService {
       String requesterEmail) {
 
     UserEntity currentUser = getUserByEmail(requesterEmail);
-    TaskEntity task = getActiveTask(taskId, projectId, teamId);
+    TaskEntity task = requireActiveTask(taskId, projectId, teamId);
 
     validateCanChangeStatusAndUpdate(teamId, task, currentUser.getId());
 
-    ActivityEventEntity update = activityEventService.recordTaskComment(
+    ActivityEventEntity activity = activityEventService.recordTaskComment(
         task,
         currentUser,
         request.message());
 
-    return mapToUpdateResponse(update);
+    return activityEventService.toTaskActivitiesResponse(activity);
   }
 
-  /**
-   * Returns an existing task by id.
-   */
-  @Transactional(readOnly = true)
-  public TaskResponse getExistingTaskById(
-      UUID teamId,
-      UUID projectId,
-      UUID taskId,
-      Authentication authentication) {
-
-    UserEntity requester = getUserByEmail(authentication.getName());
-    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
-
-    TaskEntity task = getExistingTask(taskId, projectId, teamId);
-
-    validateCanReadTask(task, requester.getId(), isGlobalAdmin);
-
-    return mapToResponse(task);
-  }
-
-  /**
-   * Returns an non-archived task by id.
-   */
-  @Transactional(readOnly = true)
-  public TaskResponse getActiveTaskById(
-      UUID teamId,
-      UUID projectId,
-      UUID taskId,
-      Authentication authentication) {
-
-    UserEntity requester = getUserByEmail(authentication.getName());
-    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
-
-    ProjectEntity project = getExistingProject(projectId, teamId);
-    TaskEntity task = project.getTeam().getDeletedAt() != null
-        ? getExistingTask(taskId, projectId, teamId)
-        : getActiveTask(taskId, projectId, teamId);
-
-    validateCanReadTask(task, requester.getId(), isGlobalAdmin);
-
-    return mapToResponse(task);
-  }
-
-  /**
-   * Retrieves tasks for a projects and team with support for:
-   * - Search
-   * - Filtering
-   * - Sorting
-   * - Pagination
-   * - Role-based soft-delete visibility
-   */
-  @Transactional(readOnly = true)
-  public PageResponse<TaskResponse> getTasks(
-      UUID teamId,
-      UUID projectId,
-      TaskSearchRequest request,
-      Pageable pageable,
-      Authentication authentication) {
-
-    UserEntity requester = getUserByEmail(authentication.getName());
-
-    ProjectEntity project = getExistingProject(projectId, teamId);
-    boolean isTeamDeleted = project.getTeam().getDeletedAt() != null;
-
-    boolean isGlobalAdmin = authentication.getAuthorities()
-        .stream()
-        .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
-
-    boolean canViewDeleted = isGlobalAdmin || isTeamManager(teamId, requester.getId());
-
-    if ((isTeamDeleted || project.getDeletedAt() != null) && !canViewDeleted) {
-      throw new ResourceNotFoundException("Project not found");
-    }
-
-    if (!isGlobalAdmin && !canViewDeleted) {
-      validateMembership(teamId, requester.getId());
-    }
-
-    DeletedFilter filter = request.deletedFilter();
-
-    if (!canViewDeleted && filter != DeletedFilter.ACTIVE) {
-      throw new ForbiddenException("Not allowed to view deleted tasks");
-    }
-
-    if (isTeamDeleted && filter == DeletedFilter.ACTIVE) {
-      filter = DeletedFilter.ALL;
-    }
-
-    pageable = validateSorting(pageable);
-
-    Specification<TaskEntity> spec = TaskSpecification.build(
-        projectId,
-        request.search(),
-        request.status(),
-        request.priority(),
-        request.assigneeId(),
-        request.supportId(),
-        request.overdue(),
-        filter,
-        canViewDeleted);
-
-    Page<TaskEntity> page = taskRepository.findAll(spec, pageable);
-
-    return new PageResponse<>(
-        page.map(this::mapToResponse).getContent(),
-        page.getNumber(),
-        page.getSize(),
-        page.getTotalElements(),
-        page.getTotalPages(),
-        page.isFirst(),
-        page.isLast());
-  }
-
-  /**
-   * Returns all user's task.
-   * Assignee and Support
-   */
-  @Transactional(readOnly = true)
-  public PageResponse<TaskResponse> getMyTasks(
-      String requesterEmail,
-      Pageable pageable) {
-
-    UserEntity requester = getUserByEmail(requesterEmail);
-
-    Page<TaskEntity> page = taskRepository.findMyTasks(requester.getId(),
-        pageable);
-
-    return new PageResponse<>(
-        page.map(this::mapToResponse).getContent(),
-        page.getNumber(),
-        page.getSize(),
-        page.getTotalElements(),
-        page.getTotalPages(),
-        page.isFirst(),
-        page.isLast());
-  }
-
-  /**
-   * Returns all user's task by project.
-   * Assignee and Support
-   */
-  @Transactional(readOnly = true)
-  public PageResponse<TaskResponse> getMyTasksByProject(
-      UUID projectId,
-      String requesterEmail,
-      Pageable pageable) {
-
-    UserEntity requester = getUserByEmail(requesterEmail);
-
-    Page<TaskEntity> page = taskRepository.findMyTasksByProject(projectId, requester.getId(), pageable);
-
-    return new PageResponse<>(
-        page.map(this::mapToResponse).getContent(),
-        page.getNumber(),
-        page.getSize(),
-        page.getTotalElements(),
-        page.getTotalPages(),
-        page.isFirst(),
-        page.isLast());
-  }
-
-  /**
-   * Get all task update for an Active Task
-   */
-  @Transactional(readOnly = true)
-  public PageResponse<TaskActivityResponse> getTaskActivity(
-      UUID teamId,
-      UUID taskId,
-      Pageable pageable,
-      Authentication authentication) {
-
-    UserEntity currentUser = getUserByEmail(authentication.getName());
-    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
-    TaskEntity task = getExistingTask(taskId, teamId);
-    validateCanReadTask(task, currentUser.getId(), isGlobalAdmin);
-
-    Page<ActivityEventEntity> page = isDeleted(task)
-        ? activityEventRepository.findByTaskId(taskId, pageable)
-        : activityEventRepository.findActiveTaskActivity(taskId, pageable);
-
-    return new PageResponse<>(
-        page.map(this::mapToUpdateResponse).getContent(),
-        page.getNumber(),
-        page.getSize(),
-        page.getTotalElements(),
-        page.getTotalPages(),
-        page.isFirst(),
-        page.isLast());
-  }
-
-  /**
-   * Get all task update for an Existing Task
-   */
-  @Transactional(readOnly = true)
-  public PageResponse<TaskActivityResponse> getAllExistingTaskActivities(
-      UUID teamId,
-      UUID taskId,
-      Pageable pageable,
-      Authentication authentication) {
-
-    UserEntity currentUser = getUserByEmail(authentication.getName());
-    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
-    TaskEntity task = getExistingTask(taskId, teamId);
-
-    validateCanReadTask(task, currentUser.getId(), isGlobalAdmin);
-
-    Page<ActivityEventEntity> page = activityEventRepository.findByTaskId(
-        taskId,
-        pageable);
-
-    return new PageResponse<>(
-        page.map(this::mapToUpdateResponse).getContent(),
-        page.getNumber(),
-        page.getSize(),
-        page.getTotalElements(),
-        page.getTotalPages(),
-        page.isFirst(),
-        page.isLast());
-  }
-
+  // ********************
   // HELPERS
+  // ********************
 
-  /**
-   * Maps TaskEntity to TaskResponse.
-   */
+  private <T, R> PageResponse<R> toPageResponse(Page<T> page, Function<T, R> mapper) {
+    return new PageResponse<>(
+        page.map(mapper).getContent(),
+        page.getNumber(),
+        page.getSize(),
+        page.getTotalElements(),
+        page.getTotalPages(),
+        page.isFirst(),
+        page.isLast());
+  }
+
   private TaskResponse mapToResponse(TaskEntity task) {
-    TaskResponse.TaskUser assignedUser = new TaskResponse.TaskUser(task.getAssignee().getId(),
+    TaskResponse.TaskUserSummary assignedUser = new TaskResponse.TaskUserSummary(task.getAssignee().getId(),
         task.getAssignee().getFirstName(),
         task.getAssignee().getLastName(),
         task.getAssignee().getEmail());
 
-    TaskResponse.TaskUser supportUser = null;
+    TaskResponse.TaskUserSummary supportUser = null;
     if (task.getSupport() != null) {
-      supportUser = new TaskResponse.TaskUser(task.getSupport().getId(),
+      supportUser = new TaskResponse.TaskUserSummary(task.getSupport().getId(),
           task.getSupport().getFirstName(),
           task.getSupport().getLastName(),
           task.getSupport().getEmail());
@@ -734,11 +678,215 @@ public class TaskService {
         task.getLastActivityAt());
   }
 
+  private UserEntity getUserByEmail(String email) {
+    UserEntity user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    return user;
+  }
+
   /**
-   * Maps ActivityEventEntity to TaskActivityResponse.
+   * Ensure team exists
+   * Returns team
    */
-  public TaskActivityResponse mapToUpdateResponse(ActivityEventEntity entity) {
-    return activityEventService.toTaskActivitiesResponse(entity);
+  private TeamEntity requireTeam(UUID teamId) {
+    return teamRepository.findById(teamId)
+        .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+  }
+
+  /**
+   * Ensures project exists
+   * Returns active project
+   */
+  private ProjectEntity requireActiveProject(UUID projectId, UUID teamId) {
+    return projectRepository
+        .findByIdAndTeamIdAndDeletedAtIsNull(projectId, teamId)
+        .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+  }
+
+  /**
+   * Ensures task exists
+   * Returns active task
+   */
+  private TaskEntity requireActiveTask(UUID taskId, UUID projectId, UUID teamId) {
+    return taskRepository.findByIdAndProjectIdAndProjectTeamIdAndDeletedAtIsNull(taskId, projectId, teamId)
+        .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+  }
+
+  /**
+   * Ensure task exists
+   * Returns task
+   */
+  private TaskEntity requireTask(UUID taskId, UUID projectId, UUID teamId) {
+    return taskRepository.findByIdAndProjectIdAndProjectTeamId(taskId, projectId, teamId)
+        .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+  }
+
+  /**
+   * Ensures:
+   * - Team exists
+   * - Team not deleted
+   * - Membership exists
+   *
+   * Returns membership entity.
+   */
+  private TeamMemberEntity requireActiveMembership(UUID teamId, UUID userId) {
+    TeamMemberEntity member = teamMemberRepository
+        .findByTeamIdAndUserId(teamId, userId)
+        .orElseThrow(() -> new ForbiddenException("User is not a team member"));
+    if (member.getTeam().getDeletedAt() != null) {
+      throw new ConflictException("Team is deleted and cannot be changed");
+    }
+    return member;
+  }
+
+  /*
+   * Ensures sort request is sortable
+   */
+  private Pageable requireSortable(Pageable pageable) {
+
+    for (Sort.Order order : pageable.getSort()) {
+      if (!ALLOWED_SORT_FIELDS.contains(order.getProperty())) {
+        throw new BadRequestInputException(
+            "Invalid sort field: " + order.getProperty());
+      }
+    }
+
+    return pageable;
+  }
+
+  /**
+   * Checks if Start Date < Due Date
+   */
+  private void validateDates(Instant start, Instant due) {
+    if (start == null || due == null) {
+      throw new BadRequestInputException("Start date and due date are required");
+    }
+
+    if (due.isBefore(start)) {
+      throw new ConflictException("Due date must be after start date");
+    }
+  }
+
+  /**
+   * Ensures User is Owner, Admin, Assignee, or Support
+   */
+  private void validateCanChangeStatusAndUpdate(UUID teamId, TaskEntity task, UUID userId) {
+    TeamMemberEntity member = requireActiveMembership(teamId, userId);
+
+    boolean allowed = task.getAssignee().getId().equals(userId) ||
+        (task.getSupport() != null && task.getSupport().getId().equals(userId));
+
+    if (!allowed || !canManageTeam(member)) {
+      throw new ForbiddenException("Cannot change task status");
+    }
+  }
+
+  /**
+   * Ensures:
+   * - Task status cannot be changed to its current value
+   * - Task status cannot be set to todo
+   */
+  private void validateStatusTransition(TaskStatus current, TaskStatus next) {
+    if (next == null) {
+      throw new BadRequestInputException("Task status is required");
+    }
+
+    if (current == next) {
+      throw new ConflictException("Task is already in this status");
+    }
+
+    if (next == TaskStatus.TODO && current != TaskStatus.TODO) {
+      throw new BadRequestInputException("Cannot transition back to TODO");
+    }
+  }
+
+  /**
+   * Ensures:
+   * - Assignee is not Support
+   */
+  private void validateAssignment(
+      UUID teamId,
+      UUID assigneeId,
+      UUID supportId) {
+
+    if (assigneeId.equals(supportId)) {
+      throw new ConflictException("Assignee and support cannot be the same");
+    }
+  }
+
+  /**
+   * Ensures:
+   * - User is able to read task
+   * - User is Global admin or team member
+   */
+  private void validateCanReadTask(TaskEntity task, UUID requesterId, boolean isGlobalAdmin) {
+    if (isGlobalAdmin) {
+      return;
+    }
+
+    UUID teamId = task.getProject().getTeam().getId();
+    TeamMemberEntity membership = teamMemberRepository.findByTeamIdAndUserId(teamId, requesterId)
+        .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+    boolean deleted = task.getDeletedAt() != null || task.getProject().getDeletedAt() != null;
+    if (deleted && !canManageTeam(membership)) {
+      throw new ResourceNotFoundException("Task not found");
+    }
+  }
+
+  /**
+   * Ensures:
+   * - User is Team member
+   * - Role is Team OWNER or ADMIN
+   */
+  private void validateManagerMembership(UUID teamId, UUID userId) {
+    TeamMemberEntity member = requireActiveMembership(teamId, userId);
+
+    if (!canManageTeam(member)) {
+      throw new ForbiddenException("Insufficient permissions");
+    }
+
+  }
+
+  /**
+   * Ensures is Global Admin or Super Admin
+   */
+  private boolean isGlobalAdmin(Authentication authentication) {
+    return authentication.getAuthorities()
+        .stream()
+        .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
+  }
+
+  /**
+   * Ensures is Team Owner or Admin
+   */
+  private boolean canManageTeam(TeamMemberEntity member) {
+    return TEAM_MANAGEMENT_ROLES.contains(member.getRole());
+  }
+
+  /**
+   * Ensures:
+   * - User is able to read deleted task
+   * - User is Global admin or team owner or admin
+   */
+  private boolean canViewDeletedTasks(TeamEntity team, UUID requesterId, boolean isGlobalAdmin) {
+    if (isGlobalAdmin) {
+      return true;
+    }
+
+    TeamMemberEntity membership = teamMemberRepository.findByTeamIdAndUserId(team.getId(), requesterId)
+        .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+
+    boolean canManageTeam = canManageTeam(membership);
+    if (team.getDeletedAt() != null && !canManageTeam) {
+      throw new ResourceNotFoundException("Team not found");
+    }
+
+    return canManageTeam;
+  }
+
+  private String normalizeTaskName(String name) {
+    return name.trim().toLowerCase(Locale.ROOT);
   }
 
   private TaskDetailsUpdateMessage buildTaskDetailsUpdateMessage(
@@ -794,225 +942,10 @@ public class TaskService {
         detailedChanges);
   }
 
-  /**
-   * Returns the user by email
-   */
-  private UserEntity getUserByEmail(String email) {
-    UserEntity user = userRepository.findByEmail(email)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-    return user;
-  }
-
-  /**
-   * Ensures:
-   * - Team exists
-   * - Team not deleted
-   * - Membership exists
-   *
-   * Returns membership entity.
-   * Uses ResourceNotFound to prevent ID probing.
-   */
-  private TeamMemberEntity getMembership(UUID teamId, UUID userId) {
-    TeamMemberEntity member = teamMemberRepository
-        .findByTeamIdAndUserId(teamId, userId)
-        .orElseThrow(() -> new ForbiddenException("User is not a team member"));
-    if (member.getTeam().getDeletedAt() != null) {
-      throw new ConflictException("Team is deleted and cannot be changed");
-    }
-    return member;
-  }
-
-  /**
-   * Checks if a User is member of a team
-   */
-  private void validateMembership(UUID teamId, UUID userId) {
-    validateUserExist(userId);
-
-    if (!teamMemberRepository.existsByTeamIdAndUserId(teamId, userId)) {
-      throw new ConflictException("User must belong to the same team");
-    }
-  }
-
-  /**
-   * Checks if a User exist
-   */
-  private void validateUserExist(UUID id) {
-    boolean user = userRepository.existsById(id);
-    if (!user) {
-      throw new ResourceNotFoundException("Team not found");
-    }
-  }
-
-  /**
-   * Ensures:
-   * - Project exists
-   * - Project not deleted
-   * - Membership exists
-   *
-   * Returns project entity.
-   * Uses ResourceNotFound to prevent ID probing.
-   */
-  private ProjectEntity getActiveProject(UUID projectId, UUID teamId) {
-    return projectRepository.findByIdAndTeamIdAndDeletedAtIsNull(projectId, teamId)
-        .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
-  }
-
-  private ProjectEntity getExistingProject(UUID projectId, UUID teamId) {
-    return projectRepository.findByIdAndTeamId(projectId, teamId)
-        .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
-  }
-
-  /**
-   * Ensures:
-   * - Task exists
-   * - Task not deleted *
-   * Returns task entity.
-   * Uses ResourceNotFound to prevent ID probing.
-   */
-  private TaskEntity getActiveTask(UUID taskId, UUID projectId, UUID teamId) {
-    return taskRepository.findByIdAndProjectIdAndProjectTeamIdAndDeletedAtIsNull(taskId, projectId, teamId)
-        .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
-  }
-
-  /**
-   * Ensures:
-   * - Task exists
-   * - Task not deleted
-   */
-  private void validateActiveTask(UUID taskId) {
-    boolean task = taskRepository.existsByIdAndDeletedAtIsNull(taskId);
-    if (!task) {
-      throw new ResourceNotFoundException("Task not found");
-    }
-  }
-
-  /**
-   * Ensures:
-   * - Task exists
-   * Returns task entity.
-   * Uses ResourceNotFound to prevent ID probing.
-   */
-  private TaskEntity getExistingTask(UUID taskId, UUID projectId, UUID teamId) {
-    return taskRepository.findByIdAndProjectIdAndProjectTeamId(taskId, projectId, teamId)
-        .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
-  }
-
-  private TaskEntity getExistingTask(UUID taskId, UUID teamId) {
-    return taskRepository.findByIdAndProjectTeamId(taskId, teamId)
-        .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
-  }
-
-  /**
-   * Ensures:
-   * - User is Team member
-   * - Role is Team OWNER or ADMIN
-   */
-  private void validateCanManageProjectTask(UUID teamId, UUID userId) {
-    TeamMemberEntity member = getMembership(teamId, userId);
-
-    if (member.getRole() != TeamRole.OWNER &&
-        member.getRole() != TeamRole.ADMIN) {
-      throw new ForbiddenException("Insufficient permissions");
-    }
-  }
-
-  /**
-   * Checks if Start Date < Due Date
-   */
-  private void validateDates(Instant start, Instant due) {
-    if (start == null || due == null) {
-      throw new BadRequestInputException("Start date and due date are required");
-    }
-
-    if (due.isBefore(start)) {
-      throw new ConflictException("Due date must be after start date");
-    }
-  }
-
-  /**
-   * Ensures:
-   * - User is Owner, Admin, Assignee, or Support
-   */
-  private void validateCanChangeStatusAndUpdate(UUID teamId, TaskEntity task, UUID userId) {
-    TeamMemberEntity member = getMembership(teamId, userId);
-
-    boolean allowed = member.getRole() == TeamRole.OWNER ||
-        member.getRole() == TeamRole.ADMIN ||
-        task.getAssignee().getId().equals(userId) ||
-        (task.getSupport() != null && task.getSupport().getId().equals(userId));
-
-    if (!allowed) {
-      throw new ForbiddenException("Cannot change task status");
-    }
-  }
-
-  /**
-   * Ensures:
-   * - Task status cannot be set to todo
-   */
-  private void validateStatusTransition(TaskStatus current, TaskStatus next) {
-    if (next == null) {
-      throw new BadRequestInputException("Task status is required");
-    }
-
-    if (current == next) {
-      throw new ConflictException("Task is already in this status");
-    }
-
-    if (next == TaskStatus.TODO && current != TaskStatus.TODO) {
-      throw new BadRequestInputException("Cannot transition back to TODO");
-    }
-  }
-
-  /**
-   * Ensures:
-   * - Assignee is not Support
-   */
-  private void validateAssignment(
-      UUID teamId,
-      UUID assigneeId,
-      UUID supportId) {
-
-    if (assigneeId.equals(supportId)) {
-      throw new ConflictException("Assignee and support cannot be the same");
-    }
-  }
-
   private record TaskDetailsUpdateMessage(
       String message,
       List<String> fields,
       List<ActivityEventDetails.ActivityChange> changes) {
-  }
-
-  /*
-   * Allowed Sorting Fields
-   */
-  private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
-      "name",
-      "priority",
-      "status",
-      "assignee",
-      "support",
-      "plannedStartDate",
-      "plannedDueDate",
-      "createdAt",
-      "taskNumber",
-      "updatedAt",
-      "lastActivityAt");
-
-  /*
-   * Check sort request
-   */
-  private Pageable validateSorting(Pageable pageable) {
-
-    for (Sort.Order order : pageable.getSort()) {
-      if (!ALLOWED_SORT_FIELDS.contains(order.getProperty())) {
-        throw new BadRequestInputException(
-            "Invalid sort field: " + order.getProperty());
-      }
-    }
-
-    return pageable;
   }
 
   private ActivityEventDetails buildTaskActivityDetails(
@@ -1055,40 +988,6 @@ public class TaskService {
     }
 
     return changes;
-  }
-
-  private boolean hasGlobalAdminAuthority(Authentication authentication) {
-    return authentication.getAuthorities()
-        .stream()
-        .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
-  }
-
-  private void validateCanReadTask(TaskEntity task, UUID requesterId, boolean isGlobalAdmin) {
-    if (isGlobalAdmin) {
-      return;
-    }
-
-    UUID teamId = task.getProject().getTeam().getId();
-    TeamMemberEntity membership = teamMemberRepository.findByTeamIdAndUserId(teamId, requesterId)
-        .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
-
-    if (isDeleted(task) &&
-        membership.getRole() != TeamRole.OWNER &&
-        membership.getRole() != TeamRole.ADMIN) {
-      throw new ResourceNotFoundException("Task not found");
-    }
-  }
-
-  private boolean isTeamManager(UUID teamId, UUID requesterId) {
-    return teamMemberRepository.findByTeamIdAndUserId(teamId, requesterId)
-        .map(member -> member.getRole() == TeamRole.OWNER || member.getRole() == TeamRole.ADMIN)
-        .orElse(false);
-  }
-
-  private boolean isDeleted(TaskEntity task) {
-    return task.getDeletedAt() != null ||
-        task.getProject().getDeletedAt() != null ||
-        task.getProject().getTeam().getDeletedAt() != null;
   }
 
 }

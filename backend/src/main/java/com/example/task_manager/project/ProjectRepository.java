@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -24,13 +22,7 @@ public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID>, J
 
   Optional<ProjectEntity> findByIdAndTeamIdAndDeletedAtIsNull(UUID projectId, UUID teamId);
 
-  Page<ProjectEntity> findByTeamId(UUID id, Pageable pageable);
-
-  Page<ProjectEntity> findByTeamIdAndDeletedAtIsNull(UUID id, Pageable pageable);
-
   boolean existsByIdAndTeamIdAndDeletedAtIsNull(UUID projectId, UUID teamId);
-
-  boolean existsByIdAndTeamId(UUID projectId, UUID teamId);
 
   boolean existsByTeamIdAndNameIgnoreCaseAndDeletedAtIsNull(UUID teamId, String name);
 

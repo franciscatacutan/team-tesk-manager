@@ -15,8 +15,8 @@ public record TaskResponse(
     String description,
     TaskStatus status,
     TaskPriority priority,
-    TaskUser assignedUser,
-    TaskUser supportUser,
+    TaskUserSummary assignedUser,
+    TaskUserSummary supportUser,
     Long taskNumber,
     Instant plannedStartDate,
     Instant plannedDueDate,
@@ -29,7 +29,7 @@ public record TaskResponse(
   /**
    * DTO for user assigned to task.
    */
-  public record TaskUser(
+  public record TaskUserSummary(
       UUID id,
       String firstName,
       String lastName,

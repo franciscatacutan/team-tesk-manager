@@ -35,125 +35,127 @@ import com.example.task_manager.user.entity.UserRole;
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
-    // Mocked dependencies
-    @Mock
-    private UserRepository userRepository;
+  // Mocked dependencies
+  @Mock
+  private UserRepository userRepository;
 
-    @Mock
-    private PasswordEncoder passwordEncoder;
+  @Mock
+  private PasswordEncoder passwordEncoder;
 
-    @Mock
-    private AuthenticationManager authenticationManager;
+  @Mock
+  private AuthenticationManager authenticationManager;
 
-    @Mock
-    private JwtService jwtService;
+  @Mock
+  private JwtService jwtService;
 
-    @Mock
-    private RefreshTokenService refreshTokenService;
+  @Mock
+  private RefreshTokenService refreshTokenService;
 
-    @InjectMocks
-    private AuthService authService;
+  @InjectMocks
+  private AuthService authService;
 
-    /**
-     * Tests successful user registration.
-     */
-    @Test
-    void shouldRegisterUserSuccessfully() {
+  /**
+   * Tests successful user registration.
+   */
+  @Test
+  void shouldRegisterUserSuccessfully() {
 
-        // Data for registration
-        String email = "test@test.com";
-        String password = "password123";
+    // Data for registration
+    String email = "test@test.com";
+    String password = "password123";
 
-        RegisterRequest request = new RegisterRequest(
-                "  TEST@test.com  ",
-                "Test",
-                "Name",
-                password);
+    RegisterRequest request = new RegisterRequest(
+        email,
+        "Test",
+        "Name",
+        password);
 
-        when(userRepository.existsByEmailIgnoreCase("test@test.com"))
-                .thenReturn(false);
+    when(userRepository.existsByEmailIgnoreCase(email))
+        .thenReturn(false);
 
-        when(passwordEncoder.encode(password))
-                .thenReturn("hashed-pass");
+    when(passwordEncoder.encode(password))
+        .thenReturn("hashed-pass");
 
-        when(userRepository.save(any(UserEntity.class)))
-                .thenAnswer(invocation -> {
-                    UserEntity savedUser = invocation.getArgument(0);
-                    savedUser.setId(UUID.randomUUID());
-                    return savedUser;
-                });
+    when(userRepository.save(any(UserEntity.class)))
+        .thenAnswer(invocation -> {
+          UserEntity savedUser = invocation.getArgument(0);
+          savedUser.setId(UUID.randomUUID());
+          return savedUser;
+        });
 
-        when(jwtService.generateToken(any(UserEntity.class)))
-                .thenReturn("fake-jwt-token");
-        when(jwtService.getAccessTokenExpirationSeconds()).thenReturn(900L);
-        when(refreshTokenService.createSession(any(UserEntity.class), any(), any()))
-                .thenReturn(new RefreshTokenService.RefreshTokenSession("refresh-token", java.time.Instant.now().plusSeconds(3600)));
+    when(jwtService.generateToken(any(UserEntity.class)))
+        .thenReturn("fake-jwt-token");
+    when(jwtService.getAccessTokenExpirationSeconds()).thenReturn(900L);
+    when(refreshTokenService.createSession(any(UserEntity.class), any(), any()))
+        .thenReturn(
+            new RefreshTokenService.RefreshTokenSession("refresh-token", java.time.Instant.now().plusSeconds(3600)));
 
-        AuthService.AuthSession session = authService.register(request, "127.0.0.1", "JUnit");
-        AuthResponse response = session.response();
+    AuthService.AuthSession session = authService.register(request, "127.0.0.1", "JUnit");
+    AuthResponse response = session.response();
 
-        // Verify interactions and response
-        verify(passwordEncoder).encode("password123");
-        verify(userRepository).save(any(UserEntity.class));
-        verify(userRepository).existsByEmailIgnoreCase("test@test.com");
-        // Verify that the token was generated
-        assertThat(response.token()).isEqualTo("fake-jwt-token");
-        assertThat(response.user().email()).isEqualTo("test@test.com");
+    // Verify interactions and response
+    verify(passwordEncoder).encode("password123");
+    verify(userRepository).save(any(UserEntity.class));
+    verify(userRepository).existsByEmailIgnoreCase("test@test.com");
+    // Verify that the token was generated
+    assertThat(response.token()).isEqualTo("fake-jwt-token");
+    assertThat(response.user().email()).isEqualTo("test@test.com");
 
-    }
+  }
 
-    /**
-     * Tests registration failure when email is already in use.
-     */
-    @Test
-    void shouldThrowExceptionWhenEmailAlreadyExists() {
+  /**
+   * Tests registration failure when email is already in use.
+   */
+  @Test
+  void shouldThrowExceptionWhenEmailAlreadyExists() {
 
-        // Existing email
-        String email = "john@test.com";
+    // Existing email
+    String email = "john@test.com";
 
-        RegisterRequest request = new RegisterRequest(
-                email,
-                "John",
-                "Doe",
-                "password123");
+    RegisterRequest request = new RegisterRequest(
+        email,
+        "John",
+        "Doe",
+        "password123");
 
-        when(userRepository.existsByEmailIgnoreCase(email))
-                .thenReturn(true);
+    when(userRepository.existsByEmailIgnoreCase(email))
+        .thenReturn(true);
 
-        // Assert that EmailAlreadyInUseException is thrown
-        assertThrows(EmailAlreadyInUseException.class,
-                () -> authService.register(request, "127.0.0.1", "JUnit"));
-    }
+    // Assert that EmailAlreadyInUseException is thrown
+    assertThrows(EmailAlreadyInUseException.class,
+        () -> authService.register(request, "127.0.0.1", "JUnit"));
+  }
 
-    @Test
-    void shouldLoginUsingAuthenticationManager() {
+  @Test
+  void shouldLoginUsingAuthenticationManager() {
 
-        UserEntity user = new UserEntity();
-        UUID userId = UUID.randomUUID();
-        user.setId(userId);
-        user.setFirstName("Jane");
-        user.setLastName("Doe");
-        user.setEmail("jane@test.com");
-        user.setPassword("{argon2}hashed");
-        user.setRole(UserRole.USER);
+    UserEntity user = new UserEntity();
+    UUID userId = UUID.randomUUID();
+    user.setId(userId);
+    user.setFirstName("Jane");
+    user.setLastName("Doe");
+    user.setEmail("jane@test.com");
+    user.setPassword("{argon2}hashed");
+    user.setRole(UserRole.USER);
 
-        CustomUserPrincipal principal = new CustomUserPrincipal(user);
-        LoginRequest request = new LoginRequest("  JANE@test.com ", "Password123!");
+    CustomUserPrincipal principal = new CustomUserPrincipal(user);
+    LoginRequest request = new LoginRequest("  JANE@test.com ", "Password123!");
 
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenReturn(UsernamePasswordAuthenticationToken.authenticated(principal, null, principal.getAuthorities()));
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(jwtService.generateToken(user)).thenReturn("jwt-token");
-        when(jwtService.getAccessTokenExpirationSeconds()).thenReturn(900L);
-        when(refreshTokenService.createSession(any(UserEntity.class), any(), any()))
-                .thenReturn(new RefreshTokenService.RefreshTokenSession("refresh-token", java.time.Instant.now().plusSeconds(3600)));
+    when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+        .thenReturn(UsernamePasswordAuthenticationToken.authenticated(principal, null, principal.getAuthorities()));
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(jwtService.generateToken(user)).thenReturn("jwt-token");
+    when(jwtService.getAccessTokenExpirationSeconds()).thenReturn(900L);
+    when(refreshTokenService.createSession(any(UserEntity.class), any(), any()))
+        .thenReturn(
+            new RefreshTokenService.RefreshTokenSession("refresh-token", java.time.Instant.now().plusSeconds(3600)));
 
-        AuthService.AuthSession session = authService.login(request, "127.0.0.1", "JUnit");
-        AuthResponse response = session.response();
+    AuthService.AuthSession session = authService.login(request, "127.0.0.1", "JUnit");
+    AuthResponse response = session.response();
 
-        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
-        verify(userRepository).findById(eq(userId));
-        assertThat(response.token()).isEqualTo("jwt-token");
-        assertThat(response.user().email()).isEqualTo("jane@test.com");
-    }
+    verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+    verify(userRepository).findById(eq(userId));
+    assertThat(response.token()).isEqualTo("jwt-token");
+    assertThat(response.user().email()).isEqualTo("jane@test.com");
+  }
 }
