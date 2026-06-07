@@ -94,7 +94,7 @@ public class TaskService {
 
     ProjectEntity project = requireActiveProject(projectId, teamId);
 
-    requireManagerMembership(teamId, requester.getId());
+    validateManagerMembership(teamId, requester.getId());
     validateDates(request.plannedStartDate(), request.plannedDueDate());
 
     TeamMemberEntity assigneeMember = requireActiveMembership(teamId, request.assigneeId());
@@ -162,7 +162,7 @@ public class TaskService {
 
     TaskEntity task = requireActiveTask(taskId, projectId, teamId);
 
-    requireManagerMembership(teamId, requester.getId());
+    validateManagerMembership(teamId, requester.getId());
 
     String currentTitle = task.getName();
     String currentDescription = task.getDescription();
@@ -231,7 +231,7 @@ public class TaskService {
 
   /**
    * Soft-deletes a task.
-   * Only Owner and Admin can soft-delete project
+   * Only Owner and Admin can soft-delete task
    */
   @Transactional
   public void deleteTask(
@@ -242,7 +242,7 @@ public class TaskService {
 
     UserEntity requester = getUserByEmail(requesterEmail);
 
-    requireManagerMembership(teamId, requester.getId());
+    validateManagerMembership(teamId, requester.getId());
 
     TaskEntity task = requireActiveTask(taskId, projectId, teamId);
 
@@ -450,7 +450,7 @@ public class TaskService {
     UserEntity requester = getUserByEmail(requesterEmail);
     TaskEntity task = requireActiveTask(taskId, projectId, teamId);
 
-    requireManagerMembership(teamId, requester.getId());
+    validateManagerMembership(teamId, requester.getId());
 
     UserEntity currentAssignee = task.getAssignee();
     UserEntity currentSupport = task.getSupport();
@@ -530,7 +530,7 @@ public class TaskService {
     UserEntity currentUser = getUserByEmail(requesterEmail);
     TaskEntity task = requireActiveTask(taskId, projectId, teamId);
 
-    requireManagerMembership(teamId, currentUser.getId());
+    validateManagerMembership(teamId, currentUser.getId());
 
     UserEntity currentAssignee = task.getAssignee();
     UserEntity currentSupport = task.getSupport();
@@ -739,21 +739,6 @@ public class TaskService {
     return member;
   }
 
-  /**
-   * Ensures:
-   * - User is Team member
-   * - Role is Team OWNER or ADMIN
-   */
-  private TeamMemberEntity requireManagerMembership(UUID teamId, UUID userId) {
-    TeamMemberEntity member = requireActiveMembership(teamId, userId);
-
-    if (!canManageTeam(member)) {
-      throw new ForbiddenException("Insufficient permissions");
-    }
-
-    return member;
-  }
-
   /*
    * Ensures sort request is sortable
    */
@@ -850,6 +835,20 @@ public class TaskService {
   }
 
   /**
+   * Ensures:
+   * - User is Team member
+   * - Role is Team OWNER or ADMIN
+   */
+  private void validateManagerMembership(UUID teamId, UUID userId) {
+    TeamMemberEntity member = requireActiveMembership(teamId, userId);
+
+    if (!canManageTeam(member)) {
+      throw new ForbiddenException("Insufficient permissions");
+    }
+
+  }
+
+  /**
    * Ensures is Global Admin or Super Admin
    */
   private boolean hasGlobalAdminAuthority(Authentication authentication) {
@@ -858,6 +857,9 @@ public class TaskService {
         .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
   }
 
+  /**
+   * Ensures is Team Owner or Admin
+   */
   private boolean canManageTeam(TeamMemberEntity member) {
     return TEAM_MANAGEMENT_ROLES.contains(member.getRole());
   }

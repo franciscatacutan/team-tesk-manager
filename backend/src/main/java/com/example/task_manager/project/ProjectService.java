@@ -91,7 +91,9 @@ public class ProjectService {
 
     UserEntity requester = getUserByEmail(requesterEmail);
 
-    TeamMemberEntity requesterMembership = requireManagerMembership(teamId, requester.getId());
+    validateManagerMembership(teamId, requester.getId());
+
+    TeamEntity team = requireActiveTeam(teamId);
 
     String trimmedName = normalizeProjectName(request.name());
 
@@ -102,7 +104,7 @@ public class ProjectService {
     project.setName(request.name().trim());
     project.setDescription(request.description());
     project.setStatus(ProjectStatus.ACTIVE);
-    project.setTeam(requesterMembership.getTeam());
+    project.setTeam(team);
     project.setCreatedBy(requester);
     project.setOwner(requester);
     project.setPlannedStartDate(request.plannedStartDate());
@@ -152,7 +154,7 @@ public class ProjectService {
 
     UserEntity requester = getUserByEmail(requesterEmail);
 
-    requireManagerMembership(teamId, requester.getId());
+    validateManagerMembership(teamId, requester.getId());
 
     ProjectEntity project = requireActiveProject(projectId, teamId);
 
@@ -232,7 +234,7 @@ public class ProjectService {
 
     UserEntity requester = getUserByEmail(requesterEmail);
 
-    requireManagerMembership(teamId, requester.getId());
+    validateManagerMembership(teamId, requester.getId());
 
     ProjectEntity project = requireActiveProject(projectId, teamId);
 
@@ -265,6 +267,84 @@ public class ProjectService {
   }
 
   /**
+   * Retrieves projects for a team with support for:
+   * - Search
+   * - Filtering
+   * - Sorting
+   * - Pagination
+   * - Role-based soft-delete visibility
+   */
+  @Transactional(readOnly = true)
+  public PageResponse<ProjectResponse> getProjects(
+      UUID teamId,
+      ProjectSearchRequest request,
+      Pageable pageable,
+      Authentication authentication) {
+
+    UserEntity requester = getUserByEmail(authentication.getName());
+
+    TeamEntity team = requireTeam(teamId);
+    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
+    boolean canViewDeleted = canViewDeletedProjects(team, requester.getId(), isGlobalAdmin);
+
+    pageable = request.all()
+        ? Pageable.unpaged()
+        : requireSorting(pageable);
+
+    Specification<ProjectEntity> spec = ProjectSpecification.build(
+        teamId,
+        request.search(),
+        request.status(),
+        request.createdBy(),
+        request.deletedFilter(),
+        canViewDeleted);
+
+    Page<ProjectEntity> page = projectRepository.findAll(spec, pageable);
+
+    return toPageResponse(page, this::mapToResponse);
+  }
+
+  /**
+   * Returns a project by id.
+   * Only Global Admin, Owner and Team Admin can view deleted task
+   */
+  @Transactional(readOnly = true)
+  public ProjectResponse getProjectById(
+      UUID teamId,
+      UUID projectId,
+      Authentication authentication) {
+
+    UserEntity requester = getUserByEmail(authentication.getName());
+    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
+
+    ProjectEntity project = requireProject(projectId, teamId);
+
+    validateCanReadProject(project, requester.getId(), isGlobalAdmin);
+
+    return mapToResponse(project);
+  }
+
+  /**
+   * Returns all updates by projects.
+   */
+  @Transactional(readOnly = true)
+  public PageResponse<ProjectActivityResponse> getProjectActivities(
+      UUID teamId,
+      UUID projectId,
+      Pageable pageable,
+      Authentication authentication) {
+
+    UserEntity requester = getUserByEmail(authentication.getName());
+    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
+    ProjectEntity project = requireProject(projectId, teamId);
+    validateCanReadProject(project, requester.getId(), isGlobalAdmin);
+
+    Page<ActivityEventEntity> page = activityEventRepository.findByProjectId(projectId, pageable);
+
+    return toPageResponse(page, activityEventService::toProjectActivitiesResponse);
+  }
+
+  /**
    * Change the status of a project
    * Only admin and owner can change status
    */
@@ -277,7 +357,7 @@ public class ProjectService {
 
     UserEntity requester = getUserByEmail(requesterEmail);
 
-    requireManagerMembership(teamId, requester.getId());
+    validateManagerMembership(teamId, requester.getId());
 
     ProjectEntity project = requireActiveProject(projectId, teamId);
 
@@ -317,80 +397,6 @@ public class ProjectService {
     return mapToResponse(project);
   }
 
-  /**
-   * Retrieves projects for a team with support for:
-   * - Search
-   * - Filtering
-   * - Sorting
-   * - Pagination
-   * - Role-based soft-delete visibility
-   */
-  @Transactional(readOnly = true)
-  public PageResponse<ProjectResponse> getProjects(
-      UUID teamId,
-      ProjectSearchRequest request,
-      Pageable pageable,
-      Authentication authentication) {
-
-    UserEntity requester = getUserByEmail(authentication.getName());
-
-    TeamEntity team = requireTeam(teamId);
-    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
-    boolean canViewDeleted = canViewDeletedProjects(team, requester.getId(), isGlobalAdmin);
-
-    pageable = request.all()
-        ? Pageable.unpaged()
-        : validateSorting(pageable);
-
-    Specification<ProjectEntity> spec = ProjectSpecification.build(
-        teamId,
-        request.search(),
-        request.status(),
-        request.createdBy(),
-        request.deletedFilter(),
-        canViewDeleted);
-
-    Page<ProjectEntity> page = projectRepository.findAll(spec, pageable);
-
-    return toPageResponse(page, this::mapToResponse);
-  }
-
-  @Transactional(readOnly = true)
-  public ProjectResponse getProjectById(
-      UUID teamId,
-      UUID projectId,
-      Authentication authentication) {
-
-    UserEntity requester = getUserByEmail(authentication.getName());
-    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
-
-    ProjectEntity project = requireProject(projectId, teamId);
-
-    ensureCanReadProject(project, requester.getId(), isGlobalAdmin);
-
-    return mapToResponse(project);
-  }
-
-  /**
-   * Returns all updates by projects.
-   */
-  @Transactional(readOnly = true)
-  public PageResponse<ProjectActivityResponse> getProjectActivities(
-      UUID teamId,
-      UUID projectId,
-      Pageable pageable,
-      Authentication authentication) {
-
-    UserEntity requester = getUserByEmail(authentication.getName());
-    boolean isGlobalAdmin = hasGlobalAdminAuthority(authentication);
-    ProjectEntity project = requireProject(projectId, teamId);
-    ensureCanReadProject(project, requester.getId(), isGlobalAdmin);
-
-    Page<ActivityEventEntity> page = activityEventRepository.findByProjectId(projectId, pageable);
-
-    return toPageResponse(page, activityEventService::toProjectActivitiesResponse);
-  }
-
   // ********************
   // HELPERS
   // ********************
@@ -406,9 +412,6 @@ public class ProjectService {
         page.isLast());
   }
 
-  /**
-   * Maps a ProjectEntity to a Project Response.
-   */
   private ProjectResponse mapToResponse(ProjectEntity project) {
     ProjectResponse.ProjectUserSummary owner = new ProjectResponse.ProjectUserSummary(
         project.getOwner().getId(),
@@ -462,18 +465,52 @@ public class ProjectService {
         isDeleted);
   }
 
-  /**
-   * Returns the user by email
-   */
   private UserEntity getUserByEmail(String email) {
     return userRepository.findByEmail(email)
         .orElseThrow(() -> new ResourceNotFoundException("User not found"));
   }
 
   /**
+   * Ensure team exists
+   * Returns active team
+   */
+  private TeamEntity requireActiveTeam(UUID teamId) {
+    return teamRepository.findByIdAndDeletedAtIsNull(teamId)
+        .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+  }
+
+  /**
+   * Ensure team exists
+   * Returns team
+   */
+  private TeamEntity requireTeam(UUID teamId) {
+    return teamRepository.findById(teamId)
+        .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+  }
+
+  /**
+   * Ensure project exist
+   * Return an active project
+   */
+  private ProjectEntity requireActiveProject(UUID projectId, UUID teamId) {
+    return projectRepository
+        .findByIdAndTeamIdAndDeletedAtIsNull(projectId, teamId)
+        .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+  }
+
+  /**
+   * Ensure project exist
+   * Return an existing project
+   */
+  private ProjectEntity requireProject(UUID projectId, UUID teamId) {
+    return projectRepository.findByIdAndTeamId(projectId, teamId)
+        .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+  }
+
+  /**
    * Ensures:
    * - Team exists
-   * - Team not deleted
+   * - Team is active
    * - Membership exists
    *
    * Returns membership entity.
@@ -488,42 +525,34 @@ public class ProjectService {
     return member;
   }
 
-  /**
-   * Get an active project
+  /*
+   * Check sort request
    */
-  private ProjectEntity requireActiveProject(UUID projectId, UUID teamId) {
-    return projectRepository
-        .findByIdAndTeamIdAndDeletedAtIsNull(projectId, teamId)
-        .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
-  }
+  private Pageable requireSorting(Pageable pageable) {
 
-  /**
-   * Get an existing project
-   */
-  private ProjectEntity requireProject(UUID projectId, UUID teamId) {
-    return projectRepository.findByIdAndTeamId(projectId, teamId)
-        .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
-  }
-
-  /**
-   * Ensures:
-   * - User is Team member
-   * - Role is Team OWNER or ADMIN
-   */
-  private TeamMemberEntity requireManagerMembership(UUID teamId, UUID userId) {
-    TeamMemberEntity member = requireActiveMembership(teamId, userId);
-
-    if (!canManageTeam(member)) {
-      throw new ForbiddenException("Insufficient permissions");
+    for (Sort.Order order : pageable.getSort()) {
+      if (!ALLOWED_SORT_FIELDS.contains(order.getProperty())) {
+        throw new BadRequestInputException(
+            "Invalid sort field: " + order.getProperty());
+      }
     }
 
-    return member;
+    return pageable;
+  }
+
+  /**
+   * Checks if Start Date < Due Date
+   */
+  private void validateDates(Instant start, Instant due) {
+    if (start != null && due != null && due.isBefore(start)) {
+      throw new ConflictException("Project due date must be after start date");
+    }
   }
 
   /**
    * Ensures:
    * - Project status cannot be changed to its current value
-   * All transitions between ACTIVE, ON_HOLD, COMPLETED are allowed
+   * - All transitions between ACTIVE, ON_HOLD, COMPLETED are allowed
    */
   private void validateStatusChange(
       ProjectEntity project,
@@ -543,18 +572,27 @@ public class ProjectService {
     }
   }
 
-  private TeamEntity requireTeam(UUID teamId) {
-    return teamRepository.findById(teamId)
-        .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+  /**
+   * Ensures:
+   * - Project exist
+   * - Project is active and unique for Team
+   * 
+   */
+  private void validateExistByTeamAndName(UUID teamId, String name) {
+
+    boolean project = projectRepository.existsByTeamIdAndNameIgnoreCaseAndDeletedAtIsNull(teamId, name);
+
+    if (project) {
+      throw new ConflictException("Project name already exists for Team");
+    }
   }
 
-  private boolean hasGlobalAdminAuthority(Authentication authentication) {
-    return authentication.getAuthorities()
-        .stream()
-        .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
-  }
-
-  private void ensureCanReadProject(ProjectEntity project, UUID requesterId, boolean isGlobalAdmin) {
+  /**
+   * Ensures:
+   * - User is able to read task
+   * - User is Global admin or team member
+   */
+  private void validateCanReadProject(ProjectEntity project, UUID requesterId, boolean isGlobalAdmin) {
     if (isGlobalAdmin) {
       return;
     }
@@ -569,10 +607,41 @@ public class ProjectService {
     }
   }
 
+  /**
+   * Ensures:
+   * - User is Team member
+   * - Role is Team OWNER or ADMIN
+   */
+  private void validateManagerMembership(UUID teamId, UUID userId) {
+    TeamMemberEntity member = requireActiveMembership(teamId, userId);
+
+    if (!canManageTeam(member)) {
+      throw new ForbiddenException("Insufficient permissions");
+    }
+
+  }
+
+  /**
+   * Ensures is Global Admin or Super Admin
+   */
+  private boolean hasGlobalAdminAuthority(Authentication authentication) {
+    return authentication.getAuthorities()
+        .stream()
+        .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
+  }
+
+  /**
+   * Ensures is Team Owner or Admin
+   */
   private boolean canManageTeam(TeamMemberEntity member) {
     return TEAM_MANAGEMENT_ROLES.contains(member.getRole());
   }
 
+  /**
+   * Ensures:
+   * - User is able to read deleted project
+   * - User is Global admin or team owner or admin
+   */
   private boolean canViewDeletedProjects(TeamEntity team, UUID requesterId, boolean isGlobalAdmin) {
     if (isGlobalAdmin) {
       return true;
@@ -589,38 +658,11 @@ public class ProjectService {
     return canManageTeam;
   }
 
-  /*
-   * Check sort request
+  /**
+   * Checks if a Project Name is unique for an active project
    */
-  private Pageable validateSorting(Pageable pageable) {
-
-    for (Sort.Order order : pageable.getSort()) {
-      if (!ALLOWED_SORT_FIELDS.contains(order.getProperty())) {
-        throw new BadRequestInputException(
-            "Invalid sort field: " + order.getProperty());
-      }
-    }
-
-    return pageable;
-  }
-
-  private ActivityEventDetails buildProjectActivityDetails(
-      List<String> fields,
-      String from,
-      String to,
-      String target,
-      List<ActivityEventDetails.ActivityChange> changes,
-      UserEntity subjectUser) {
-    return new ActivityEventDetails(
-        fields,
-        from,
-        to,
-        target,
-        changes,
-        null,
-        null,
-        null,
-        subjectUser == null ? null : activityEventService.reference(subjectUser));
+  private String normalizeProjectName(String name) {
+    return name.trim().toLowerCase(Locale.ROOT);
   }
 
   private ProjectDetailsUpdateMessage buildProjectUpdateMessage(
@@ -667,32 +709,29 @@ public class ProjectService {
         changes);
   }
 
-  /**
-   * Checks if a Project Name is unique for an active project
-   */
-  private String normalizeProjectName(String name) {
-    return name.trim().toLowerCase(Locale.ROOT);
-  }
-
-  private void validateExistByTeamAndName(UUID teamId, String name) {
-
-    boolean project = projectRepository.existsByTeamIdAndNameIgnoreCaseAndDeletedAtIsNull(teamId, name);
-
-    if (project) {
-      throw new ConflictException("Project name already exists for Team");
-    }
-  }
-
   private record ProjectDetailsUpdateMessage(
       String message,
       List<String> fields,
       List<ActivityEventDetails.ActivityChange> changes) {
   }
 
-  private void validateDates(Instant start, Instant due) {
-    if (start != null && due != null && due.isBefore(start)) {
-      throw new ConflictException("Project due date must be after start date");
-    }
+  private ActivityEventDetails buildProjectActivityDetails(
+      List<String> fields,
+      String from,
+      String to,
+      String target,
+      List<ActivityEventDetails.ActivityChange> changes,
+      UserEntity subjectUser) {
+    return new ActivityEventDetails(
+        fields,
+        from,
+        to,
+        target,
+        changes,
+        null,
+        null,
+        null,
+        subjectUser == null ? null : activityEventService.reference(subjectUser));
   }
 
 }
