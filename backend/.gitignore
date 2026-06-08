@@ -1,8 +1,25 @@
 HELP.md
+
+# Build
 target/
-.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+
+# Maven Wrapper
+# (commit wrapper files)
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
 
 ### STS ###
 .apt_generated

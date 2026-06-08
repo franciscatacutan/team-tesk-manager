@@ -3,9 +3,10 @@ spring:
     activate:
       on-profile: local
 
-server:
-  address: localhost
-  port: 8080
+  jpa:
+    hibernate:
+      ddl-auto: update
 
-frontend:
-  url: http://localhost:5173
+auth:
+  refresh-cookie-secure: false
+  refresh-cookie-same-site: Lax
