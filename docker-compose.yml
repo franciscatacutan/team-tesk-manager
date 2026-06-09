@@ -9,9 +9,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
-    networks:
-      - team-task-manager-network
-
     ports:
       - "5432:5432"
 
@@ -26,6 +23,9 @@ services:
 
     restart: unless-stopped
 
+    networks:
+      - team-task-manager-network
+
   backend:
     build:
       context: ./backend
@@ -36,9 +36,6 @@ services:
     env_file:
       - .env
 
-    networks:
-      - team-task-manager-network
-
     ports:
       - "8080:8080"
 
@@ -48,7 +45,11 @@ services:
 
     restart: unless-stopped
 
+    networks:
+      - team-task-manager-network
+
 volumes:
   postgres_data:
 
-networks: team-task-manager-network
+networks:
+  team-task-manager-network:
