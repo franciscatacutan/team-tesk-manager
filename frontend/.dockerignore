@@ -8,8 +8,5 @@ dist
 .idea/
 .vscode/
 
-.env
-.env.*
-
 *.log
 logs/
