@@ -1,6 +1,7 @@
 spring:
   application:
     name: Team Task Manager
+
   profiles:
     default: local
 
@@ -13,10 +14,25 @@ spring:
     open-in-view: false
     show-sql: false
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+  endpoint:
+    health:
+      show-details: never
+
+  health:
+    defaults:
+      enabled: true
+
 auth:
   jwt:
     secret: ${JWT_SECRET}
     issuer: ${JWT_ISSUER}
+
   access-token-expiration-ms: 900000
   refresh-token-expiration-ms: 2592000000
   refresh-cookie-name: refresh_token
