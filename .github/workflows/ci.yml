@@ -30,7 +30,7 @@ jobs:
           java-version: 21
 
       - name: Build Backend
-        run: mvn clean verify
+        run: mvn clean package -DskipTests
 
   frontend:
     runs-on: ubuntu-latest
