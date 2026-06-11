@@ -1,6 +1,6 @@
 package com.example.task_manager.team.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.example.task_manager.team.entity.TeamRole;
@@ -16,5 +16,5 @@ public record TeamMemberResponse(
     String email,
     TeamRole teamRole,
     UserRole globalRole,
-    LocalDateTime joinedAt) {
+    Instant joinedAt) {
 }

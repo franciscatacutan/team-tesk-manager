@@ -2,37 +2,48 @@ spring:
   application:
     name: Team Task Manager
 
-  # Database configuration
+  profiles:
+    default: local
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/taskmanager
+    url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
-  # JPA configuration
   jpa:
     open-in-view: false
-    hibernate:
-      ddl-auto: update
     show-sql: false
 
-# Authentication configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+  endpoint:
+    health:
+      show-details: never
+
+  health:
+    defaults:
+      enabled: true
+
 auth:
   jwt:
     secret: ${JWT_SECRET}
-    issuer: ${JWT_ISSUER:team-task-manager}
-  access-token-expiration-ms: 900000 # 15 minutes
-  refresh-token-expiration-ms: 2592000000 # 30 days
+    issuer: ${JWT_ISSUER}
+
+  access-token-expiration-ms: 900000
+  refresh-token-expiration-ms: 2592000000
   refresh-cookie-name: refresh_token
-  refresh-cookie-secure: false
-  refresh-cookie-same-site: Lax
 
 app:
   bootstrap-admin:
-    email: ${BOOTSTRAP_ADMIN_EMAIL:}
-    password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+    email: ${BOOTSTRAP_ADMIN_EMAIL}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD}
 
 frontend:
-  url: ${FRONTEND_URL:http://localhost:5173}
+  url: ${FRONTEND_URL}
 
 logging:
   level:
