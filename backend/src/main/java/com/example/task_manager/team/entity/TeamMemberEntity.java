@@ -1,6 +1,6 @@
 package com.example.task_manager.team.entity;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -59,8 +59,12 @@ public class TeamMemberEntity {
   @Column(nullable = false)
   private TeamRole role;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "added_by", nullable = false)
+  private UserEntity addedBy;
+
   @CreationTimestamp
-  private LocalDateTime joinedAt;
+  private Instant joinedAt;
 
   @Version
   private Long version;
