@@ -126,6 +126,7 @@ public class TeamService {
     ownerMember.setTeam(team);
     ownerMember.setUser(owner);
     ownerMember.setRole(TeamRole.OWNER);
+    ownerMember.setAddedBy(owner);
 
     teamMemberRepository.save(ownerMember);
 
@@ -430,7 +431,7 @@ public class TeamService {
     for (TeamMemberRequest user : request.members()) {
 
       try {
-        TeamMemberEntity member = addTeamMember(team, user);
+        TeamMemberEntity member = addTeamMember(team, user, requester);
 
         teamMemberRepository.flush();
 
@@ -678,6 +679,13 @@ public class TeamService {
   }
 
   private TeamMemberResponse mapToMemberResponse(TeamMemberEntity member) {
+
+    TeamMemberResponse.User user = new TeamMemberResponse.User(
+        member.getAddedBy().getId(),
+        member.getAddedBy().getFirstName(),
+        member.getAddedBy().getLastName(),
+        member.getAddedBy().getEmail());
+
     return new TeamMemberResponse(
         member.getUser().getId(),
         member.getUser().getFirstName(),
@@ -685,7 +693,8 @@ public class TeamService {
         member.getUser().getEmail(),
         member.getRole(),
         member.getUser().getRole(),
-        member.getJoinedAt());
+        member.getJoinedAt(),
+        user);
   }
 
   private UserResponse mapToNonMemberResponse(UserEntity user) {
@@ -781,7 +790,8 @@ public class TeamService {
    */
   private TeamMemberEntity addTeamMember(
       TeamEntity team,
-      TeamMemberRequest request) {
+      TeamMemberRequest request,
+      UserEntity requester) {
 
     UserEntity user = getUserById(request.userId());
 
@@ -801,6 +811,7 @@ public class TeamService {
     member.setTeam(team);
     member.setUser(user);
     member.setRole(role);
+    member.setAddedBy(requester);
 
     return teamMemberRepository.save(member);
   }

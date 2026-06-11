@@ -16,5 +16,12 @@ public record TeamMemberResponse(
     String email,
     TeamRole teamRole,
     UserRole globalRole,
-    Instant joinedAt) {
+    Instant joinedAt,
+    User addedBy) {
+  public record User(
+      UUID userId,
+      String firstName,
+      String lastName,
+      String email) {
+  }
 }
