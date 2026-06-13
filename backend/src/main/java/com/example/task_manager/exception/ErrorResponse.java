@@ -5,7 +5,13 @@ import java.time.Instant;
 /**
  * Represents an error response structure.
  */
-public record ErrorResponse(int status, ErrorCode error, String message, String path, Instant timestamp) {
+public record ErrorResponse(
+    int status,
+    ErrorCode error,
+    String message,
+    String path,
+    Instant timestamp) {
+
   public enum ErrorCode {
     INVALID_CREDENTIALS,
     FORBIDDEN,
@@ -16,6 +22,8 @@ public record ErrorResponse(int status, ErrorCode error, String message, String 
     INTERNAL_SERVER_ERROR,
     VALIDATION_ERROR,
     INVALID_PARAMETER,
-    INVALID_METHOD
+    INVALID_METHOD,
+    CONFLICT,
+    BAD_REQUEST
   }
 }

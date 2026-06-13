@@ -9,10 +9,18 @@ import com.example.task_manager.exception.ErrorResponse.ErrorCode;
  */
 public class UnauthorizedException extends ApiException {
 
+  private static final String DEFAULT_MESSAGE = "User is not Authorized";
+
   public UnauthorizedException() {
+    this(null);
+  }
+
+  public UnauthorizedException(String message) {
     super(HttpStatus.UNAUTHORIZED,
         ErrorCode.UNAUTHORIZED,
-        "User is not Authorized");
+        message == null || message.isBlank()
+            ? DEFAULT_MESSAGE
+            : message);
   }
 
 }

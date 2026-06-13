@@ -1,0 +1,22 @@
+package com.example.task_manager.task.entity;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+
+/**
+ * Enum representing the status of a task.
+ */
+public enum TaskStatus {
+  TODO,
+  IN_PROGRESS,
+  IN_REVIEW,
+  ON_HOLD,
+  DONE,
+  CANCELLED,
+  DELETED;
+
+  // Converts a string to a TaskStatus enum, ignoring case
+  @JsonCreator
+  public static TaskStatus from(String value) {
+    return TaskStatus.valueOf(value.toUpperCase());
+  }
+}

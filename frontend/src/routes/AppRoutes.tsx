@@ -1,18 +1,32 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import AuthPage from "../pages/AuthPage";
-import DashboardPage from "../pages/DashboardPage";
-import ProjectsPage from "../pages/ProjectsPage";
 import ErrorPage from "../pages/ErrorPage";
 
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
 
+import TeamSelectionPage from "../pages/TeamSelectionPage";
+import ProfilePage from "../pages/ProfilePage";
+import SettingsPage from "../pages/SettingsPage";
+import UsersPage from "../pages/UsersPage";
+import TaskDetails from "../features/tasks/components/TaskDetails";
+import ProjectDetails from "../features/projects/components/ProjectDetails";
+import ProjectsView from "../features/projects/components/ProjectsView";
+import WorkspaceLayout from "../layout/workspace/WorkspaceLayout";
+import TeamOverview from "../features/teams/components/TeamOverview";
+import TeamMembersPage from "../features/teams/components/MembersView";
+import AppLayout from "../layout/AppLayout";
+import TeamActivity from "../features/teams/components/TeamActivity";
+import TeamInsightsPage from "../features/teams/components/TeamInsightsPage";
+import { useThemePreference } from "../features/settings/hooks/useThemePreference";
+
 export default function AppRoutes() {
+  useThemePreference();
+
   return (
     <BrowserRouter>
       <Routes>
-        {/* LOGIN (PUBLIC) */}
         <Route
           path="/login"
           element={
@@ -21,39 +35,51 @@ export default function AppRoutes() {
             </PublicRoute>
           }
         />
-
-        {/* PROJECTS */}
         <Route
-          path="/projects"
           element={
             <ProtectedRoute>
-              <ProjectsPage />
+              <AppLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route
+            path="/teams"
+            element={
+              <ProtectedRoute>
+                <TeamSelectionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/users" element={<UsersPage />} />
+          <Route path="/users/:userId" element={<ProfilePage />} />
 
-        {/* PROJECT DASHBOARD */}
-        <Route
-          path="/projects/:id"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/teams/:teamId"
+            element={
+              <ProtectedRoute>
+                <WorkspaceLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<TeamOverview />} />
+            <Route path="projects" element={<ProjectsView />} />
+            <Route path="members" element={<TeamMembersPage />} />
+            <Route path="activity" element={<TeamActivity />} />
+            <Route path="insights" element={<TeamInsightsPage />} />
+            <Route path="projects/:projectId" element={<ProjectDetails />} />
 
-        {/* ROOT */}
-        <Route path="/" element={<Navigate to="/projects" replace />} />
+            <Route
+              path="projects/:projectId/tasks/:taskId"
+              element={<TaskDetails />}
+            />
+          </Route>
+        </Route>
 
-        {/* EVERYTHING ELSE */}
-        <Route
-          path="*"
-          element={
-            <ProtectedRoute>
-              <ErrorPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/" element={<Navigate to="/teams" replace />} />
+
+        <Route path="*" element={<ErrorPage />} />
       </Routes>
     </BrowserRouter>
   );
