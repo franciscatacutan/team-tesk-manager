@@ -84,7 +84,7 @@ public class TaskController {
     return ResponseEntity.ok(taskService.getTasks(teamId, projectId, request, pageable, authentication));
   }
 
-  @GetMapping("/{taskId}/existing")
+  @GetMapping("/{taskId}")
   public ResponseEntity<TaskResponse> getTaskById(
       @PathVariable UUID teamId,
       @PathVariable UUID projectId,
